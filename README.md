@@ -22,6 +22,7 @@ are available:
 * [Google Guava](https://code.google.com/p/guava-libraries/)
 * [Metrics](http://metrics.codahale.com/)
 * [Log4J](http://logging.apache.org/log4j/2.x/)
+* TODO: Several Attribyte libraries are included with no source. In-progress.
 
 ##Additional Dependencies for Default (MySQL) Implementation
 
