@@ -1,0 +1,13 @@
+hub.url=https://pubsubhub.attribyte.net
+hub.topic=/test
+#hub.username=
+#hub.password=
+
+endpoint.listenAddress=127.0.0.1
+endpoint.listenPort=8087
+endpoint.callbackBase=http://127.0.0.1
+
+publisher.numProcessors=4
+publisher.queueSize=0
+
+test.numNotifications=1000

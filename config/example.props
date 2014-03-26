@@ -1,0 +1,118 @@
+##########
+# Server #
+##########
+
+http.address=127.0.0.1
+http.port=8086
+
+#############################
+# StoredNotificationServlet #
+#############################
+
+redis.host=127.0.0.1
+redis.port=6379
+redis.minPoolSize=32
+redis.maxPoolSize=32
+
+#################
+# Hub Datastore #
+#################
+
+endpoint.datastoreClass=org.attribyte.api.pubsub.impl.JDBCPoolDatastore
+
+######################
+# Hub MySQL Database #
+######################
+
+endpoint.acp.driver.mysql.class=com.mysql.jdbc.Driver
+
+endpoint.acp.property.std.useUnicode=true
+endpoint.acp.property.std.characterEncoding=utf8
+
+endpoint.acp.connection.pubsub.user=root
+endpoint.acp.connection.pubsub.password=
+endpoint.acp.connection.pubsub.connectionString=jdbc:mysql://127.0.0.1/pubsub
+endpoint.acp.connection.pubsub.testSQL=SELECT 1 FROM test
+endpoint.acp.connection.pubsub.testInterval=30s
+endpoint.acp.connection.pubsub.createTimeout=60s
+endpoint.acp.connection.pubsub.debug=true
+endpoint.acp.connection.pubsub.properties=std
+
+endpoint.acp.pool.pubsub.minActiveSegments=1
+endpoint.acp.pool.pubsub.startActiveSegments=2
+endpoint.acp.pool.pubsub.idleCheckInterval=30s
+endpoint.acp.pool.pubsub.saturatedAcquireTimeout=1s
+endpoint.acp.pool.pubsub.segment0.size=5
+endpoint.acp.pool.pubsub.segment0.closeConcurrency=2
+endpoint.acp.pool.pubsub.segment0.testOnLogicalOpen=false
+endpoint.acp.pool.pubsub.segment0.testOnLogicalClose=false
+endpoint.acp.pool.pubsub.segment0.incompleteTransactionPolicy=report
+endpoint.acp.pool.pubsub.segment0.openStatementPolicy=silent
+endpoint.acp.pool.pubsub.segment0.forceRealClosePolicy=connectionWithLimit
+endpoint.acp.pool.pubsub.segment0.closeTimeLimit = 10s
+endpoint.acp.pool.pubsub.segment0.connectionName=pubsub
+endpoint.acp.pool.pubsub.segment0.acquireTimeout=10ms
+endpoint.acp.pool.pubsub.segment0.activeTimeout=60s
+endpoint.acp.pool.pubsub.segment0.connectionLifetime=15m
+endpoint.acp.pool.pubsub.segment0.idleTimeBeforeShutdown=30s
+endpoint.acp.pool.pubsub.segment0.minActiveTime=30s
+endpoint.acp.pool.pubsub.segment0.reconnectConcurrency=2
+endpoint.acp.pool.pubsub.segment0.reconnectMaxWaitTime=1m
+endpoint.acp.pool.pubsub.segment0.activeTimeoutMonitorFrequency=30s
+endpoint.acp.pool.pubsub.segment1.clone=segment0
+endpoint.acp.pool.pubsub.segment1.acquireTimeout=50ms
+endpoint.acp.pool.pubsub.segment1.size=5
+
+#################
+# Notifications #
+#################
+
+# A notification contains the message to be broadcast to all
+# subscribers to its topic. This queue/pool performs the following tasks
+# when a notification is enqueue:
+#  - Retrieve all subscribers associated with the topic
+#  - Build the HTTP POST to be sent to all subscribers
+#  - Enqueue the HTTP Post for callback.
+
+endpoint.notifierFactoryClass=org.attribyte.api.pubsub.impl.NotifierFactory
+endpoint.baseConcurrentNotifiers=4
+endpoint.maxConcurrentNotifiers=16
+endpoint.maxNotifierQueueSize=4096
+endpoint.notifierThreadKeepAliveMinutes=2
+
+#######################
+# Subscriber Callback #
+#######################
+
+endpoint.callbackFactoryClass=org.attribyte.api.pubsub.impl.CallbackFactory
+endpoint.maxConcurrentCallbacks=64
+
+#################
+# Subscriptions #
+#################
+
+endpoint.verifierFactoryClass=org.attribyte.api.pubsub.impl.SubscriptionVerifierFactory
+endpoint.baseConcurrentVerifiers=1
+endpoint.maxConcurrentVerifiers=4
+endpoint.verifierThreadKeepAliveMinutes=2
+endpoint.verifyRetryWaitMinutes=1
+endpoint.verifyRetryLimit=10
+endpoint.verifyRetryThreads=2
+endpoint.minLeaseSeconds=3600
+endpoint.maxLeaseDays=3650
+#endpoint.topicURLFilters=
+#endpoint.callbackURLFilters=
+
+###########
+# General #
+###########
+
+endpoint.httpclient.class=org.attribyte.api.http.impl.commons.Client
+endpoint.httpclient.connectionTimeoutMillis=5000
+endpoint.httpclient.socketTimeoutMillis=5000
+endpoint.httpclient.userAgent=Attribyte/PubSub
+#endpoint.httpclient.proxyHost=
+#endpoint.httpclient.proxyPort=
+
+#Supported topics...
+endpoint.topics=/test,/example,/post

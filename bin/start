@@ -1,0 +1,20 @@
+JAVA_EXE="/usr/local/bin/java"
+INSTALL_DIR="/var/attribyte/pubsub"
+LIB_DIR="$INSTALL_DIR/lib"
+EXTLIB_DIR="$INSTALL_DIR/dist/extlib"
+DISTLIB="$INSTALL_DIR/dist/lib/pubsub.jar"
+CLASSPATH=$DISTLIB
+
+for jar in `ls $EXTLIB_DIR/*.jar`;
+do
+        CLASSPATH=$CLASSPATH:$jar
+done
+
+
+for jar in `ls $LIB_DIR/*.jar`;
+do
+        CLASSPATH=$CLASSPATH:$jar
+done
+
+export CLASSPATH
+$JAVA_EXE org.attribyte.api.pubsub.impl.server.Server $INSTALL_DIR/config/config.properties $INSTALL_DIR/config/log.properties
