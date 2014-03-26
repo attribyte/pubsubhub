@@ -2,7 +2,7 @@ JAVA_EXE="/usr/local/bin/java"
 INSTALL_DIR="/var/attribyte/pubsub"
 LIB_DIR="$INSTALL_DIR/lib"
 EXTLIB_DIR="$INSTALL_DIR/dist/extlib"
-DISTLIB="$INSTALL_DIR/dist/lib/pubsub.jar"
+DISTLIB="$INSTALL_DIR/dist/lib/attribyte-pubsub.0.1.0.jar"
 CLASSPATH=$DISTLIB
 
 for jar in `ls $EXTLIB_DIR/*.jar`;
