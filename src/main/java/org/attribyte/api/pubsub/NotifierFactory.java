@@ -29,5 +29,5 @@ public interface NotifierFactory extends MetricSet {
     * @return The notifier.
     */
    public Notifier create(Notification notification, HubEndpoint hub);
-   
+
 }

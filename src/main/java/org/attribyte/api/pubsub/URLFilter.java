@@ -14,26 +14,27 @@
  */
 
 package org.attribyte.api.pubsub;
+
 import org.attribyte.api.http.AuthScheme;
 
 /**
  * Determines if a URL (topic or callback URL)
- * requires authentication or should be rejected. 
+ * requires authentication or should be rejected.
  */
-public interface URLFilter  {
-   
+public interface URLFilter {
+
    /**
     * Reports that the URL should be rejected.
     * @param url The URL to test.
     * @return Should the URL be rejected?
     */
    public boolean reject(String url);
-   
+
    /**
     * Returns an authentication scheme, if required for the URL.
     * @param url The URL.
     * @return The required authentication or <code>null</code> if no authentication is required.
     */
    public AuthScheme authScheme(String url);
-   
+
 }

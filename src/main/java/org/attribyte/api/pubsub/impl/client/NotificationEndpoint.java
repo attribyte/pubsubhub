@@ -29,8 +29,8 @@ import java.util.Map;
  * An endpoint that accepts notifications from a hub
  * by listening on a configured address and port.
  * <p>
- *    Notifications are reported as they are received to the
- *    configured callback.
+ * Notifications are reported as they are received to the
+ * configured callback.
  * </p>
  */
 public class NotificationEndpoint implements MetricSet {
@@ -76,7 +76,7 @@ public class NotificationEndpoint implements MetricSet {
       HandlerCollection serverHandlers = new HandlerCollection();
       server.setHandler(serverHandlers);
 
-      ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS|ServletContextHandler.NO_SECURITY);
+      ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
 
       PingServlet pingServlet = new PingServlet();

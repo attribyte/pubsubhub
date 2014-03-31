@@ -82,7 +82,7 @@ public class AsyncPublisher implements MetricSet {
    public AsyncPublisher(final int numProcessors, final int maxQueueSize, final int notificationTimeoutSeconds)
            throws Exception {
       final BlockingQueue<Runnable> notifications;
-      assert(numProcessors > 0);
+      assert (numProcessors > 0);
       if(maxQueueSize > 0) {
          notifications = new ArrayBlockingQueue<Runnable>(maxQueueSize);
       } else {
@@ -182,7 +182,7 @@ public class AsyncPublisher implements MetricSet {
    /**
     * Starts the publisher.
     * <p>
-    *    Must be called before use.
+    * Must be called before use.
     * </p>
     * @throws Exception on start error.
     */
@@ -197,7 +197,7 @@ public class AsyncPublisher implements MetricSet {
     */
    public void shutdown(int maxWaitSeconds) throws Exception {
       this.notificationExecutor.shutdown();
-      this.notificationExecutor.awaitTermination(maxWaitSeconds , TimeUnit.SECONDS);
+      this.notificationExecutor.awaitTermination(maxWaitSeconds, TimeUnit.SECONDS);
       if(!this.notificationExecutor.isShutdown()) {
          this.notificationExecutor.shutdownNow();
       }

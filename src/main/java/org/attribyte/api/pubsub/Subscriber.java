@@ -14,6 +14,7 @@
  */
 
 package org.attribyte.api.pubsub;
+
 import org.attribyte.api.http.AuthScheme;
 
 /**
@@ -31,27 +32,27 @@ public class Subscriber extends Endpoint {
       super(endpointURL, id);
       this.priority = 0;
    }
-   
+
    public Subscriber(final String endpointURL, final long id, final AuthScheme auth, final String authId) {
       super(endpointURL, id, auth, authId);
       this.priority = 0;
-   }   
-   
+   }
+
    public Subscriber(final String endpointURL, final long id, final AuthScheme auth, final String authId, final int priority) {
       super(endpointURL, id, auth, authId);
       this.priority = priority;
-   }   
-   
+   }
+
    @Override
    public boolean equals(Object other) {
       if(other instanceof Subscriber) {
          Subscriber otherSubscriber = (Subscriber)other;
-         return otherSubscriber.endpointURL.equals(endpointURL);         
+         return otherSubscriber.endpointURL.equals(endpointURL);
       } else {
          return false;
       }
    }
-   
+
    /**
     * Gets the priority assigned to this subscriber.
     * @return The priority.
@@ -59,6 +60,6 @@ public class Subscriber extends Endpoint {
    public int getPriority() {
       return priority;
    }
-   
+
    private final int priority;
 }

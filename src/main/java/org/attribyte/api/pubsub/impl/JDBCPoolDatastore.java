@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * A datastore that uses a connection pool (acp) to create database connections.
  * <p>
- *    The test SQL for connection health check is 'SELECT 1' by default.
- *    This may be configured by setting the property 'db.testSQL'.
+ * The test SQL for connection health check is 'SELECT 1' by default.
+ * This may be configured by setting the property 'db.testSQL'.
  * </p>
  */
 public class JDBCPoolDatastore extends RDBHubDatastore {
@@ -48,8 +48,8 @@ public class JDBCPoolDatastore extends RDBHubDatastore {
       if(isInit.compareAndSet(false, true)) {
          this.eventHandler = eventHandler;
          this.logger = logger;
-         this.connectionTestSQL = props.getProperty(prefix+"db.testSQL", "SELECT 1");
-         Properties poolProps = new InitUtil(prefix+"acp.", props, false).getProperties();
+         this.connectionTestSQL = props.getProperty(prefix + "db.testSQL", "SELECT 1");
+         Properties poolProps = new InitUtil(prefix + "acp.", props, false).getProperties();
          List<ConnectionPool.Initializer> pools = ConnectionPool.Initializer.fromProperties(poolProps, null, logger);
          if(pools.size() == 0) {
             throw new InitializationException("No connection pool specified");
@@ -67,7 +67,7 @@ public class JDBCPoolDatastore extends RDBHubDatastore {
    public final Connection getConnection() throws SQLException {
       return pool.getConnection();
    }
-   
+
    @Override
    public final void shutdown() {
       pool.shutdown();

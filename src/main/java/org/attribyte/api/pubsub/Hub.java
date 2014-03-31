@@ -14,6 +14,7 @@
  */
 
 package org.attribyte.api.pubsub;
+
 import org.attribyte.api.http.AuthScheme;
 
 /**
@@ -40,13 +41,13 @@ public class Hub extends Endpoint {
     */
    public Hub(final String endpointURL, final long id, final AuthScheme auth, final String authId) {
       super(endpointURL, id, auth, authId);
-   }   
+   }
 
    @Override
    public boolean equals(Object other) {
       if(other instanceof Hub) {
          Hub otherHub = (Hub)other;
-         return otherHub.endpointURL.equals(endpointURL);         
+         return otherHub.endpointURL.equals(endpointURL);
       } else {
          return false;
       }

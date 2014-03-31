@@ -20,18 +20,18 @@ import org.attribyte.util.StringUtil;
 /**
  * A resource, identified by a URL, to which subscriptions are made.
  * <p>
- *    Topics are uniquely identified by their URL and optionally have an
- *    (also unique) assigned integer id.
+ * Topics are uniquely identified by their URL and optionally have an
+ * (also unique) assigned integer id.
  * </p>
  * @author Attribyte, LLC
  */
 public final class Topic {
-   
+
    /**
     * Creates immutable instances of <code>Topic</code>.
     */
    public static final class Builder {
-      
+
       /**
        * Sets the id of the topic to be created.
        * @param id The id.
@@ -41,7 +41,7 @@ public final class Topic {
          this.id = id;
          return this;
       }
-      
+
       /**
        * Sets the topic URL.
        * @param topicURL The URL.
@@ -51,7 +51,7 @@ public final class Topic {
          this.topicURL = topicURL;
          return this;
       }
-      
+
       /**
        * Creates the topic.
        * @return The topic.
@@ -59,11 +59,11 @@ public final class Topic {
       public Topic create() {
          return new Topic(topicURL, id);
       }
-      
+
       private long id;
       private String topicURL;
    }
-   
+
    /**
     * Creates a topic.
     * @param topicURL The URL.
@@ -72,7 +72,7 @@ public final class Topic {
    public Topic(final String topicURL, final long id) {
       if(!StringUtil.hasContent(topicURL)) {
          throw new UnsupportedOperationException("Topic URL must not be null or empty");
-      }      
+      }
       this.id = id;
       this.topicURL = topicURL;
    }
@@ -84,7 +84,7 @@ public final class Topic {
    public long getId() {
       return id;
    }
-   
+
    /**
     * Gets the topic URL.
     * @return The URL.
@@ -97,7 +97,7 @@ public final class Topic {
    public int hashCode() {
       return topicURL.hashCode();
    }
-   
+
    @Override
    /**
     * Topics are equal if their URLs match.
@@ -107,12 +107,12 @@ public final class Topic {
    public boolean equals(Object other) {
       if(other instanceof Topic) {
          Topic otherTopic = (Topic)other;
-         return otherTopic.topicURL.equals(topicURL);         
+         return otherTopic.topicURL.equals(topicURL);
       } else {
          return false;
       }
    }
-   
+
    protected final long id;
    protected final String topicURL;
 }

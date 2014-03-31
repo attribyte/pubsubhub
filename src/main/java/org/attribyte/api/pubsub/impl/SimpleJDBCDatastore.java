@@ -33,7 +33,7 @@ import java.util.Properties;
  * A datastore that creates a new connection on every invocation. Not suitable for production environments.
  */
 public class SimpleJDBCDatastore extends RDBHubDatastore {
-   
+
    String host;
    String db;
    String user;
@@ -41,15 +41,15 @@ public class SimpleJDBCDatastore extends RDBHubDatastore {
    String port;
    String driver;
    String connectionString;
-   
+
    @Override
    public void init(final String prefix, final Properties props, final HubDatastore.EventHandler eventHandler, final Logger logger) throws InitializationException {
-      
+
       this.eventHandler = eventHandler;
       this.logger = logger;
-      
+
       InitUtil initProps = new InitUtil(prefix, props);
-      
+
       if(initProps.getProperty("connectionString") == null) {
          this.host = initProps.getProperty("host", null);
          this.port = initProps.getProperty("port", "3306");
@@ -62,16 +62,16 @@ public class SimpleJDBCDatastore extends RDBHubDatastore {
          } catch(Exception e) {
             throw new InitializationException("Unable to initialize JDBC driver", e);
          }
-         
+
          if(host == null) {
             initProps.throwRequiredException("host");
          }
-         
+
          if(db == null) {
             initProps.throwRequiredException("db");
          }
-         
-         this.connectionString = "jdbc:mysql://"+host+":"+port+"/"+db;         
+
+         this.connectionString = "jdbc:mysql://" + host + ":" + port + "/" + db;
       } else {
          this.connectionString = initProps.getProperty("connectionString");
       }
@@ -85,7 +85,7 @@ public class SimpleJDBCDatastore extends RDBHubDatastore {
          return DriverManager.getConnection(connectionString);
       }
    }
-   
+
    @Override
    public void shutdown() {
       //Nothing to do

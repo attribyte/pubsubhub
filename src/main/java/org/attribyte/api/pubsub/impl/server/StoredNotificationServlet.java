@@ -59,7 +59,7 @@ public class StoredNotificationServlet extends ServletBase {
                                     final HubEndpoint endpoint,
                                     final JedisPool jedisPool,
                                     final Logger logger) throws DatastoreException {
-      this(topics, endpoint,  1024 * 1000, jedisPool, logger);
+      this(topics, endpoint, 1024 * 1000, jedisPool, logger);
    }
 
    /**
@@ -72,11 +72,11 @@ public class StoredNotificationServlet extends ServletBase {
            final int maxBodyBytes,
            final JedisPool jedisPool,
            final Logger logger) throws DatastoreException {
-      assert(maxBodyBytes > 0);
-      assert(endpoint != null);
-      assert(jedisPool != null);
-      assert(logger != null);
-      assert(topics != null && topics.size() > 0);
+      assert (maxBodyBytes > 0);
+      assert (endpoint != null);
+      assert (jedisPool != null);
+      assert (logger != null);
+      assert (topics != null && topics.size() > 0);
       this.endpoint = endpoint;
       this.datastore = endpoint.getDatastore();
       this.MAX_BODY_BYTES = maxBodyBytes;
@@ -87,22 +87,22 @@ public class StoredNotificationServlet extends ServletBase {
       int count = 0;
       for(String topicURL : topics) {
          Topic topic = datastore.getTopic(topicURL, true); //Create the topic if it doesn't exist.
-         logger.info("Starting topic processor for '"+topicURL+"'...");
+         logger.info("Starting topic processor for '" + topicURL + "'...");
          TopicProcessor processor = new TopicProcessor(topic, 3, 10); //TODO 3 seconds, 10 items...
          Thread processorThread = new Thread(processor);
-         processorThread.setName("TopicProcessor-"+count);
+         processorThread.setName("TopicProcessor-" + count);
          this.processors.add(processor);
          this.topicProcessorThreads.add(processorThread);
          count++;
       }
 
-      logger.info("Starting "+topicProcessorThreads.size()+" processor threads...");
+      logger.info("Starting " + topicProcessorThreads.size() + " processor threads...");
 
       for(Thread thread : topicProcessorThreads) {
          thread.start();
       }
    }
-   
+
    /**
     * The hub endpoint.
     */
@@ -117,7 +117,7 @@ public class StoredNotificationServlet extends ServletBase {
     * The Jedis client.
     */
    private final JedisPool jedisPool;
-   
+
    /**
     * The maximum accepted body size.
     */

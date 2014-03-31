@@ -34,12 +34,12 @@ import java.util.List;
  * The standard notifier implementation.
  */
 public class Notifier extends org.attribyte.api.pubsub.Notifier {
-   
+
    public Notifier(final Notification notification, final HubEndpoint hub, final Timer timer) {
       super(notification, hub);
       this.timer = timer;
    }
-   
+
    @Override
    public void run() {
       final Timer.Context ctx = timer.time();
@@ -68,26 +68,25 @@ public class Notifier extends org.attribyte.api.pubsub.Notifier {
    /**
     * Sends a notification to the subscriber's callback URL with
     * priority associated with the particular subscriber.
-    *
     * @param notification The notification.
     * @param subscription The subscription.
     * @return Was the notification enqueued?
     */
    protected boolean sendNotification(final Notification notification, final Subscription subscription) {
-      
+
       try {
 
          PostRequestBuilder builder = new PostRequestBuilder(subscription.getCallbackURL(), notification.getContent());
-         
+
          if(StringUtil.hasContent(subscription.getSecret()) && notification.getContent() != null) {
             try {
                String hmacSignature = HMACUtil.hexHMAC(ByteBufferUtil.array(notification.getContent()), subscription.getSecret());
-               builder.addHeader("X-Hub-Signature", "sha1="+hmacSignature);
+               builder.addHeader("X-Hub-Signature", "sha1=" + hmacSignature);
             } catch(SignatureException se) {
                builder.addHeader("X-Hub-Signature", "sha1=");
             }
-         }      
-         
+         }
+
          Request postRequest = builder.create();
 
          long subscriberId = subscription.getEndpointId();
@@ -105,11 +104,11 @@ public class Notifier extends org.attribyte.api.pubsub.Notifier {
             } catch(DatastoreException de) {
                hub.getLogger().error("Problem getting subscriber", de);
             }
-         }   
-         
+         }
+
          hub.enqueueCallback(postRequest, subscription.getId(), priority);
          return true;
-         
+
       } catch(InvalidURIException use) {
          hub.getLogger().error("Invalid notification URL detected: ", use);
          return false;

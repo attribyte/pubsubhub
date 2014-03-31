@@ -18,21 +18,21 @@ package org.attribyte.api.pubsub;
 import org.attribyte.api.http.Request;
 
 /**
- * A <code>Runnable</code> implementation used to send subscription 
+ * A <code>Runnable</code> implementation used to send subscription
  * callbacks. The <code>Comparable</code> implementation
  * compares priority to allow use of a priority queue for scheduling.
  * <em><code>Callback</code> instances are not thread-safe.</em>
  */
 public abstract class Callback implements Runnable, Comparable<Callback> {
-   
+
    @Override
    public abstract void run();
-   
+
    @Override
    public int compareTo(Callback other) {
       return priority == other.priority ? 0 : priority < other.priority ? -1 : 1;
    }
-   
+
    /**
     * Creates a callback.
     * @param request The request to be sent to the subscriber.
@@ -41,15 +41,15 @@ public abstract class Callback implements Runnable, Comparable<Callback> {
     * @param hub The hub endpoint sending the callback.
     */
    protected Callback(final Request request,
-         final long subscriptionId,
-         final int priority,
-         final HubEndpoint hub) {
+                      final long subscriptionId,
+                      final int priority,
+                      final HubEndpoint hub) {
       this.request = request;
       this.subscriptionId = subscriptionId;
       this.priority = priority;
       this.hub = hub;
    }
-   
+
    /**
     * Increments the number of attempts for this callback.
     * @return The number of attempts after the increment.
@@ -59,8 +59,8 @@ public abstract class Callback implements Runnable, Comparable<Callback> {
          lastFailedTimestamp = System.currentTimeMillis();
       }
       return ++attempts;
-   }   
-   
+   }
+
    /**
     * Gets the number of attempts.
     * @return The number of attempts.
@@ -84,7 +84,7 @@ public abstract class Callback implements Runnable, Comparable<Callback> {
    public long getLastFailedTimestamp() {
       return lastFailedTimestamp;
    }
-   
+
    protected final Request request;
    protected final long subscriptionId;
    protected final HubEndpoint hub;

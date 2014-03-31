@@ -120,8 +120,8 @@ public abstract class RDBHubDatastore implements HubDatastore {
       }
    }
 
-   private static final String hasActiveSubscriptionSQL = "SELECT 1 FROM subscription WHERE topicId=?"+
-   " AND status="+Subscription.Status.ACTIVE.getValue() + " LIMIT 1";
+   private static final String hasActiveSubscriptionSQL = "SELECT 1 FROM subscription WHERE topicId=?" +
+           " AND status=" + Subscription.Status.ACTIVE.getValue() + " LIMIT 1";
 
    @Override
    public final boolean hasActiveSubscriptions(final long topicId) throws DatastoreException {
@@ -144,7 +144,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    }
 
    private static final String hasActiveCallbackSubscriptionSQL = "SELECT 1 FROM subscription WHERE callbackURL=?" +
-   " AND status="+Subscription.Status.ACTIVE.getValue() + " LIMIT 1";
+           " AND status=" + Subscription.Status.ACTIVE.getValue() + " LIMIT 1";
 
    @Override
    public boolean hasActiveSubscriptions(final String callbackURL) throws DatastoreException {
@@ -167,7 +167,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    }
 
    protected static final String getSubscriptionSQL =
-      "SELECT id, endpointId, topicId, callbackURL, status, leaseSeconds, hmacSecret, expireTime FROM subscription WHERE ";
+           "SELECT id, endpointId, topicId, callbackURL, status, leaseSeconds, hmacSecret, expireTime FROM subscription WHERE ";
 
    private static final String getIdSubscriptionSQL = getSubscriptionSQL + "id=?";
 
@@ -189,8 +189,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
          } else {
             return null;
          }
-      }
-      catch(SQLException se) {
+      } catch(SQLException se) {
          throw new DatastoreException("Problem getting subscription", se);
       } finally {
          SQLUtil.closeQuietly(conn, stmt, rs);
@@ -198,14 +197,14 @@ public abstract class RDBHubDatastore implements HubDatastore {
 
       Topic topic = getTopic(builder.getTopicId());
       if(topic == null) {
-         throw new DatastoreException("No topic found for id = "+builder.getTopicId());
+         throw new DatastoreException("No topic found for id = " + builder.getTopicId());
       } else {
          return builder.setTopic(topic).create();
       }
    }
 
    private static final String getSubscriptionsSQL =
-      "SELECT id, endpointId, topicId, callbackURL, status, leaseSeconds, hmacSecret, expireTime FROM subscriptions ORDER BY id ASC LIMIT ?,?";
+           "SELECT id, endpointId, topicId, callbackURL, status, leaseSeconds, hmacSecret, expireTime FROM subscriptions ORDER BY id ASC LIMIT ?,?";
 
    @Override
    public final List<Subscription> getSubscriptions(final int start, final int limit) throws DatastoreException {
@@ -235,7 +234,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       for(Subscription.Builder builder : subscriptionBuilders) {
          Topic topic = getTopic(builder.getTopicId());
          if(topic == null) {
-            throw new DatastoreException("No topic found for id = "+builder.getTopicId());
+            throw new DatastoreException("No topic found for id = " + builder.getTopicId());
          } else {
             builder.setTopic(topic);
             subscriptions.add(builder.create());
@@ -247,10 +246,10 @@ public abstract class RDBHubDatastore implements HubDatastore {
 
    private static final String updateSubscriptionSQL = "UPDATE subscription SET endpointId=?, status=?, leaseSeconds=?, hmacSecret=? WHERE id=?";
    private static final String updateSubscriptionExtendLeaseSQL =
-      "UPDATE subscription SET endpointId=?, status=?, leaseSeconds=?, hmacSecret=?, expireTime=NOW() + INTERVAL ? SECOND WHERE id=?";
+           "UPDATE subscription SET endpointId=?, status=?, leaseSeconds=?, hmacSecret=?, expireTime=NOW() + INTERVAL ? SECOND WHERE id=?";
    private static final String createSubscriptionSQL =
-      "INSERT INTO subscription (endpointId, topicId, callbackURL, callbackHash, callbackHost, callbackPath, status, createTime, leaseSeconds, hmacSecret, expireTime)"+
-      "VALUES (?,?,?,MD5(?),?,?,?,NOW(),?,?,NOW()+INTERVAL ? SECOND) ON DUPLICATE KEY UPDATE endpointId=?, status=?, leaseSeconds=?, hmacSecret=?, expireTime=NOW()+INTERVAL ? SECOND";
+           "INSERT INTO subscription (endpointId, topicId, callbackURL, callbackHash, callbackHost, callbackPath, status, createTime, leaseSeconds, hmacSecret, expireTime)" +
+                   "VALUES (?,?,?,MD5(?),?,?,?,NOW(),?,?,NOW()+INTERVAL ? SECOND) ON DUPLICATE KEY UPDATE endpointId=?, status=?, leaseSeconds=?, hmacSecret=?, expireTime=NOW()+INTERVAL ? SECOND";
 
    @Override
    public final Subscription updateSubscription(final Subscription subscription, boolean extendLease) throws DatastoreException {
@@ -368,7 +367,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
          }
 
          if(stmt.executeUpdate() == 0) {
-            throw new DatastoreException("The subscription with id="+id+" does not exist");
+            throw new DatastoreException("The subscription with id=" + id + " does not exist");
          }
       } catch(SQLException se) {
          throw new DatastoreException("Problem updating subscription", se);
@@ -378,7 +377,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    }
 
    private static final String getActiveSubscriptionsSQL = getSubscriptionSQL +
-   " topicId=? AND id >= ? AND status="+Subscription.Status.ACTIVE.getValue()+" ORDER BY id ASC LIMIT ?";
+           " topicId=? AND id >= ? AND status=" + Subscription.Status.ACTIVE.getValue() + " ORDER BY id ASC LIMIT ?";
 
    @Override
    public final long getActiveSubscriptions(Topic topic, final Collection<Subscription> subscriptions, final long startId, final int maxReturned) throws DatastoreException {
@@ -397,7 +396,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       }
 
       if(topic == null) {
-         throw new DatastoreException("No topic found for '"+topicURL+"'");
+         throw new DatastoreException("No topic found for '" + topicURL + "'");
       }
 
       try {
@@ -405,7 +404,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
          stmt = conn.prepareStatement(getActiveSubscriptionsSQL);
          stmt.setLong(1, topic.getId());
          stmt.setLong(2, startId);
-         stmt.setInt(3, maxReturned+1);
+         stmt.setInt(3, maxReturned + 1);
          rs = stmt.executeQuery();
          int count = 0;
          while(rs.next()) {
@@ -427,7 +426,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       }
    }
 
-   private static final String getActivePathSubscriptionsSQL = getSubscriptionSQL + "callbackPath=? AND status="+Subscription.Status.ACTIVE.getValue();
+   private static final String getActivePathSubscriptionsSQL = getSubscriptionSQL + "callbackPath=? AND status=" + Subscription.Status.ACTIVE.getValue();
 
    @Override
    public final List<Subscription> getSubscriptionsForPath(final String callbackPath) throws DatastoreException {
@@ -456,7 +455,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       for(Subscription.Builder builder : subscriptionBuilders) {
          Topic topic = getTopic(builder.getTopicId());
          if(topic == null) {
-            throw new DatastoreException("No topic found for id = "+builder.getTopicId());
+            throw new DatastoreException("No topic found for id = " + builder.getTopicId());
          } else {
             subscriptions.add(builder.setTopic(topic).create());
          }
@@ -465,8 +464,8 @@ public abstract class RDBHubDatastore implements HubDatastore {
       return subscriptions;
    }
 
-   private static final String expireSubscriptionsSQL = "UPDATE subscription SET status="+Subscription.Status.EXPIRED.getValue()+
-   " WHERE status="+Subscription.Status.ACTIVE.getValue()+" AND expireTime < NOW() LIMIT ?";
+   private static final String expireSubscriptionsSQL = "UPDATE subscription SET status=" + Subscription.Status.EXPIRED.getValue() +
+           " WHERE status=" + Subscription.Status.ACTIVE.getValue() + " AND expireTime < NOW() LIMIT ?";
 
    @Override
    public int expireSubscriptions(final int maxExpired) throws DatastoreException {
@@ -488,7 +487,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    /**
     * Gets a subscription builder from a result set.
     * <p>
-    *    The topic must be resolved from the topic id.
+    * The topic must be resolved from the topic id.
     * </p>
     * @param rs The result set.
     * @return The subscription builder.
@@ -520,7 +519,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       }
 
       if(scheme.equalsIgnoreCase("basic")) {
-          return new BasicAuthScheme();
+         return new BasicAuthScheme();
       } else {
          return null;
       }
@@ -531,7 +530,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       if(endpoint.getAuthScheme() != null && endpoint.getAuthId() != null) {
          if(endpoint.getAuthScheme() instanceof BasicAuthScheme) {
             return request.addHeaders(
-                    Collections.singletonList(new Header(BasicAuthScheme.AUTH_HEADER, "Basic "+endpoint.getAuthId())) //TODO: encryption
+                    Collections.singletonList(new Header(BasicAuthScheme.AUTH_HEADER, "Basic " + endpoint.getAuthId())) //TODO: encryption
             );
          } else {
             return request;
@@ -551,20 +550,20 @@ public abstract class RDBHubDatastore implements HubDatastore {
     */
    protected Logger logger;
 
-   
+
    private static final String getUniqueSubscriptionSQL = getSubscriptionSQL + "topicId=? AND callbackURL=?";
-   
+
    @Override
    public Subscription getSubscription(final String topicURL, final String callbackURL) throws DatastoreException {
       Topic topic = getTopic(topicURL, false);
       if(topic == null) {
          return null;
       }
-      
+
       Connection conn = null;
       PreparedStatement stmt = null;
       ResultSet rs = null;
-      
+
       try {
          conn = getConnection();
          stmt = conn.prepareStatement(getUniqueSubscriptionSQL);
@@ -588,7 +587,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    @Override
    public Subscriber getSubscriber(final String endpointURL, final AuthScheme scheme, final String authId,
                                    final boolean create) throws DatastoreException {
-      
+
       Connection conn = null;
       PreparedStatement stmt = null;
       ResultSet rs = null;
@@ -602,7 +601,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
          if(rs.next()) {
             long subscriberId = rs.getLong(1);
             return new Subscriber(endpointURL, subscriberId, scheme, authId);
-         } else if(!create){
+         } else if(!create) {
             return null;
          } else {
             SQLUtil.closeQuietly(conn, stmt, rs);
@@ -622,7 +621,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
 
    @Override
    public Subscriber getSubscriber(final long id) throws DatastoreException {
-      
+
       Connection conn = null;
       PreparedStatement stmt = null;
       ResultSet rs = null;
@@ -647,7 +646,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
 
    @Override
    public Subscriber createSubscriber(final String endpointURL, final AuthScheme scheme, final String authId) throws DatastoreException {
-      
+
       Connection conn = null;
       PreparedStatement stmt = null;
       ResultSet rs = null;
@@ -673,5 +672,5 @@ public abstract class RDBHubDatastore implements HubDatastore {
       } finally {
          SQLUtil.closeQuietly(conn, stmt, rs);
       }
-   }   
+   }
 }

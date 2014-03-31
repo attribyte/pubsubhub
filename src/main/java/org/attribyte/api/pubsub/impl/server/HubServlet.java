@@ -42,9 +42,9 @@ public class HubServlet extends HttpServlet {
     * @param logger The logger.
     */
    public HubServlet(final HubEndpoint endpoint, final Logger logger) {
-      this(endpoint,  1024 * 1000, logger);
+      this(endpoint, 1024 * 1000, logger);
    }
-   
+
    /**
     * Creates a servlet with a specified maximum body size.
     * @param endpoint The hub endpoint.
@@ -56,13 +56,13 @@ public class HubServlet extends HttpServlet {
       this.MAX_BODY_BYTES = maxBodyBytes;
       this.logger = logger;
    }
-   
+
    @Override
    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-      
+
       Request endpointRequest = Bridge.fromServletRequest(request, MAX_BODY_BYTES);
       final Response endpointResponse;
-      
+
       String hubMode = request.getParameter("hub.mode");
       if(hubMode == null) {
          endpointResponse = new ResponseBuilder(Response.Code.BAD_REQUEST, "A 'hub.mode' must be specified").create();
@@ -76,10 +76,10 @@ public class HubServlet extends HttpServlet {
                endpointResponse = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.mode' is unsupported").create();
          }
       }
-      
-      Bridge.sendServletResponse(endpointResponse, response);         
+
+      Bridge.sendServletResponse(endpointResponse, response);
    }
-   
+
    @Override
    public void destroy() {
       shutdown();

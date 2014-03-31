@@ -22,7 +22,7 @@ import org.attribyte.api.http.Request;
  * Creates instances of <code>Callback</code>.
  */
 public interface CallbackFactory extends MetricSet {
-   
+
    /**
     * Creates a callback.
     * @param request The HTTP request to be sent to the client.

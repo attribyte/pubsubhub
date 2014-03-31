@@ -14,6 +14,7 @@
  */
 
 package org.attribyte.api.pubsub;
+
 import org.attribyte.api.http.AuthScheme;
 import org.attribyte.util.StringUtil;
 
@@ -31,30 +32,30 @@ public class Endpoint {
    public Endpoint(final String endpointURL, final long id) {
       if(!StringUtil.hasContent(endpointURL)) {
          throw new UnsupportedOperationException("Endpoint URL must not be null or empty");
-      }      
+      }
       this.id = id;
       this.endpointURL = endpointURL;
       this.authScheme = null;
       this.authId = null;
    }
-   
+
    /**
     * Creates an (immutable) endpoint with an auth scheme and id.
     * @param endpointURL The endpoint URL.
     * @param id The endpoint id.
     * @param authScheme The auth scheme expected by the endpoint.
     * @param authId The auth id expected by the endpoint.
-    */   
+    */
    public Endpoint(final String endpointURL, final long id, final AuthScheme authScheme, final String authId) {
       if(!StringUtil.hasContent(endpointURL)) {
          throw new UnsupportedOperationException("Endpoint URL must not be null or empty");
-      }      
+      }
       this.id = id;
       this.endpointURL = endpointURL;
       this.authScheme = authScheme;
       this.authId = authId;
-   }   
-   
+   }
+
    /**
     * Creates a copy of an endpoint.
     * @param other The other endpoint.
@@ -65,7 +66,7 @@ public class Endpoint {
       this.authScheme = other.authScheme;
       this.authId = other.authId;
    }
-   
+
    /**
     * Creates a copy of an endpoint with a new id.
     * @param other The other endpoint.
@@ -76,7 +77,7 @@ public class Endpoint {
       this.endpointURL = other.endpointURL;
       this.authScheme = other.authScheme;
       this.authId = other.authId;
-   }   
+   }
 
    /**
     * Gets the unique id assigned to the endpoint.
@@ -85,7 +86,7 @@ public class Endpoint {
    public long getId() {
       return id;
    }
-   
+
    /**
     * Gets the auth scheme required by the endpoint, if any.
     * @return The auth scheme or <code>null</code> if none.
@@ -93,7 +94,7 @@ public class Endpoint {
    public AuthScheme getAuthScheme() {
       return authScheme;
    }
-   
+
    /**
     * Gets the (user) id used for authentication if any.
     * @return The id or <code>null</code> if none.
@@ -101,7 +102,7 @@ public class Endpoint {
    public String getAuthId() {
       return authId;
    }
-   
+
    /**
     * Gets the endpoint URL.
     * @return The URL.
@@ -114,7 +115,7 @@ public class Endpoint {
    public int hashCode() {
       return endpointURL.hashCode();
    }
-   
+
    @Override
    /**
     * Endpoints are equal if their URLs match.
@@ -122,12 +123,12 @@ public class Endpoint {
    public boolean equals(Object other) {
       if(other instanceof Endpoint) {
          Endpoint otherEndpoint = (Endpoint)other;
-         return otherEndpoint.endpointURL.equals(endpointURL);         
+         return otherEndpoint.endpointURL.equals(endpointURL);
       } else {
          return false;
       }
    }
-   
+
    protected final long id;
    protected final String endpointURL;
    protected final AuthScheme authScheme;

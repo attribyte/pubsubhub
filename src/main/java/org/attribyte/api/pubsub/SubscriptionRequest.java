@@ -20,24 +20,24 @@ package org.attribyte.api.pubsub;
  * @author Attribyte, LLC
  */
 public class SubscriptionRequest {
-   
+
    public static enum Mode {
 
       /**
        * Mode is 'subscribe'.
        */
       SUBSCRIBE,
-      
+
       /**
        * Mode is 'unsubscribe'.
        */
       UNSUBSCRIBE,
-      
+
       /**
        * Mode is 'invalid'.
        */
       INVALID;
-      
+
       /**
        * Given a string, return the <code>Mode</code>.
        * @param str The string.
@@ -53,7 +53,7 @@ public class SubscriptionRequest {
          }
       }
    }
-   
+
    /**
     * The subscription status (verified or unverified).
     */
@@ -62,21 +62,21 @@ public class SubscriptionRequest {
        * Request is verified.
        */
       VERIFIED,
-      
+
       /**
        * Request is unverified.
        */
       UNVERIFIED
    }
-   
+
    /**
     * Gets the subscription associated with this request.
     * @return The subscription.
     */
    public Subscription getSubscription() {
       return subscription;
-   }   
-   
+   }
+
    /**
     * Gets the verify status for this request.
     * @return The request.
@@ -84,7 +84,7 @@ public class SubscriptionRequest {
    public Status getStatus() {
       return verifyStatus;
    }
-   
+
    /**
     * Sets the verify status for this request.
     * @param verifyStatus The verify status.
@@ -92,12 +92,12 @@ public class SubscriptionRequest {
    public void setStatus(final Status verifyStatus) {
       this.verifyStatus = verifyStatus;
    }
-   
+
    public SubscriptionRequest(final Subscription subscription) {
       this.subscription = subscription;
    }
-   
+
    protected final Subscription subscription;
    protected Status verifyStatus = Status.UNVERIFIED;
-   
+
 }

@@ -51,7 +51,7 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
       this.failedMeter = failedMeter;
       this.abandonedMeter = abandonedMeter;
    }
-   
+
    @Override
    public void run() {
 
@@ -60,7 +60,7 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
       String challenge = StringUtil.randomString(32);
       String leaseSecondsStr = request.getParameterValue("hub.lease_seconds");
       String hubSecret = request.getParameterValue("hub.secret");
-      
+
       if(leaseSecondsStr == null) {
          leaseSecondsStr = Integer.toString(hub.getMaxLeaseSeconds());
       } else {
@@ -71,7 +71,7 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
             leaseSecondsStr = Integer.toString(hub.getMaxLeaseSeconds());
          }
       }
-      
+
       String callbackURL = request.getParameterValue("hub.callback");
       StringBuilder buf = new StringBuilder(callbackURL);
       if(buf.indexOf("?") > 0) {
@@ -79,21 +79,21 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
       } else {
          buf.append("?");
       }
-      
+
       buf.append("hub.mode=").append(mode);
       buf.append("&hub.topic=").append(URIEncoder.encodeQueryString(topicURL));
       buf.append("&hub.challenge=").append(challenge);
       buf.append("&hub.lease_seconds=").append(leaseSecondsStr);
 
       final Timer.Context ctx = timer.time();
-      
+
       try {
 
          Request verifyRequest = new GetRequestBuilder(buf.toString()).create(); //No headers - client will add user agent
          if(subscriber != null && subscriber.getAuthScheme() != null) {
             verifyRequest = hub.getDatastore().addAuth(subscriber, verifyRequest);
          }
-         
+
          Response verifyResponse = hub.getHttpClient().send(verifyRequest, true, hub.getMaxParameterBytes());
          int responseCode = verifyResponse.getResponseCode();
 
@@ -103,13 +103,13 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
          SubscriptionRequest.Mode requestMode = SubscriptionRequest.Mode.fromString(mode);
          Subscription.Status status;
          switch(requestMode) {
-         case SUBSCRIBE:
-            status = Subscription.Status.ACTIVE;
-            break;
-         default:
-            status = Subscription.Status.REMOVED;
-         }         
-         
+            case SUBSCRIBE:
+               status = Subscription.Status.ACTIVE;
+               break;
+            default:
+               status = Subscription.Status.REMOVED;
+         }
+
          if(responseCode == Response.Code.NOT_FOUND) {
             failedMeter.mark();
          } else if(Response.Code.isOK(responseCode) && body.trim().equals(challenge)) {
@@ -122,7 +122,7 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
             } else {
                builder = new Subscription.Builder(subscription, subscriber);
             }
-            
+
             builder.setStatus(status);
             builder.setLeaseSeconds(Integer.parseInt(leaseSecondsStr));
             builder.setSecret(hubSecret);

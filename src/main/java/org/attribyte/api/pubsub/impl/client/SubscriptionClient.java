@@ -70,7 +70,7 @@ public class SubscriptionClient {
    /**
     * Starts the client.
     * <p>
-    *    Must be called before use.
+    * Must be called before use.
     * </p>
     * @throws Exception on start error.
     */

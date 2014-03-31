@@ -27,7 +27,7 @@ import java.util.Collections;
  * @author Attribyte, LLC
  */
 public class Notification {
-   
+
    /**
     * Creates a notification with content specified as a byte array.
     * @param topic The topic.
@@ -43,7 +43,7 @@ public class Notification {
       }
       this.content = ByteBuffer.wrap(content).asReadOnlyBuffer();
    }
-   
+
    /**
     * Creates a notification with content specified as a <code>ByteBuffer</code>.
     * @param topic The topic.
@@ -62,8 +62,8 @@ public class Notification {
       } else {
          this.content = content.asReadOnlyBuffer();
       }
-   }   
-   
+   }
+
    /**
     * Gets the topic.
     * @return The topic.
@@ -71,7 +71,7 @@ public class Notification {
    public Topic getTopic() {
       return topic;
    }
-   
+
    /**
     * Gets the notification headers.
     * @return The headers.
@@ -79,7 +79,7 @@ public class Notification {
    public Collection<Header> getHeaders() {
       return headers;
    }
-   
+
    /**
     * Gets the notification content.
     * @return The content.
@@ -87,7 +87,7 @@ public class Notification {
    public ByteBuffer getContent() {
       return content;
    }
-   
+
    private final Topic topic;
    private final Collection<Header> headers;
    private final ByteBuffer content;

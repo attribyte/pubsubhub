@@ -55,7 +55,7 @@ public class TestEndpoint {
          hubAuth = Optional.absent();
       }
 
-      Topic notificationTopic = new Topic.Builder().setTopicURL(hubURL + "/notify"+hubTopic).setId(1L).create();
+      Topic notificationTopic = new Topic.Builder().setTopicURL(hubURL + "/notify" + hubTopic).setId(1L).create();
       Topic acceptTopic = new Topic.Builder().setTopicURL(hubTopic).setId(2L).create();
 
       String listenAddress = props.getProperty("endpoint.listenAddress", "127.0.0.1");
@@ -103,12 +103,12 @@ public class TestEndpoint {
 
       SubscriptionClient subscriptionClient = new SubscriptionClient();
       subscriptionClient.start();
-      SubscriptionClient.Result res = subscriptionClient.postSubscriptionRequest(hubTopic, hubURL+"/subscribe",
+      SubscriptionClient.Result res = subscriptionClient.postSubscriptionRequest(hubTopic, hubURL + "/subscribe",
               endpointCallbackBase + hubTopic,
               3600 * 24 * 365 * 5, endpointAuth, hubAuth);
 
       if(res.isError) {
-         System.err.println("Problem creating subscription: "+res.code);
+         System.err.println("Problem creating subscription: " + res.code);
          if(res.message.isPresent()) {
             System.err.println(res.message.get());
          }
@@ -129,13 +129,13 @@ public class TestEndpoint {
       if(notificationRes.message.isPresent()) System.out.println(notificationRes.message);
 
       for(int i = 0; i < numNotifications; i++) {
-        if(i % 100 == 0) System.out.println("Enqueued "+i+" notifications...");
+         if(i % 100 == 0) System.out.println("Enqueued " + i + " notifications...");
          publisher.enqueueNotification(buildNotification(notificationTopic), hubAuth);
       }
 
       while(completeCount.get() < numNotifications) {
-         System.out.println("Completed "+completeCount.get()+"...");
-         System.out.println("Average time in queue: "+timer.getSnapshot().getMean() / (double)TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS));
+         System.out.println("Completed " + completeCount.get() + "...");
+         System.out.println("Average time in queue: " + timer.getSnapshot().getMean() / (double)TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS));
          Thread.sleep(5000L);
       }
 

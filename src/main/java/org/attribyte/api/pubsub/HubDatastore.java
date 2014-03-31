@@ -14,6 +14,7 @@
  */
 
 package org.attribyte.api.pubsub;
+
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.health.HealthCheck;
 import org.attribyte.api.DatastoreException;
@@ -73,7 +74,7 @@ public interface HubDatastore {
    /**
     * Initializes the data store.
     * <p>
-    *   Must be called <em>once</em> before any operations.
+    * Must be called <em>once</em> before any operations.
     * </p>
     * @param prefix The prefix for all applicable properties (e.g. 'datastore.').
     * @param props The properties.
@@ -120,8 +121,8 @@ public interface HubDatastore {
    /**
     * Updates a subscription for a topic and callback.
     * <p>
-    *   If a subscription does not exist, one will be created.
-    *   Lease will only be extended if the subscription is active.
+    * If a subscription does not exist, one will be created.
+    * Lease will only be extended if the subscription is active.
     * </p>
     * @param subscription The subscription to update.
     * @param extendLease Should the current lease be extended?
@@ -150,11 +151,11 @@ public interface HubDatastore {
    /**
     * Gets the ids of active subscriptions for a topic.
     * <p>
-    *   This method allows efficient, but not the most straightforward, paging
-    *   by returning subscription ids in the order they were created (ascending id).
-    *   The method returns the id that will start the next page.
-    *   If this id is <code>LAST_ID</code>, there are no more pages. Otherwise, the returned id is passed
-    *   into the next call as <code>startId</code> to get the next page.
+    * This method allows efficient, but not the most straightforward, paging
+    * by returning subscription ids in the order they were created (ascending id).
+    * The method returns the id that will start the next page.
+    * If this id is <code>LAST_ID</code>, there are no more pages. Otherwise, the returned id is passed
+    * into the next call as <code>startId</code> to get the next page.
     * </p>
     * @param topic The topic.
     * @param subscriptions A collection to fill with subscriptions.
@@ -231,7 +232,7 @@ public interface HubDatastore {
     * @throws DatastoreException on datastore error.
     */
    public Subscription getSubscription(String topicURL, String callbackURL) throws DatastoreException;
-   
+
    /**
     * Gets a subscriber.
     * @param endpointURL The subscriber's endpoint URL.
@@ -242,7 +243,7 @@ public interface HubDatastore {
     * @throws DatastoreException on datastore error.
     */
    public Subscriber getSubscriber(String endpointURL, AuthScheme scheme, String authId, boolean create) throws DatastoreException;
-   
+
    /**
     * Gets a subscriber.
     * @param id The subscriber id.
@@ -250,7 +251,7 @@ public interface HubDatastore {
     * @throws DatastoreException on datastore error.
     */
    public Subscriber getSubscriber(long id) throws DatastoreException;
-   
+
    /**
     * Creates a subscriber if none exists for the combination of endpoint URL and authentication scheme.
     * @param endpointURL The subscriber's endpoint URL.

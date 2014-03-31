@@ -43,7 +43,7 @@ public class BroadcastServlet extends ServletBase {
     * @param endpoint The hub endpoint.
     */
    public BroadcastServlet(final HubEndpoint endpoint, final Logger logger) {
-      this(endpoint,  1024 * 1000, logger);
+      this(endpoint, 1024 * 1000, logger);
    }
 
    /**
@@ -56,7 +56,7 @@ public class BroadcastServlet extends ServletBase {
       this.maxBodyBytes = maxBodyBytes;
       this.logger = logger;
    }
-   
+
    @Override
    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
@@ -88,7 +88,7 @@ public class BroadcastServlet extends ServletBase {
 
       Bridge.sendServletResponse(endpointResponse, response);
    }
-   
+
    @Override
    public void destroy() {
       shutdown();

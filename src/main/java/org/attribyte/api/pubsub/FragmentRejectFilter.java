@@ -14,18 +14,19 @@
  */
 
 package org.attribyte.api.pubsub;
+
 import org.attribyte.api.http.AuthScheme;
 
 /**
  * A filter that rejects URLs that contain a fragment (#).
  */
-public class FragmentRejectFilter implements URLFilter  {
+public class FragmentRejectFilter implements URLFilter {
 
    @Override
    public boolean reject(String url) {
       return url.indexOf('#') > 0;
    }
-   
+
    @Override
    public AuthScheme authScheme(String url) {
       return null;

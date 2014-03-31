@@ -29,9 +29,9 @@ import java.security.SignatureException;
  * @author Matt Hamer - Attribyte, LLC
  */
 public class HMACUtil {
-   
+
    private static final String HMAC_SHA1_ALGORITHM = "HmacSHA1";
-   
+
    /**
     * Computes RFC 2104 HMAC signature.
     * @param data The data to be signed.
@@ -69,8 +69,8 @@ public class HMACUtil {
       } catch(Exception e) {
          throw new SignatureException("Unable to generate HMAC : " + e.getMessage());
       }
-   }   
-   
+   }
+
    /**
     * Builds a data string for use in computing the HMAC for an HTTP request.
     * @param httpMethod GET, POST, PUT, DELETE, etc.
@@ -78,8 +78,8 @@ public class HMACUtil {
     * @param body The request body, if any.
     * @param timestamp The request timestamp.
     * @return The data string.
-    */   
-   public static final String buildHMACData(String httpMethod, String url, byte[] body, long timestamp) { 
+    */
+   public static final String buildHMACData(String httpMethod, String url, byte[] body, long timestamp) {
       StringBuilder buf = new StringBuilder(httpMethod.toUpperCase());
       String curl = canonicalize(url);
       buf.append(' ').append(curl);
@@ -90,34 +90,34 @@ public class HMACUtil {
          buf.append(' ').append(timestamp);
       }
       return buf.toString();
-   } 
-   
+   }
+
    /**
     * Canonicalizes a request URL for the purpose of building a signature.
     * <p>
-    *   <ol>
-    *     <li>Trim and lower-case the URL.</li>
-    *     <li>Remove the protocol.</li>
-    *     <li>Remove any fragment (#)</li>
-    *   </ol>
+    * <ol>
+    * <li>Trim and lower-case the URL.</li>
+    * <li>Remove the protocol.</li>
+    * <li>Remove any fragment (#)</li>
+    * </ol>
     * </p>
     * @param url The URL.
     * @return The canonical URL.
     */
    public static final String canonicalize(String url) {
-      
+
       String hostPathQuery = url.trim().toLowerCase();
 
       int pindex = url.indexOf("://");
       if(pindex > 0) {
-         hostPathQuery = hostPathQuery.substring(pindex+3);
+         hostPathQuery = hostPathQuery.substring(pindex + 3);
       }
-      
+
       int fragIndex = hostPathQuery.lastIndexOf('#');
       if(fragIndex > 0) {
          hostPathQuery = hostPathQuery.substring(0, fragIndex);
       }
-      
+
       return hostPathQuery;
    }
 }

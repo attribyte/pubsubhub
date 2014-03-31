@@ -24,7 +24,7 @@ import java.util.Date;
  * @author Attribyte, LLC
  */
 public class Subscription {
-   
+
    /**
     * Use to create immutable instances without constructor.
     */
@@ -120,7 +120,7 @@ public class Subscription {
          this.endpoint = endpoint;
          this.endpointId = endpoint.getId();
       }
-      
+
       /**
        * Creates an immutable <code>Subscription</code>
        * @return The subscription.
@@ -128,7 +128,7 @@ public class Subscription {
       public Subscription create() {
          return new Subscription(id, callbackURL, topic, endpointId, secret, leaseSeconds, status, expireTime, endpoint);
       }
-      
+
       /**
        * Sets the HMAC secret.
        * @param secret The secret.
@@ -138,7 +138,7 @@ public class Subscription {
          this.secret = secret;
          return this;
       }
-      
+
       /**
        * Sets the lease seconds.
        * @param leaseSeconds The lease in seconds.
@@ -148,7 +148,7 @@ public class Subscription {
          this.leaseSeconds = leaseSeconds;
          return this;
       }
-      
+
       /**
        * Sets the status.
        * @param status The status.
@@ -158,7 +158,7 @@ public class Subscription {
          this.status = status;
          return this;
       }
-      
+
       /**
        * Sets the expire time.
        * @param expireTime The expire time.
@@ -168,7 +168,7 @@ public class Subscription {
          this.expireTime = expireTime;
          return this;
       }
-      
+
       /**
        * Sets the topic id.
        * @param topicId The topic id.
@@ -216,42 +216,42 @@ public class Subscription {
       protected final long id;
       protected final long endpointId;
       protected final String callbackURL;
-      
+
       protected String secret;
       protected int leaseSeconds;
       protected Status status;
-      protected Date expireTime;      
+      protected Date expireTime;
       protected Endpoint endpoint;
       protected Topic topic;
       protected long topicId;
    }
-   
-   
+
+
    /**
     * Defines allowed subscription status.
     */
    public static enum Status {
-      
+
       /**
        * Subscription is pending.
        */
       PENDING(0),
-      
+
       /**
        * Subscription is active.
        */
       ACTIVE(1),
-      
+
       /**
        * Subscription is expired.
        */
       EXPIRED(2),
-      
+
       /**
        * Subscription was explicitly removed.
        */
       REMOVED(3),
-      
+
       /**
        * Subscription unsubscribe is pending.
        */
@@ -261,11 +261,11 @@ public class Subscription {
        * Subscription state is invalid or unknown.
        */
       INVALID(127);
-      
+
       Status(final int value) {
          this.value = value;
       }
-      
+
       /**
        * Gets a status from the integer value.
        * @param value The value.
@@ -273,21 +273,21 @@ public class Subscription {
        */
       public static final Status fromValue(int value) {
          switch(value) {
-         case 0:
-            return PENDING;
-         case 1:
-            return ACTIVE;
-         case 2:
-            return EXPIRED;
-         case 3:
-            return REMOVED;
-         case 4:
-            return PENDING_UNSUBSCRIBE;
-         default:
-            return INVALID;
+            case 0:
+               return PENDING;
+            case 1:
+               return ACTIVE;
+            case 2:
+               return EXPIRED;
+            case 3:
+               return REMOVED;
+            case 4:
+               return PENDING_UNSUBSCRIBE;
+            default:
+               return INVALID;
          }
       }
-      
+
       /**
        * Gets an integer value for this status.
        * @return The assigned integer value.
@@ -297,73 +297,73 @@ public class Subscription {
       }
 
       private final int value;
-      
+
    }
-   
+
    public Subscription(final long id, final String callbackURL, final Topic topic, final long endpointId,
-         final String secret, final int leaseSeconds, final Status status, final Date expireTime, final Endpoint endpoint) {
-      
+                       final String secret, final int leaseSeconds, final Status status, final Date expireTime, final Endpoint endpoint) {
+
       if(topic == null) {
          throw new UnsupportedOperationException("Topic must not be null");
       }
-      
+
       if(!StringUtil.hasContent(callbackURL)) {
          throw new UnsupportedOperationException("Callback URL must not be null or empty");
       }
-      
+
       this.id = id;
       this.callbackURL = callbackURL.trim();
       this.topic = topic;
       this.endpointId = endpointId;
-      
+
       int hi = this.callbackURL.indexOf("://");
       if(hi < 0) {
          hi = 0;
       } else {
          hi += 3;
       }
-      
+
       int pi = this.callbackURL.indexOf('/', hi);
-      
+
       if(pi < 0) {
          this.callbackHost = callbackURL.substring(hi);
          this.callbackPath = "/";
       } else {
          this.callbackHost = callbackURL.substring(hi, pi);
          this.callbackPath = callbackURL.substring(pi);
-      }      
-      
+      }
+
       this.secret = secret;
       this.leaseSeconds = leaseSeconds;
       this.status = status;
       this.expireTime = expireTime;
       this.endpoint = endpoint;
    }
-   
+
    public Subscription(final long id, final String callbackURL, final Topic topic, final long endpointId) {
-      
+
       if(topic == null) {
          throw new UnsupportedOperationException("Topic must not be null");
       }
-      
+
       if(!StringUtil.hasContent(callbackURL)) {
          throw new UnsupportedOperationException("Callback URL must not be null or empty");
       }
-      
+
       this.id = id;
       this.callbackURL = callbackURL.trim();
       this.topic = topic;
       this.endpointId = endpointId;
-      
+
       int hi = this.callbackURL.indexOf("://");
       if(hi < 0) {
          hi = 0;
       } else {
          hi += 3;
       }
-      
+
       int pi = this.callbackURL.indexOf('/', hi);
-      
+
       if(pi < 0) {
          this.callbackHost = callbackURL.substring(hi);
          this.callbackPath = "/";
@@ -408,7 +408,7 @@ public class Subscription {
       this.leaseSeconds = other.leaseSeconds;
       this.endpoint = other.endpoint;
    }
-   
+
    @Override
    /**
     * Subscriptions are equal when their topic and callback URLs are equal.
@@ -429,7 +429,7 @@ public class Subscription {
       h = 31 * h + topic.hashCode();
       return h;
    }
-   
+
    /**
     * Gets the topic.
     * @return The topic.
@@ -437,7 +437,7 @@ public class Subscription {
    public Topic getTopic() {
       return topic;
    }
-   
+
    /**
     * Gets the secret used to send authenticated notifications.
     * @return The secret or <code>null</code> if none specified.
@@ -445,7 +445,7 @@ public class Subscription {
    public String getSecret() {
       return secret;
    }
-   
+
    /**
     * Gets the subscription lease in seconds. If <code>0</code> lease is
     * indefinite.
@@ -454,7 +454,7 @@ public class Subscription {
    public int getLeaseSeconds() {
       return leaseSeconds;
    }
-   
+
    /**
     * Gets the unique id assigned to this subscription.
     * @return The id.
@@ -462,7 +462,7 @@ public class Subscription {
    public long getId() {
       return id;
    }
-   
+
    /**
     * Gets the subscription status.
     * @return The status.
@@ -470,7 +470,7 @@ public class Subscription {
    public Status getStatus() {
       return status;
    }
-   
+
    /**
     * Gets the id of the endpoint.
     * @return The endpoint id.
@@ -478,7 +478,7 @@ public class Subscription {
    public long getEndpointId() {
       return endpointId;
    }
-   
+
    /**
     * Gets the callback URL.
     * @return The callback URL.
@@ -486,7 +486,7 @@ public class Subscription {
    public String getCallbackURL() {
       return callbackURL;
    }
-   
+
    /**
     * Gets the host of the callback URL.
     * @return The host.
@@ -494,7 +494,7 @@ public class Subscription {
    public String getCallbackHost() {
       return callbackHost;
    }
-   
+
    /**
     * Gets the callback URL's path.
     * @return The path.
@@ -502,7 +502,7 @@ public class Subscription {
    public String getCallbackPath() {
       return callbackPath;
    }
-   
+
    /**
     * Returns the current expire time.
     * @return The expire time.
@@ -517,11 +517,11 @@ public class Subscription {
    protected final String callbackURL;
    protected final String callbackHost;
    protected final String callbackPath;
-   
+
    protected String secret;
    protected int leaseSeconds;
    protected Status status;
    protected Date expireTime;
    protected Endpoint endpoint;
-   
+
 }

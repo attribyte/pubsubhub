@@ -20,18 +20,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * A <code>Runnable</code> class used to process <code>Notifications</code>.
  * <p>
- *    Instances are responsible for iterating through all active
- *    subscriptions for the notification's <code>Topic</code> and
- *    queuing the HTTP post to the callback URLs.
+ * Instances are responsible for iterating through all active
+ * subscriptions for the notification's <code>Topic</code> and
+ * queuing the HTTP post to the callback URLs.
  * </p>
  */
 public abstract class Notifier implements Runnable {
-   
+
    public Notifier(final Notification notification, final HubEndpoint hub) {
       this.notification = notification;
       this.hub = hub;
    }
-   
+
    /**
     * Increment the number of attempts for this notifier.
     * @return The number of attempts after the increment.

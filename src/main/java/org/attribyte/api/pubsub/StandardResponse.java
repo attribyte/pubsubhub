@@ -14,6 +14,7 @@
  */
 
 package org.attribyte.api.pubsub;
+
 import org.attribyte.api.http.Response;
 import org.attribyte.api.http.ResponseBuilder;
 
@@ -25,31 +26,31 @@ public class StandardResponse {
    /**
     * A response sent if the request does not include 'hub.callback'.
     */
-   public static final Response NO_HUB_CALLBACK = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.callback' parameter must be specified").create(); 
-   
+   public static final Response NO_HUB_CALLBACK = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.callback' parameter must be specified").create();
+
    /**
     * A response sent if the request does not include 'hub.mode'.
     */
    public static final Response NO_HUB_MODE = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.mode' parameter must be specified").create();
-   
+
    /**
     * A response sent if the request includes an invalid 'hub.mode'.
     */
-   public static final Response INVALID_HUB_MODE = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.mode' parameter must be either 'subscribe' or 'unsubscribe'").create();   
-   
+   public static final Response INVALID_HUB_MODE = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.mode' parameter must be either 'subscribe' or 'unsubscribe'").create();
+
    /**
     * A response sent if the request does not include 'hub.topic'.
     */
-   public static final Response NO_HUB_TOPIC = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.topic' parameter must be specified").create();   
-   
+   public static final Response NO_HUB_TOPIC = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.topic' parameter must be specified").create();
+
    /**
     * A response sent if the request includes an invalid 'hub.secret'.
     */
-   public static final Response INVALID_HUB_SECRET = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.secret' parameter is too long").create();      
-   
+   public static final Response INVALID_HUB_SECRET = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.secret' parameter is too long").create();
+
    /**
     * A response sent if the request includes an invalid 'hub.lease_seconds'.
     */
-   public static final Response INVALID_HUB_LEASE_SECONDS = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.lease_seconds' parameter must be an integer").create();       
-   
+   public static final Response INVALID_HUB_LEASE_SECONDS = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.lease_seconds' parameter must be an integer").create();
+
 }

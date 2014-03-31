@@ -25,9 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * A <code>Runnable</code> used to verify subscription requests.
  * <p>
- *   For asynchronous verification,
- *   the <code>run</code> method simply calls <code>processRequest</code>, ignoring
- *   any return values or exceptions.
+ * For asynchronous verification,
+ * the <code>run</code> method simply calls <code>processRequest</code>, ignoring
+ * any return values or exceptions.
  * </p>
  */
 public abstract class SubscriptionVerifier implements Runnable {
@@ -43,34 +43,34 @@ public abstract class SubscriptionVerifier implements Runnable {
       this.hub = hub;
       this.subscriber = subscriber;
    }
-   
+
    /**
     * Validates the request, returning a <code>Response</code> to be sent to the
     * client if the request is invalid. Otherwise, <code>null</code> is returned.
     * @return The response, if an error is detected, otherwise, <code>null</code>.
     */
    public Response validate() {
-      
+
       String callbackStr = request.getParameterValue("hub.callback");
       if(!StringUtil.hasContent(callbackStr)) {
          return StandardResponse.NO_HUB_CALLBACK;
       }
-      
+
       String modeStr = request.getParameterValue("hub.mode");
       if(!StringUtil.hasContent(modeStr)) {
          return StandardResponse.NO_HUB_MODE;
-      }      
-      
+      }
+
       SubscriptionRequest.Mode mode = SubscriptionRequest.Mode.fromString(modeStr);
       if(mode == SubscriptionRequest.Mode.INVALID) {
          return StandardResponse.INVALID_HUB_MODE;
       }
-      
+
       String topicStr = request.getParameterValue("hub.topic");
       if(!StringUtil.hasContent(topicStr)) {
          return StandardResponse.NO_HUB_TOPIC;
       }
-      
+
       String hubSecretStr = request.getParameterValue("hub.secret");
       if(StringUtil.hasContent(hubSecretStr)) {
          try {
@@ -82,7 +82,7 @@ public abstract class SubscriptionVerifier implements Runnable {
             //Ignore
          }
       }
-      
+
       String leaseSecondsStr = request.getHeaderValue("hub.lease_seconds");
       if(StringUtil.hasContent(leaseSecondsStr)) {
          try {
@@ -97,7 +97,7 @@ public abstract class SubscriptionVerifier implements Runnable {
 
       return null;
    }
-   
+
    /**
     * Increments the number of attempts for this verifier.
     * @return The number of attempts after the increment.
@@ -113,7 +113,7 @@ public abstract class SubscriptionVerifier implements Runnable {
    public Subscriber getSubscriber() {
       return subscriber;
    }
-   
+
    protected final Request request;
    protected final HubEndpoint hub;
    protected final AtomicInteger attempts = new AtomicInteger(0);

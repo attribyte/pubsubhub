@@ -60,7 +60,7 @@ public class Server {
       if(props.getProperty("endpoint.topics") != null) { //Add supported topics...
          for(String topicURL : Splitter.on(",").omitEmptyStrings().trimResults().split(props.getProperty("endpoint.topics"))) {
             Topic topic = endpoint.getDatastore().getTopic(topicURL, true);
-            System.out.println("Added topic, '"+topicURL+"' ("+topic.getId()+")");
+            System.out.println("Added topic, '" + topicURL + "' (" + topic.getId() + ")");
          }
       }
 
@@ -137,7 +137,7 @@ public class Server {
       HandlerCollection serverHandlers = new HandlerCollection();
       server.setHandler(serverHandlers);
 
-      ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS|ServletContextHandler.NO_SECURITY);
+      ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
       serverHandlers.addHandler(rootContext);
 
@@ -215,10 +215,15 @@ public class Server {
       final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(props.getProperty("logger.name", "pubsub"));
       return new Logger() {
          public void debug(final String s) { logger.debug(s); }
-         public void info(final String s) {  logger.info(s);  }
-         public void warn(final String s) {  logger.warn(s);  }
+
+         public void info(final String s) { logger.info(s); }
+
+         public void warn(final String s) { logger.warn(s); }
+
          public void warn(final String s, final Throwable throwable) { logger.warn(s, throwable); }
+
          public void error(final String s) { logger.error(s); }
+
          public void error(final String s, final Throwable throwable) { logger.error(s, throwable); }
       };
    }
@@ -230,12 +235,12 @@ public class Server {
          File f = new File(filename);
 
          if(!f.exists()) {
-            System.err.println("Start-up error: The configuration file, '"+f.getAbsolutePath()+" does not exist");
+            System.err.println("Start-up error: The configuration file, '" + f.getAbsolutePath() + " does not exist");
             System.exit(0);
          }
 
          if(!f.canRead()) {
-            System.err.println("Start-up error: The configuration file, '"+f.getAbsolutePath()+" is not readable");
+            System.err.println("Start-up error: The configuration file, '" + f.getAbsolutePath() + " is not readable");
             System.exit(0);
          }
 
@@ -250,12 +255,12 @@ public class Server {
             } else {
                props.putAll(currProps);
             }
-         } catch (IOException ioe) {
+         } catch(IOException ioe) {
             //TODO
          } finally {
             try {
                fis.close();
-            } catch (Exception e) {
+            } catch(Exception e) {
                //TODO
             }
          }
