@@ -78,7 +78,7 @@ public class AsyncCallbackFactory implements org.attribyte.api.pubsub.CallbackFa
       };
 
       ThreadPoolExecutor executor = new ThreadPoolExecutor(minPoolSize, maxPoolSize, 0L, TimeUnit.MILLISECONDS,
-              callbackQueue, new ThreadFactoryBuilder().setNameFormat("async-publisher-%d").build());
+              callbackQueue, new ThreadFactoryBuilder().setNameFormat("async-callback-%d").build());
       executor.prestartAllCoreThreads();
       this.callbackExecutor = MoreExecutors.listeningDecorator(executor);
    }
