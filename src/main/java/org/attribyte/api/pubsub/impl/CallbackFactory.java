@@ -48,6 +48,11 @@ public class CallbackFactory implements org.attribyte.api.pubsub.CallbackFactory
    public void init(final Properties props) {
    }
 
+   @Override
+   public boolean shutdown(final int waitTimeSeconds) {
+      return true;
+   }
+
    /**
     * Times all callbacks.
     */

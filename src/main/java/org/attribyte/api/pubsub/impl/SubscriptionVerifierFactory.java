@@ -38,6 +38,11 @@ public class SubscriptionVerifierFactory implements org.attribyte.api.pubsub.Sub
    }
 
    @Override
+   public boolean shutdown(final int waitTimeSeconds) {
+      return true;
+   }
+
+   @Override
    public Map<String, Metric> getMetrics() {
       return ImmutableMap.<String, Metric>of(
               "verifications", verificationTimer,

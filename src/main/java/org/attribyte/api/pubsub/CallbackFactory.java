@@ -40,4 +40,11 @@ public interface CallbackFactory extends MetricSet {
     * @param props The properties.
     */
    public void init(final Properties props);
+
+   /**
+    * Shutdown the factory.
+    * @param waitTimeSeconds The maximum amount of time to wait for shutdown to complete.
+    * @return Was shutdown complete?
+    */
+   public boolean shutdown(final int waitTimeSeconds);
 }

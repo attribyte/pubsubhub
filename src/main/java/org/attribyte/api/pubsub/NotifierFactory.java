@@ -38,4 +38,11 @@ public interface NotifierFactory extends MetricSet {
     */
    public void init(final Properties props);
 
+   /**
+    * Shutdown the factory.
+    * @param waitTimeSeconds The maximum amount of time to wait for shutdown to complete.
+    * @return Was shutdown complete?
+    */
+   public boolean shutdown(final int waitTimeSeconds);
+
 }

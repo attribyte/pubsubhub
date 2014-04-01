@@ -302,7 +302,7 @@ public class HubEndpoint implements MetricSet {
          if(notifierFactory == null) {
             initUtil.throwRequiredException("notifierFactoryClass");
          } else {
-            notifierFactory.init(props);
+            notifierFactory.init(initUtil.getProperties());
          }
 
          String notifierExecutorServiceClass = initUtil.getProperty("notifierExecutorServiceClass");
@@ -352,7 +352,7 @@ public class HubEndpoint implements MetricSet {
          if(callbackFactory == null) {
             initUtil.throwRequiredException("callbackFactoryClass");
          } else {
-            callbackFactory.init(props);
+            callbackFactory.init(initUtil.getProperties());
          }
 
          String callbackExecutorServiceClass = initUtil.getProperty("callbackExecutorServiceClass");
@@ -384,7 +384,7 @@ public class HubEndpoint implements MetricSet {
          if(verifierFactory == null) {
             initUtil.throwRequiredException("verifierFactoryClass");
          } else {
-            verifierFactory.init(props);
+            verifierFactory.init(initUtil.getProperties());
          }
 
          String verifierExecutorServiceClass = initUtil.getProperty("verifierExecutorServiceClass");
@@ -546,6 +546,37 @@ public class HubEndpoint implements MetricSet {
                failedCallbackService.shutdownNow();
                logger.info("Failed callback service shutdown *abnormally* in " + elapsedMillis + " ms.");
             }
+
+            logger.info("Shutting down callback factory...");
+            startMillis = System.currentTimeMillis();
+            terminatedNormally = callbackFactory.shutdown(maxShutdownAwaitSeconds);
+            if(terminatedNormally) {
+               logger.info("Callback factory shutdown normally in " + elapsedMillis + " ms.");
+            } else {
+               failedCallbackService.shutdownNow();
+               logger.info("Callback factory shutdown *abnormally* in " + elapsedMillis + " ms.");
+            }
+
+            logger.info("Shutting down notifier factory...");
+            startMillis = System.currentTimeMillis();
+            terminatedNormally = notifierFactory.shutdown(maxShutdownAwaitSeconds);
+            if(terminatedNormally) {
+               logger.info("Notifier factory shutdown normally in " + elapsedMillis + " ms.");
+            } else {
+               failedCallbackService.shutdownNow();
+               logger.info("Notifier factory shutdown *abnormally* in " + elapsedMillis + " ms.");
+            }
+
+            logger.info("Shutting down verifier factory...");
+            startMillis = System.currentTimeMillis();
+            terminatedNormally = verifierFactory.shutdown(maxShutdownAwaitSeconds);
+            if(terminatedNormally) {
+               logger.info("Verifier factory shutdown normally in " + elapsedMillis + " ms.");
+            } else {
+               failedCallbackService.shutdownNow();
+               logger.info("Verifier factory shutdown *abnormally* in " + elapsedMillis + " ms.");
+            }
+
          } catch(InterruptedException ie) {
             Thread.currentThread().interrupt();
          }

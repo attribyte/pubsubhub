@@ -42,6 +42,11 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
    public void init(final Properties props) {
    }
 
+   @Override
+   public boolean shutdown(final int waitTimeSeconds) {
+      return true;
+   }
+
    /**
     * Measures the notification rate and the time required to
     * select subscriptions and enqueue callbacks.
