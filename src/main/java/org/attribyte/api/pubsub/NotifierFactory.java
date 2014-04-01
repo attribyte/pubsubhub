@@ -17,6 +17,8 @@ package org.attribyte.api.pubsub;
 
 import com.codahale.metrics.MetricSet;
 
+import java.util.Properties;
+
 /**
  * Creates instances of <code>Notifier</code>.
  */
@@ -29,5 +31,11 @@ public interface NotifierFactory extends MetricSet {
     * @return The notifier.
     */
    public Notifier create(Notification notification, HubEndpoint hub);
+
+   /**
+    * Allow initialization for the factory.
+    * @param props The properties.
+    */
+   public void init(final Properties props);
 
 }

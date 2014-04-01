@@ -23,6 +23,7 @@ import org.attribyte.api.http.Request;
 import org.attribyte.api.pubsub.HubEndpoint;
 
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Creates instances of the default <code>Callback</code> implementation.
@@ -41,6 +42,10 @@ public class CallbackFactory implements org.attribyte.api.pubsub.CallbackFactory
               "failed-callbacks", failedCallbackMeter,
               "abandoned-callbacks", abandonedCallbackMeter
       );
+   }
+
+   @Override
+   public void init(final Properties props) {
    }
 
    /**

@@ -18,6 +18,8 @@ package org.attribyte.api.pubsub;
 import com.codahale.metrics.MetricSet;
 import org.attribyte.api.http.Request;
 
+import java.util.Properties;
+
 /**
  * Creates instances of <code>SubscriptionVerifier</code>.
  */
@@ -31,5 +33,11 @@ public interface SubscriptionVerifierFactory extends MetricSet {
     * @return The verifier.
     */
    public SubscriptionVerifier create(final Request request, final HubEndpoint hub, final Subscriber subscriber);
+
+   /**
+    * Allow initialization for the factory.
+    * @param props The properties.
+    */
+   public void init(final Properties props);
 
 }

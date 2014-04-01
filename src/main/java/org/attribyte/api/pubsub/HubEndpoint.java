@@ -301,6 +301,8 @@ public class HubEndpoint implements MetricSet {
          notifierFactory = (NotifierFactory)initUtil.initClass("notifierFactoryClass", NotifierFactory.class);
          if(notifierFactory == null) {
             initUtil.throwRequiredException("notifierFactoryClass");
+         } else {
+            notifierFactory.init(props);
          }
 
          String notifierExecutorServiceClass = initUtil.getProperty("notifierExecutorServiceClass");
@@ -349,6 +351,8 @@ public class HubEndpoint implements MetricSet {
          callbackFactory = (CallbackFactory)initUtil.initClass("callbackFactoryClass", CallbackFactory.class);
          if(callbackFactory == null) {
             initUtil.throwRequiredException("callbackFactoryClass");
+         } else {
+            callbackFactory.init(props);
          }
 
          String callbackExecutorServiceClass = initUtil.getProperty("callbackExecutorServiceClass");
@@ -379,6 +383,8 @@ public class HubEndpoint implements MetricSet {
          verifierFactory = (SubscriptionVerifierFactory)initUtil.initClass("verifierFactoryClass", SubscriptionVerifierFactory.class);
          if(verifierFactory == null) {
             initUtil.throwRequiredException("verifierFactoryClass");
+         } else {
+            verifierFactory.init(props);
          }
 
          String verifierExecutorServiceClass = initUtil.getProperty("verifierExecutorServiceClass");

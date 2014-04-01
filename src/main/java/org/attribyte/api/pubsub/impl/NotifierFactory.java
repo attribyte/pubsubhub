@@ -22,6 +22,7 @@ import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Notification;
 
 import java.util.Map;
+import java.util.Properties;
 
 public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory {
 
@@ -35,6 +36,10 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
       return ImmutableMap.<String, Metric>of(
               "notifications", notificationTimer
       );
+   }
+
+   @Override
+   public void init(final Properties props) {
    }
 
    /**

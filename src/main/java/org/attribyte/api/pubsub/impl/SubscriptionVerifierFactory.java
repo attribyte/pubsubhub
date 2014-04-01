@@ -24,12 +24,17 @@ import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Subscriber;
 
 import java.util.Map;
+import java.util.Properties;
 
 public class SubscriptionVerifierFactory implements org.attribyte.api.pubsub.SubscriptionVerifierFactory {
 
    @Override
    public SubscriptionVerifier create(final Request request, final HubEndpoint hub, final Subscriber subscriber) {
       return new SubscriptionVerifier(request, hub, subscriber, verificationTimer, failedVerificationMeter, abandonedVerificationMeter);
+   }
+
+   @Override
+   public void init(final Properties props) {
    }
 
    @Override

@@ -18,6 +18,8 @@ package org.attribyte.api.pubsub;
 import com.codahale.metrics.MetricSet;
 import org.attribyte.api.http.Request;
 
+import java.util.Properties;
+
 /**
  * Creates instances of <code>Callback</code>.
  */
@@ -32,4 +34,10 @@ public interface CallbackFactory extends MetricSet {
     * @return The new callback.
     */
    public Callback create(final Request request, final long subscriptionId, final int priority, final HubEndpoint hub);
+
+   /**
+    * Allow initialization for the factory.
+    * @param props The properties.
+    */
+   public void init(final Properties props);
 }
