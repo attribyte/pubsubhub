@@ -27,6 +27,9 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Callback;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.HttpCookieStore;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.util.Map;
 import java.util.Properties;
@@ -43,7 +46,7 @@ public class AsyncCallbackFactory implements org.attribyte.api.pubsub.CallbackFa
 
    @Override
    public Callback create(final Request request, final long subscriptionId, final int priority, final HubEndpoint hub) {
-      return new AsyncCallback(request, subscriptionId, priority, hub, callbackTimer, failedCallbackMeter, abandonedCallbackMeter, callbackExecutor);
+      return new AsyncCallback(request, subscriptionId, priority, hub, callbackTimer, failedCallbackMeter, abandonedCallbackMeter, httpClient);
    }
 
    @Override
@@ -51,69 +54,55 @@ public class AsyncCallbackFactory implements org.attribyte.api.pubsub.CallbackFa
       return ImmutableMap.<String, Metric>of(
               "callbacks", callbackTimer,
               "failed-callbacks", failedCallbackMeter,
-              "abandoned-callbacks", abandonedCallbackMeter,
-              "enqueued-callbacks", callbackQueueSize
+              "abandoned-callbacks", abandonedCallbackMeter
       );
    }
 
    @Override
    public void init(final Properties props) {
-      int maxQueueSize = Integer.parseInt(props.getProperty("asyncCallbackFactory.maxQueueSize", "4096"));
-      int minPoolSize = Integer.parseInt(props.getProperty("asyncCallbackFactory.minPoolSize", "1"));
-      int maxPoolSize = Integer.parseInt(props.getProperty("asyncCallbackFactory.maxPoolSize", "64"));
-      final int gaugeCacheTimeSeconds =
-              Integer.parseInt(props.getProperty("asyncCallbackFactory.gaugeCacheTimeSeconds", "15"));
 
-      if(maxQueueSize > 0) {
-         callbackQueue = new ArrayBlockingQueue<Runnable>(maxQueueSize);
-      } else {
-         callbackQueue = new LinkedBlockingQueue<Runnable>();
+      final int maxConnectionTimeSeconds =
+              Integer.parseInt(props.getProperty("asyncCallbackFactory.httpClient.maxConnectionTimeSeconds", "10"));
+
+      final int maxConnectionsPerDeistination =
+              Integer.parseInt(props.getProperty("asyncCallbackFactory.httpClient.maxConnectionsPerDestination", "16"));
+
+      final int maxRequestsQueuedPerDestination =
+              Integer.parseInt(props.getProperty("asyncCallbackFactory.httpClient.maxRequestsQueuedPerDestination", "1024"));
+
+      final boolean useDispatchIO =
+              props.getProperty("asyncCallbackFactory.httpClient.useDispatchIO", "true").equalsIgnoreCase("true");
+
+      final boolean useTCPNoDelay =
+              props.getProperty("asyncCallbackFactory.httpClient.useTCPNoDelay", "false").equalsIgnoreCase("true");
+
+      SslContextFactory sslContextFactory = new SslContextFactory();
+      this.httpClient = new HttpClient(sslContextFactory);
+      this.httpClient.setFollowRedirects(false);
+      this.httpClient.setConnectTimeout(maxConnectionTimeSeconds * 1000L);
+      this.httpClient.setCookieStore(new HttpCookieStore.Empty());
+      this.httpClient.setMaxConnectionsPerDestination(maxConnectionsPerDeistination);
+      this.httpClient.setMaxRequestsQueuedPerDestination(maxRequestsQueuedPerDestination);
+      this.httpClient.setDispatchIO(useDispatchIO);
+      this.httpClient.setTCPNoDelay(useTCPNoDelay);
+      try {
+         this.httpClient.start();
+      } catch(Exception e) { //Signatures need to be changed...
+         throw new UnsupportedOperationException("Unable to initialize client", e);
       }
-
-      this.callbackQueueSize = new CachedGauge<Integer>(gaugeCacheTimeSeconds, TimeUnit.SECONDS) {
-         @Override
-         protected Integer loadValue() {
-            return callbackQueue.size();
-         }
-      };
-
-      ThreadPoolExecutor executor = new ThreadPoolExecutor(minPoolSize, maxPoolSize, 0L, TimeUnit.MILLISECONDS,
-              callbackQueue, new ThreadFactoryBuilder().setNameFormat("async-callback-%d").build());
-      executor.prestartAllCoreThreads();
-      this.callbackExecutor = MoreExecutors.listeningDecorator(executor);
    }
+
+   HttpClient httpClient;
 
    @Override
    public boolean shutdown(int maxShutdownAwaitSeconds) {
-      callbackExecutor.shutdown();
       try {
-         boolean terminatedNormally = callbackExecutor.awaitTermination(maxShutdownAwaitSeconds, TimeUnit.SECONDS);
-         if(!terminatedNormally) {
-            callbackExecutor.shutdownNow();
-         }
-         return terminatedNormally;
-      } catch(InterruptedException ie) {
-         Thread.currentThread().interrupt();
+         this.httpClient.stop();
+         return true;
+      } catch(Exception e) {
          return false;
       }
    }
-
-   /**
-    * callbackExecutor.awaitTermination()
-    *
-    * The queue that holds callbacks waiting to execute.
-    */
-   BlockingQueue<Runnable> callbackQueue;
-
-   /**
-    * The executor service for async callback.
-    */
-   ListeningExecutorService callbackExecutor;
-
-   /**
-    * A gauge that measures the callback queue size.
-    */
-   CachedGauge<Integer> callbackQueueSize;
 
    /**
     * Times all callbacks.

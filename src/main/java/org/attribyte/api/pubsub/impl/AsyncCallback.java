@@ -17,21 +17,20 @@ package org.attribyte.api.pubsub.impl;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.google.common.base.Optional;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
 import org.attribyte.api.pubsub.HubEndpoint;
-import org.attribyte.api.pubsub.Notification;
-import org.attribyte.api.pubsub.impl.client.BasicAuth;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.api.Response.CompleteListener;
+import org.eclipse.jetty.client.util.ByteBufferContentProvider;
+import org.eclipse.jetty.client.util.BytesContentProvider;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The default callback implementation.
@@ -41,87 +40,6 @@ import java.util.concurrent.RejectedExecutionException;
  */
 public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
 
-   private static final class Result {
-
-      Result(final Request request,
-             final Response response) {
-         this.request = request;
-         this.response = response;
-         this.error = null;
-      }
-
-      Result(final Request request,
-             final Throwable error) {
-         this.request = request;
-         this.response = null;
-         this.error = error;
-      }
-
-      final Request request;
-      final Response response;
-      final Throwable error;
-   }
-
-
-   /**
-    * Enables async callback.
-    */
-   private final class CallbackCallable implements Callable<Result> {
-
-      CallbackCallable(final Request request) {
-         this.request = request;
-      }
-
-      public Result call() {
-         try {
-            final Response response;
-            final Timer.Context ctx = timer.time();
-            try {
-               response = hub.getHttpClient().send(request);
-               return new Result(request, response);
-            } finally {
-               ctx.stop();
-            }
-         } catch(Throwable t) {
-            return new Result(request, t);
-         }
-      }
-
-      private final Request request;
-   }
-
-   /**
-    * Handles the completion of an async callback by queueing failures for retry.
-    */
-   private final FutureCallback<Result> resultHandler = new FutureCallback<Result>() {
-
-      @Override
-      public void onSuccess(final Result result) {
-         if(result.response != null && !Response.Code.isOK(result.response.getResponseCode())) {
-            failedCallbacks.mark();
-            boolean enqueued = hub.enqueueFailedCallback(AsyncCallback.this);
-            if(!enqueued) {
-               abandonedCallbacks.mark();
-            }
-         } else if(result.error != null) {
-            failedCallbacks.mark();
-            boolean enqueued = hub.enqueueFailedCallback(AsyncCallback.this);
-            if(!enqueued) {
-               abandonedCallbacks.mark();
-            }
-         }
-      }
-
-      @Override
-      public void onFailure(final Throwable t) {
-         failedCallbacks.mark();
-         boolean enqueued = hub.enqueueFailedCallback(AsyncCallback.this);
-         if(!enqueued) {
-            abandonedCallbacks.mark();
-         }
-      }
-   };
-
    protected AsyncCallback(final Request request,
                            final long subscriptionId,
                            final int priority,
@@ -129,33 +47,49 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
                            final Timer timer,
                            final Meter failedCallbacks,
                            final Meter abandonedCallbacks,
-                           final ListeningExecutorService callbackExecutor) {
+                           final HttpClient httpClient) {
       super(request, subscriptionId, priority, hub);
       this.timer = timer;
       this.failedCallbacks = failedCallbacks;
       this.abandonedCallbacks = abandonedCallbacks;
-      this.callbackExecutor = callbackExecutor;
+      this.httpClient = httpClient;
    }
 
    @Override
    public void run() {
-      ListenableFuture<Result> futureResult = enqueueCallback(request);
-      Futures.addCallback(futureResult, resultHandler, MoreExecutors.sameThreadExecutor());
+      final Timer.Context ctx = timer.time();
+      httpClient.POST(joinURL(request))
+              .timeout(5L, TimeUnit.SECONDS)  //TODO
+              .followRedirects(false)
+              .content(new ByteBufferContentProvider(request.getBody()))
+              .send(new CompleteListener() {
+                 @Override
+                 public void onComplete(final Result result) {
+                    ctx.stop();
+                    if(!result.isSucceeded() || Response.Code.isOK(result.getResponse().getStatus())) {
+                       failedCallbacks.mark();
+                       boolean enqueued = hub.enqueueFailedCallback(AsyncCallback.this);
+                       if(!enqueued) {
+                          abandonedCallbacks.mark();
+                       }
+
+                       //TODO: Log...
+                    }
+                 }
+              });
    }
 
-   /**
-    * Enqueue a notification for future posting to the hub.
-    * @return The (listenable) future result.
-    */
-   public final ListenableFuture<Result> enqueueCallback(final Request request) {
-      try {
-         return callbackExecutor.submit(new CallbackCallable(request));
-      } catch(RejectedExecutionException re) {
-         return Futures.immediateFailedFuture(re);
+
+   private String joinURL(final Request request) {
+      StringBuilder urlBuf = request.getRequestURL();
+      if(request.getQueryString() != null) {
+         urlBuf.append("?").append(request.getQueryString());
       }
+      return urlBuf.toString();
    }
 
-   private final ListeningExecutorService callbackExecutor;
+
+   private final HttpClient httpClient;
    private final Timer timer;
    private final Meter failedCallbacks;
    private final Meter abandonedCallbacks;
