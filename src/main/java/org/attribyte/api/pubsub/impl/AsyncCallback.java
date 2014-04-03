@@ -17,7 +17,7 @@ package org.attribyte.api.pubsub.impl;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.google.common.util.concurrent.ListeningExecutorService;
+import org.attribyte.api.http.Header;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
 import org.attribyte.api.pubsub.HubEndpoint;
@@ -25,11 +25,8 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.api.Response.CompleteListener;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
-import org.eclipse.jetty.client.util.BytesContentProvider;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -58,25 +55,34 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
    @Override
    public void run() {
       final Timer.Context ctx = timer.time();
-      httpClient.POST(joinURL(request))
+      org.eclipse.jetty.client.api.Request callbackRequest = httpClient.POST(joinURL(request))
               .timeout(5L, TimeUnit.SECONDS)  //TODO
               .followRedirects(false)
-              .content(new ByteBufferContentProvider(request.getBody()))
-              .send(new CompleteListener() {
-                 @Override
-                 public void onComplete(final Result result) {
-                    ctx.stop();
-                    if(!result.isSucceeded() || Response.Code.isOK(result.getResponse().getStatus())) {
-                       failedCallbacks.mark();
-                       boolean enqueued = hub.enqueueFailedCallback(AsyncCallback.this);
-                       if(!enqueued) {
-                          abandonedCallbacks.mark();
-                       }
+              .content(new ByteBufferContentProvider(request.getBody()));
 
-                       //TODO: Log...
-                    }
-                 }
-              });
+      Collection<Header> headers = request.getHeaders(); //TODO: Bridge
+      if(headers != null) {
+         for(Header header : headers) {
+            for(String value : header.getValues()) {
+               callbackRequest.header(header.getName(), value);
+            }
+         }
+      }
+
+      callbackRequest.send(new CompleteListener() {
+         @Override
+         public void onComplete(final Result result) {
+            ctx.stop();
+            if(!result.isSucceeded() || !Response.Code.isOK(result.getResponse().getStatus())) {
+               failedCallbacks.mark();
+               boolean enqueued = hub.enqueueFailedCallback(AsyncCallback.this);
+               if(!enqueued) {
+                  abandonedCallbacks.mark();
+               }
+               //TODO: Log, report, ...
+            }
+         }
+      });
    }
 
 

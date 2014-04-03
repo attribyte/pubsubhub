@@ -116,3 +116,9 @@ endpoint.httpclient.userAgent=Attribyte/PubSub
 
 #Supported topics...
 endpoint.topics=/test,/example,/post
+
+#Require basic auth...
+endpoint.topicURLFilters=org.attribyte.api.pubsub.BasicAuthFilter
+endpoint.basicauth.00.pattern=/.*
+endpoint.basicauth.00.username=test23
+endpoint.basicauth.00.password=test23
