@@ -458,6 +458,10 @@ public class HubEndpoint implements MetricSet {
             topicURLFilters = Collections.unmodifiableList(topicURLFilters);
          }
 
+         for(URLFilter filter : topicURLFilters) {
+            filter.init(initUtil.getProperties());
+         }
+
          List<Object> callbackURLFilterObjects = initUtil.initClassList("callbackURLFilters", URLFilter.class);
          if(callbackURLFilterObjects.size() > 0) {
             callbackURLFilters = new ArrayList<URLFilter>(callbackURLFilterObjects.size() + 1);
@@ -470,6 +474,10 @@ public class HubEndpoint implements MetricSet {
             callbackURLFilters = new ArrayList<URLFilter>(1);
             callbackURLFilters.add(new FragmentRejectFilter());
             callbackURLFilters = Collections.unmodifiableList(callbackURLFilters);
+         }
+
+         for(URLFilter filter : callbackURLFilters) {
+            filter.init(initUtil.getProperties());
          }
       }
    }
@@ -486,6 +494,16 @@ public class HubEndpoint implements MetricSet {
          logger.info("Expiration service shutdown normally.");
 
          try {
+
+            logger.info("Shutting down filters...");
+
+            for(URLFilter filter : topicURLFilters) {
+               filter.shutdown(maxShutdownAwaitSeconds);
+            }
+
+            for(URLFilter filter : callbackURLFilters) {
+               filter.shutdown(maxShutdownAwaitSeconds);
+            }
 
             logger.info("Shutting down notifier service...");
             long startMillis = System.currentTimeMillis();
@@ -617,7 +635,7 @@ public class HubEndpoint implements MetricSet {
          }
 
          for(URLFilter filter : topicURLFilters) {
-            if(filter.reject(topicURL)) {
+            if(filter.reject(topicURL, request)) {
                return new ResponseBuilder(Response.Code.NOT_FOUND, "The 'hub.topic' is not supported by this server").create();
             }
          }
@@ -633,7 +651,7 @@ public class HubEndpoint implements MetricSet {
 
       if(callbackURLFilters != null) {
          for(URLFilter filter : callbackURLFilters) {
-            if(filter.reject(callbackURL)) {
+            if(filter.reject(callbackURL, request)) {
                return new ResponseBuilder(Response.Code.NOT_FOUND, "The 'hub.callback' is not supported by this server").create();
             }
          }

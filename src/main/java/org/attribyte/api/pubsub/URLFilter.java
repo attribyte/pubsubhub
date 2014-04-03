@@ -15,7 +15,9 @@
 
 package org.attribyte.api.pubsub;
 
-import org.attribyte.api.http.AuthScheme;
+import org.attribyte.api.http.Request;
+
+import java.util.Properties;
 
 /**
  * Determines if a URL (topic or callback URL)
@@ -25,16 +27,22 @@ public interface URLFilter {
 
    /**
     * Reports that the URL should be rejected.
-    * @param url The URL to test.
+    * @param topicURL The URL to test.
+    * @param request The request.
     * @return Should the URL be rejected?
     */
-   public boolean reject(String url);
+   public boolean reject(String topicURL, Request request);
 
    /**
-    * Returns an authentication scheme, if required for the URL.
-    * @param url The URL.
-    * @return The required authentication or <code>null</code> if no authentication is required.
+    * Allow initialization for the filter.
+    * @param props The properties.
     */
-   public AuthScheme authScheme(String url);
+   public void init(final Properties props);
 
+   /**
+    * Shutdown the filter.
+    * @param waitTimeSeconds The maximum amount of time to wait for shutdown to complete.
+    * @return Was shutdown complete?
+    */
+   public boolean shutdown(final int waitTimeSeconds);
 }

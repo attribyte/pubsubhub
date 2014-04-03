@@ -15,7 +15,9 @@
 
 package org.attribyte.api.pubsub;
 
-import org.attribyte.api.http.AuthScheme;
+import org.attribyte.api.http.Request;
+
+import java.util.Properties;
 
 /**
  * A filter that rejects URLs that contain a fragment (#).
@@ -23,12 +25,11 @@ import org.attribyte.api.http.AuthScheme;
 public class FragmentRejectFilter implements URLFilter {
 
    @Override
-   public boolean reject(String url) {
+   public boolean reject(String url, Request request) {
       return url.indexOf('#') > 0;
    }
 
-   @Override
-   public AuthScheme authScheme(String url) {
-      return null;
-   }
+   public void init(final Properties props) {}
+
+   public boolean shutdown(final int waitTimeSeconds) { return true; }
 }
