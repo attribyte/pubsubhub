@@ -102,6 +102,25 @@ public interface HubDatastore {
    public Topic getTopic(String topicURL, boolean create) throws DatastoreException;
 
    /**
+    * Checks to see if subscribing to a topic requires auth.
+    * @param topicId The topic id.
+    * @return Does the topic require auth for subscription?
+    * @throws DatastoreException on datastore error.
+    */
+   public boolean requiresSubscriptionAuth(long topicId) throws DatastoreException;
+
+   /**
+    * Gets subscription auth for a topic.
+    * @param topicId The topic id.
+    * @param authId The (client) auth id.
+    * @param authScheme The auth scheme.
+    * @return The auth hash or <tt>null</tt> if none.
+    * @throws DatastoreException
+    */
+   public String getSubscriptionAuth(long topicId, String authId, String authScheme) throws DatastoreException;
+
+
+   /**
     * Gets a subscription by id.
     * @param subscriptionId The id.
     * @return The subscription or <code>null</code> if not found.

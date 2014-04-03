@@ -120,6 +120,50 @@ public abstract class RDBHubDatastore implements HubDatastore {
       }
    }
 
+   public static final String requiresSubscriptionAuthSQL = "SELECT 1 FROM topicAuth WHERE topicId=? LIMIT 1";
+
+   public boolean requiresSubscriptionAuth(long topicId) throws DatastoreException {
+      Connection conn = null;
+      PreparedStatement stmt = null;
+      ResultSet rs = null;
+
+      try {
+         conn = getConnection();
+         stmt = conn.prepareStatement(requiresSubscriptionAuthSQL);
+         stmt.setLong(1, topicId);
+         rs = stmt.executeQuery();
+         return rs.next();
+      } catch(SQLException se) {
+         throw new DatastoreException("Problem checking subscription auth", se);
+      } finally {
+         SQLUtil.closeQuietly(conn, stmt, rs);
+      }
+   }
+
+   public static final String getSubscriptionAuthSQL = "SELECT authHash FROM topicAuth WHERE topicId=? AND authId=?" +
+           " AND authScheme=?";
+
+   public String getSubscriptionAuth(long topicId, String authId, String authScheme) throws DatastoreException {
+      Connection conn = null;
+      PreparedStatement stmt = null;
+      ResultSet rs = null;
+
+      try {
+         conn = getConnection();
+         stmt = conn.prepareStatement(getSubscriptionAuthSQL);
+         stmt.setLong(1, topicId);
+         stmt.setString(2, authId);
+         stmt.setString(3, authScheme);
+         rs = stmt.executeQuery();
+         return rs.next() ? rs.getString(1) : null;
+      } catch(SQLException se) {
+         throw new DatastoreException("Problem getting subscription auth", se);
+      } finally {
+         SQLUtil.closeQuietly(conn, stmt, rs);
+      }
+   }
+
+
    private static final String hasActiveSubscriptionSQL = "SELECT 1 FROM subscription WHERE topicId=?" +
            " AND status=" + Subscription.Status.ACTIVE.getValue() + " LIMIT 1";
 
