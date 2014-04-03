@@ -74,7 +74,7 @@ public class BasicAuthFilter implements URLFilter {
    }
 
    public void init(final Properties props) {
-      Map<String, Properties> filterPropertyMap = new InitUtil("basicauth", props, false).split();
+      Map<String, Properties> filterPropertyMap = new InitUtil("basicauth.", props, false).split();
       List<String> keys = Lists.newArrayList(filterPropertyMap.keySet());
       Collections.sort(keys);
       patterns = Lists.newArrayListWithCapacity(keys.size());
