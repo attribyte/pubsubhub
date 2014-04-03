@@ -9,7 +9,9 @@
 
 CREATE TABLE `test` (
   `test` int(11) unsigned NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+)
+  ENGINE =InnoDB
+  DEFAULT CHARSET =utf8;
 
 CREATE TABLE `topic` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
@@ -19,7 +21,9 @@ CREATE TABLE `topic` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `topic_hash_key` (`topicHash`),
   KEY `topic_key` (`topicURL`(64))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+)
+  ENGINE =InnoDB
+  DEFAULT CHARSET =utf8;
 
 CREATE TABLE `subscription` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -42,7 +46,9 @@ CREATE TABLE `subscription` (
   KEY `topic_key` (`topicId`),
   KEY `expire_key` (`expireTime`),
   KEY `status_key` (`createTime`,`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+)
+  ENGINE =InnoDB
+  DEFAULT CHARSET =utf8;
 
 CREATE TABLE `subscriber` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
@@ -52,4 +58,6 @@ CREATE TABLE `subscriber` (
   `createTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `endpoint_key` (`endpointURL`,`authId`,`authScheme`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+)
+  ENGINE =InnoDB
+  DEFAULT CHARSET =utf8;
