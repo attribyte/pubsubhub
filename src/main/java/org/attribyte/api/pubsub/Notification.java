@@ -16,9 +16,9 @@
 package org.attribyte.api.pubsub;
 
 import com.google.common.collect.ImmutableList;
+import com.google.protobuf.ByteString;
 import org.attribyte.api.http.Header;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -29,7 +29,23 @@ import java.util.Collections;
 public class Notification {
 
    /**
-    * Creates a notification with content specified as a byte array.
+    * Creates a notification with content specified as a <code>ByteString</code>.
+    * @param topic The topic.
+    * @param headers The headers to be added.
+    * @param content The content.
+    */
+   public Notification(final Topic topic, final Collection<Header> headers, final ByteString content) {
+      this.topic = topic;
+      if(headers != null) {
+         this.headers = ImmutableList.<Header>copyOf(headers);
+      } else {
+         this.headers = Collections.emptyList();
+      }
+      this.content = content;
+   }
+
+   /**
+    * Creates a notification with content specified as bytes.
     * @param topic The topic.
     * @param headers The headers to be added.
     * @param content The content.
@@ -41,27 +57,7 @@ public class Notification {
       } else {
          this.headers = Collections.emptyList();
       }
-      this.content = ByteBuffer.wrap(content).asReadOnlyBuffer();
-   }
-
-   /**
-    * Creates a notification with content specified as a <code>ByteBuffer</code>.
-    * @param topic The topic.
-    * @param headers The headers to be added.
-    * @param content The content.
-    */
-   public Notification(final Topic topic, final Collection<Header> headers, final ByteBuffer content) {
-      this.topic = topic;
-      if(headers != null) {
-         this.headers = ImmutableList.<Header>copyOf(headers);
-      } else {
-         this.headers = Collections.emptyList();
-      }
-      if(content.isReadOnly()) {
-         this.content = content;
-      } else {
-         this.content = content.asReadOnlyBuffer();
-      }
+      this.content = ByteString.copyFrom(content);
    }
 
    /**
@@ -84,11 +80,11 @@ public class Notification {
     * Gets the notification content.
     * @return The content.
     */
-   public ByteBuffer getContent() {
+   public ByteString getContent() {
       return content;
    }
 
    private final Topic topic;
    private final Collection<Header> headers;
-   private final ByteBuffer content;
+   private final ByteString content;
 }

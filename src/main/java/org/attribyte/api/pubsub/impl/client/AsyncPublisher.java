@@ -144,12 +144,12 @@ public class AsyncPublisher implements MetricSet {
       try {
          ContentResponse response = auth.isPresent() ?
                  httpClient.POST(notification.getTopic().getURL())
-                         .content(new ByteBufferContentProvider(notification.getContent()))
+                         .content(new ByteBufferContentProvider(notification.getContent().asReadOnlyByteBuffer()))
                          .timeout(notificationTimeoutSeconds, TimeUnit.SECONDS)
                          .header(BasicAuth.AUTH_HEADER_NAME, auth.get().headerValue)
                          .send() :
                  httpClient.POST(notification.getTopic().getURL())
-                         .content(new ByteBufferContentProvider(notification.getContent()))
+                         .content(new ByteBufferContentProvider(notification.getContent().asReadOnlyByteBuffer()))
                          .timeout(notificationTimeoutSeconds, TimeUnit.SECONDS)
                          .send();
 

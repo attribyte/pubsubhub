@@ -23,7 +23,6 @@ import org.attribyte.api.http.AuthScheme;
 import org.attribyte.api.http.PostRequestBuilder;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.pubsub.*;
-import org.attribyte.util.ByteBufferUtil;
 import org.attribyte.util.StringUtil;
 
 import java.security.SignatureException;
@@ -80,7 +79,7 @@ public class Notifier extends org.attribyte.api.pubsub.Notifier {
 
          if(StringUtil.hasContent(subscription.getSecret()) && notification.getContent() != null) {
             try {
-               String hmacSignature = HMACUtil.hexHMAC(ByteBufferUtil.array(notification.getContent()), subscription.getSecret());
+               String hmacSignature = HMACUtil.hexHMAC(notification.getContent().toByteArray(), subscription.getSecret());
                builder.addHeader("X-Hub-Signature", "sha1=" + hmacSignature);
             } catch(SignatureException se) {
                builder.addHeader("X-Hub-Signature", "sha1=");

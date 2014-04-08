@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableList;
 import org.attribyte.api.http.Header;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
-import org.attribyte.util.ByteBufferUtil;
 import org.attribyte.util.StringUtil;
 
 import java.io.FileInputStream;
@@ -79,7 +78,7 @@ public class TestEndpoint {
               new NotificationEndpoint.Callback() {
                  @Override
                  public void notification(final Notification notification) {
-                    byte[] body = ByteBufferUtil.array(notification.getContent());
+                    byte[] body = notification.getContent().toByteArray();
                     long endNanos = System.nanoTime();
                     long startNanos = Long.parseLong(new String(body, Charsets.UTF_8));
                     long measuredNanos = endNanos - startNanos;

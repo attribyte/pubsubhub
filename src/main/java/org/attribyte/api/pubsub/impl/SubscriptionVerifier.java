@@ -23,7 +23,6 @@ import org.attribyte.api.http.GetRequestBuilder;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
 import org.attribyte.api.pubsub.*;
-import org.attribyte.util.ByteBufferUtil;
 import org.attribyte.util.StringUtil;
 import org.attribyte.util.URIEncoder;
 
@@ -98,7 +97,7 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
          int responseCode = verifyResponse.getResponseCode();
 
          String charset = verifyResponse.getCharset(hub.getDefaultEncoding());
-         String body = verifyResponse.getBody() == null ? "" : new String(ByteBufferUtil.array(verifyResponse.getBody()), charset);
+         String body = verifyResponse.getBody() == null ? "" : verifyResponse.getBody().toString(charset);
 
          SubscriptionRequest.Mode requestMode = SubscriptionRequest.Mode.fromString(mode);
          Subscription.Status status;

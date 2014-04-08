@@ -58,7 +58,7 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
       org.eclipse.jetty.client.api.Request callbackRequest = httpClient.POST(joinURL(request))
               .timeout(5L, TimeUnit.SECONDS)  //TODO
               .followRedirects(false)
-              .content(new ByteBufferContentProvider(request.getBody()));
+              .content(new ByteBufferContentProvider(request.getBody().asReadOnlyByteBuffer()));
 
       Collection<Header> headers = request.getHeaders(); //TODO: Bridge
       if(headers != null) {
@@ -78,8 +78,8 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
                boolean enqueued = hub.enqueueFailedCallback(AsyncCallback.this);
                if(!enqueued) {
                   abandonedCallbacks.mark();
+                  hub.getLogger().error("Abandoned callback to " + request.getRequestURI());
                }
-               //TODO: Log, report, ...
             }
          }
       });
