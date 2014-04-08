@@ -2,7 +2,6 @@ package org.attribyte.api.pubsub.impl.client;
 
 import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -21,46 +20,7 @@ import java.util.concurrent.*;
 /**
  * Asynchronously pushes notifications to hubs.
  */
-public class AsyncPublisher implements MetricSet {
-
-   /**
-    * A notification publish result.
-    */
-   public static final class Result {
-
-      Result(final int code, final String message, final Throwable cause, final Notification notification) {
-         this.code = code;
-         this.message = message != null ? Optional.of(message) : Optional.<String>absent();
-         this.cause = cause != null ? Optional.of(cause) : Optional.<Throwable>absent();
-         this.isError = !(code > 199 && code < 300);
-         this.notification = notification != null ? Optional.of(notification) : Optional.<Notification>absent();
-      }
-
-      /**
-       * The HTTP result from the hub.
-       */
-      public final int code;
-
-      /**
-       * Was the result an error?
-       */
-      public final boolean isError;
-
-      /**
-       * An optional message.
-       */
-      public final Optional<String> message;
-
-      /**
-       * An optional error cause.
-       */
-      public final Optional<Throwable> cause;
-
-      /**
-       * The optionally included notification associated with the (error) result.
-       */
-      public final Optional<Notification> notification;
-   }
+public class AsyncPublisher implements Publisher {
 
    /**
     * Creates a publisher with an unbounded notification queue and
@@ -111,7 +71,7 @@ public class AsyncPublisher implements MetricSet {
     * @param auth The optional HTTP 'Basic' auth.
     * @return The (listenable) future result.
     */
-   public final ListenableFuture<Result> enqueueNotification(final Notification notification, final Optional<BasicAuth> auth) {
+   public final ListenableFuture<NotificationResult> enqueueNotification(final Notification notification, final Optional<BasicAuth> auth) {
       try {
          return notificationExecutor.submit(new NotificationCallable(notification, auth));
       } catch(RejectedExecutionException re) {
@@ -122,14 +82,14 @@ public class AsyncPublisher implements MetricSet {
    /**
     * A callable for notifications.
     */
-   private final class NotificationCallable implements Callable<Result> {
+   private final class NotificationCallable implements Callable<NotificationResult> {
 
       NotificationCallable(final Notification notification, final Optional<BasicAuth> auth) {
          this.notification = notification;
          this.auth = auth;
       }
 
-      public Result call() {
+      public NotificationResult call() {
          return postNotification(notification, auth);
       }
 
@@ -137,7 +97,7 @@ public class AsyncPublisher implements MetricSet {
       private final Optional<BasicAuth> auth;
    }
 
-   private Result postNotification(final Notification notification, final Optional<BasicAuth> auth) {
+   private NotificationResult postNotification(final Notification notification, final Optional<BasicAuth> auth) {
 
       Timer.Context ctx = notificationSendTime.time();
 
@@ -158,22 +118,22 @@ public class AsyncPublisher implements MetricSet {
             return ACCEPTED_RESULT;
          } else {
             String message = response.getContentAsString();
-            return new Result(code, message, null, notification);
+            return new NotificationResult(code, message, null, notification);
          }
       } catch(InterruptedException ie) {
          Thread.currentThread().interrupt();
-         return new Result(0, "Interrupted while sending", ie, notification);
+         return new NotificationResult(0, "Interrupted while sending", ie, notification);
       } catch(TimeoutException te) {
-         return new Result(0, "Timeout while sending", te, notification);
+         return new NotificationResult(0, "Timeout while sending", te, notification);
       } catch(ExecutionException ee) {
          if(ee.getCause() != null) {
-            return new Result(0, "Problem sending", ee.getCause(), notification);
+            return new NotificationResult(0, "Problem sending", ee.getCause(), notification);
          } else {
-            return new Result(0, "Problem sending", ee, notification);
+            return new NotificationResult(0, "Problem sending", ee, notification);
          }
       } catch(Throwable t) {
          t.printStackTrace();
-         return new Result(0, "Internal error", t, notification);
+         return new NotificationResult(0, "Internal error", t, notification);
       } finally {
          ctx.stop();
       }
@@ -214,12 +174,6 @@ public class AsyncPublisher implements MetricSet {
       builder.put("notification-send-time", notificationSendTime);
       return builder.build();
    }
-
-   /**
-    * The single instance of accepted result. New instances of result will only be
-    * created on errors.
-    */
-   private static final Result ACCEPTED_RESULT = new Result(Response.Code.ACCEPTED, "", null, null);
 
    /**
     * The executor handling notifications.

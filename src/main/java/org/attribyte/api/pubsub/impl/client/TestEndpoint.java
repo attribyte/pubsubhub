@@ -124,7 +124,7 @@ public class TestEndpoint {
       AsyncPublisher publisher = new AsyncPublisher(numPublisherProcessors, publisherQueueSize, 10); //10s timeout.
       publisher.start();
 
-      AsyncPublisher.Result notificationRes = publisher.enqueueNotification(buildNotification(notificationTopic), hubAuth).get();
+      Publisher.NotificationResult notificationRes = publisher.enqueueNotification(buildNotification(notificationTopic), hubAuth).get();
       if(notificationRes.message.isPresent()) System.out.println(notificationRes.message);
 
       for(int i = 0; i < numNotifications; i++) {
