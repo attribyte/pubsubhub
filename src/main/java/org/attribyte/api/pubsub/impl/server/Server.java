@@ -11,7 +11,6 @@ import com.codahale.metrics.servlets.MetricsServlet;
 import com.codahale.metrics.servlets.PingServlet;
 import com.codahale.metrics.servlets.ThreadDumpServlet;
 import com.google.common.base.Splitter;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.log4j.PropertyConfigurator;
 import org.attribyte.api.Logger;
 import org.attribyte.api.pubsub.HubEndpoint;
@@ -25,7 +24,6 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
-import redis.clients.jedis.JedisPool;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -185,23 +183,6 @@ public class Server {
       server.setStopAtShutdown(true);
       server.start();
       server.join();
-   }
-
-   /**
-    * Initialize the Redis client pool.
-    * @param props The properties.
-    * @return The Redis client pool.
-    */
-   protected static final JedisPool initRedis(final Properties props) {
-      GenericObjectPoolConfig config = new GenericObjectPoolConfig();
-      int minPoolSize = Integer.parseInt(props.getProperty("redis.minPoolSize", "10"));
-      int maxPoolSize = Integer.parseInt(props.getProperty("redis.maxPoolSize", Integer.toString(minPoolSize)));
-      config.setMaxTotal(maxPoolSize);
-      config.setMinIdle(minPoolSize);
-      config.setMaxIdle(minPoolSize);
-      String jedisHost = props.getProperty("redis.host", "127.0.0.1");
-      int jedisPort = Integer.parseInt(props.getProperty("redis.port", "6379"));
-      return new JedisPool(config, jedisHost, jedisPort);
    }
 
    /**

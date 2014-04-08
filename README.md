@@ -1,9 +1,9 @@
 ##About
 
 A framework for building a [pubsubhub](https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html).
-A fully-functional implementation that uses [MySQL](http://www.mysql.com/) is included. A barely tested (OK. Untested.)
-notification component is included that uses [Redis](http://redis.io/) queues to store notifications to allow
-cooperating hubs.
+No particular database is required to use it. However, a fully-functional implementation that
+uses [MySQL](http://www.mysql.com/) for subscription storage
+is included in the distribution.
 
 ##Building
 
