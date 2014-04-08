@@ -226,8 +226,15 @@ public class HubEndpoint implements MetricSet {
     * <dd>A user-defined service for executing callback.
     * Must implement <code>ExecutorService</code> and have a default initializer.
     * </dd>
+    * <dt>maxConcurrentFailedCallbacks</dt>
+    * <dd>The maximum number of failed callbacks concurrently retried.</dd>
+    * <dt>failedCallbackRetryStrategyClass</dt>
+    * <dd>The failed callback retry strategy. Must implement <code>RetryStrategy</code>. Default is exponential backoff.</dd>
     * </dl>
-    *
+    * <dt>failedCallbackRetryMaxAttempts</dt>
+    * <dd>The maximum number of failed callback retry attempts. Default is <code>14</code>.</dd>
+    * <dt>failedCallbackRetryDelayIntervalMillis</dt>
+    * <dd>The callback retry delay interval. Default is <code>100</code> milliseconds.</dd>
     * <h2>Subscriptions</h2>
     * <dl>
     * <dt><b>verifierFactoryClass</b></dt>
@@ -378,6 +385,19 @@ public class HubEndpoint implements MetricSet {
             callbackService = new ThreadPoolExecutor(maxConcurrentCallbacks, maxConcurrentCallbacks,
                     callbackThreadKeepAliveMinutes, TimeUnit.MINUTES, queue,
                     new ThreadFactoryBuilder().setNameFormat("callback-executor-%d").build());
+         }
+
+         int maxConcurrentFailedCallbacks = initUtil.getIntProperty("maxConcurrentFailedCallbacks", 4);
+         failedCallbackService = Executors.newScheduledThreadPool(maxConcurrentFailedCallbacks,
+                 new ThreadFactoryBuilder().setNameFormat("failed-callback-executor-%d").build());
+
+         String failedCallbackRetryStrategyClass = initUtil.getProperty("failedCallbackRetryStrategyClass");
+         if(failedCallbackRetryStrategyClass != null) {
+            failedCallbackRetryStrategy = (RetryStrategy)initUtil.initClass("failedCallbackRetryStrategyClass", RetryStrategy.class);
+         } else {
+            int maxAttempts = initUtil.getIntProperty("failedCallbackRetryMaxAttempts", 14);
+            long delayIntervalMillis = initUtil.getIntProperty("failedCallbackRetryDelayIntervalMillis", 100);
+            failedCallbackRetryStrategy = new RetryStrategy.ExponentialBackoff(maxAttempts, delayIntervalMillis);
          }
 
          verifierFactory = (SubscriptionVerifierFactory)initUtil.initClass("verifierFactoryClass", SubscriptionVerifierFactory.class);
@@ -571,7 +591,7 @@ public class HubEndpoint implements MetricSet {
             if(terminatedNormally) {
                logger.info("Callback factory shutdown normally in " + elapsedMillis + " ms.");
             } else {
-               failedCallbackService.shutdownNow();
+               callbackService.shutdownNow();
                logger.info("Callback factory shutdown *abnormally* in " + elapsedMillis + " ms.");
             }
 
@@ -750,8 +770,9 @@ public class HubEndpoint implements MetricSet {
     */
    public boolean enqueueFailedCallback(final Callback callback) {
       int attempts = callback.incrementAttempts();
-      if(attempts < 128) { //TODO: Confiugure all this...
-         failedCallbackService.schedule(callback, attempts * 30, TimeUnit.SECONDS);
+      long backoffMillis = failedCallbackRetryStrategy.backoffMillis(attempts);
+      if(backoffMillis > 0L) {
+         failedCallbackService.schedule(callback, backoffMillis, TimeUnit.MILLISECONDS);
          return true;
       } else {
          return false;
@@ -790,6 +811,14 @@ public class HubEndpoint implements MetricSet {
    private ExecutorService callbackService;
    private CachedGauge<Integer> callbackServiceQueueSize;
 
+   /**
+    * An executor service + runnable that retries failed callbacks by removing them from the
+    * failed callback queue and submitting them (again) to the callback service.
+    */
+   private ScheduledExecutorService failedCallbackService;
+   private RetryStrategy failedCallbackRetryStrategy;
+
+
    private SubscriptionVerifierFactory verifierFactory;
    private ExecutorService verifierService;
    private ScheduledThreadPoolExecutor verifierRetryService;
@@ -814,13 +843,6 @@ public class HubEndpoint implements MetricSet {
    private Client httpClient;
 
    private int maxShutdownAwaitSeconds = 30;
-
-   /**
-    * An executor service + runnable that retries failed callbacks by removing them from the
-    * failed callback queue and submitting them (again) to the callback service.
-    */
-   private final ScheduledExecutorService failedCallbackService = Executors.newScheduledThreadPool(4,
-           new ThreadFactoryBuilder().setNameFormat("failed-callback-executor-%d").build()); //TODO: Configure
 
    /**
     * A service used to periodically check for expired subscriptions.
