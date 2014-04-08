@@ -588,30 +588,30 @@ public class HubEndpoint implements MetricSet {
             logger.info("Shutting down callback factory...");
             startMillis = System.currentTimeMillis();
             terminatedNormally = callbackFactory.shutdown(maxShutdownAwaitSeconds);
+            elapsedMillis = System.currentTimeMillis() - startMillis;
             if(terminatedNormally) {
                logger.info("Callback factory shutdown normally in " + elapsedMillis + " ms.");
             } else {
-               callbackService.shutdownNow();
                logger.info("Callback factory shutdown *abnormally* in " + elapsedMillis + " ms.");
             }
 
             logger.info("Shutting down notifier factory...");
             startMillis = System.currentTimeMillis();
             terminatedNormally = notifierFactory.shutdown(maxShutdownAwaitSeconds);
+            elapsedMillis = System.currentTimeMillis() - startMillis;
             if(terminatedNormally) {
                logger.info("Notifier factory shutdown normally in " + elapsedMillis + " ms.");
             } else {
-               failedCallbackService.shutdownNow();
                logger.info("Notifier factory shutdown *abnormally* in " + elapsedMillis + " ms.");
             }
 
             logger.info("Shutting down verifier factory...");
             startMillis = System.currentTimeMillis();
             terminatedNormally = verifierFactory.shutdown(maxShutdownAwaitSeconds);
+            elapsedMillis = System.currentTimeMillis() - startMillis;
             if(terminatedNormally) {
                logger.info("Verifier factory shutdown normally in " + elapsedMillis + " ms.");
             } else {
-               failedCallbackService.shutdownNow();
                logger.info("Verifier factory shutdown *abnormally* in " + elapsedMillis + " ms.");
             }
 
