@@ -61,12 +61,8 @@ public class AsyncCallbackFactory implements org.attribyte.api.pubsub.CallbackFa
    @Override
    public void init(final Properties props) {
 
-      System.out.println("INIT ASYNC FACTory");
-
       final int maxConnectionTimeSeconds =
               Integer.parseInt(props.getProperty("asyncCallbackFactory.httpClient.maxConnectionTimeSeconds", "10"));
-
-      System.out.println("max connection time seconds " + maxConnectionTimeSeconds);
 
       final int maxConnectionsPerDeistination =
               Integer.parseInt(props.getProperty("asyncCallbackFactory.httpClient.maxConnectionsPerDestination", "16"));
