@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import com.codahale.metrics.jetty9.InstrumentedHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 import java.io.File;
@@ -137,7 +138,14 @@ public class Server {
 
       ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
-      serverHandlers.addHandler(rootContext);
+
+      //TODO: Next version of metrics allows the prefix to be set...
+
+      InstrumentedHandler instrumentedHandler = new InstrumentedHandler(registry);
+      instrumentedHandler.setName("http-server");
+      instrumentedHandler.setHandler(rootContext);
+
+      serverHandlers.addHandler(instrumentedHandler);
 
       /*
       NCSARequestLog requestLog = new NCSARequestLog(requestLogPath+requestLogBase+"-yyyy_mm_dd.request.log");
