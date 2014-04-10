@@ -5,6 +5,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.protobuf.ByteString;
 import org.attribyte.api.http.Header;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
@@ -54,7 +55,7 @@ public class TestEndpoint {
          hubAuth = Optional.absent();
       }
 
-      Topic notificationTopic = new Topic.Builder().setTopicURL(hubURL + "/notify" + hubTopic).setId(1L).create();
+      String notificationURL = hubURL + "/notify" + hubTopic;
       Topic acceptTopic = new Topic.Builder().setTopicURL(hubTopic).setId(2L).create();
 
       String listenAddress = props.getProperty("endpoint.listenAddress", "127.0.0.1");
@@ -121,15 +122,15 @@ public class TestEndpoint {
       int numPublisherProcessors = Integer.parseInt(props.getProperty("publisher.numProcessors", "4"));
       int publisherQueueSize = Integer.parseInt(props.getProperty("publisher.QueueSize", "0"));
 
-      AsyncPublisher publisher = new AsyncPublisher(numPublisherProcessors, publisherQueueSize, 10); //10s timeout.
+      AsyncPublisher publisher = new AsyncPublisher(numPublisherProcessors, publisherQueueSize, 10); //10s timeout
       publisher.start();
 
-      Publisher.NotificationResult notificationRes = publisher.enqueueNotification(buildNotification(notificationTopic), hubAuth).get();
+      Publisher.NotificationResult notificationRes = publisher.enqueueNotification(buildNotification(notificationURL), hubAuth).get();
       if(notificationRes.message.isPresent()) System.out.println(notificationRes.message);
 
       for(int i = 0; i < numNotifications; i++) {
          if(i % 100 == 0) System.out.println("Enqueued " + i + " notifications...");
-         publisher.enqueueNotification(buildNotification(notificationTopic), hubAuth);
+         publisher.enqueueNotification(buildNotification(notificationURL), hubAuth);
       }
 
       while(completeCount.get() < numNotifications) {
@@ -154,12 +155,12 @@ public class TestEndpoint {
 
    /**
     * Creates a notification with payload the current nano time.
-    * @param topic The topic.
+    * @param url The hub URL.
     * @return The notification.
     */
-   private static Notification buildNotification(final Topic topic) {
+   private static Publisher.Notification buildNotification(final String url) {
       String body = Long.toString(System.nanoTime());
-      return new Notification(topic, EMPTY_HEADERS, body.getBytes(Charsets.UTF_8));
+      return new Publisher.Notification(url, ByteString.copyFrom(body.getBytes(Charsets.UTF_8)));
    }
 
    private static Collection<Header> EMPTY_HEADERS = ImmutableList.of();
