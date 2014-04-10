@@ -6,8 +6,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.*;
-import org.attribyte.api.http.Response;
-import org.attribyte.api.pubsub.Notification;
+import com.google.protobuf.ByteString;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
@@ -39,7 +38,8 @@ public class AsyncPublisher implements Publisher {
     * @param notificationTimeoutSeconds The notification send timeout.
     * @throws Exception on initialization error.
     */
-   public AsyncPublisher(final int numProcessors, final int maxQueueSize, final int notificationTimeoutSeconds)
+   public AsyncPublisher(final int numProcessors, final int maxQueueSize,
+                         final int notificationTimeoutSeconds)
            throws Exception {
       final BlockingQueue<Runnable> notifications;
       assert (numProcessors > 0);
@@ -63,6 +63,28 @@ public class AsyncPublisher implements Publisher {
       this.httpClient.setConnectTimeout(10000L);
       this.httpClient.setCookieStore(new HttpCookieStore.Empty());
       this.notificationTimeoutSeconds = notificationTimeoutSeconds;
+   }
+
+   /**
+    * Enqueue a notification for future posting to the hub with no authentication.
+    * @param hubURL The hub URL.
+    * @param content The notification content.
+    * @return The (listenable) future result.
+    */
+   public final ListenableFuture<NotificationResult> enqueueNotification(final String hubURL, final ByteString content) {
+      return enqueueNotification(new Notification(hubURL, content), Optional.<BasicAuth>absent());
+   }
+
+   /**
+    * Enqueue a notification for future posting to the hub with basic authentication.
+    * @param hubURL The hub URL.
+    * @param content The notification content.
+    * @param auth The basic auth.
+    * @return The (listenable) future result.
+    */
+   public final ListenableFuture<NotificationResult> enqueueNotification(final String hubURL, final ByteString content,
+                                                                         BasicAuth auth) {
+      return enqueueNotification(new Notification(hubURL, content), Optional.of(auth));
    }
 
    /**
@@ -103,18 +125,18 @@ public class AsyncPublisher implements Publisher {
 
       try {
          ContentResponse response = auth.isPresent() ?
-                 httpClient.POST(notification.getTopic().getURL())
-                         .content(new ByteBufferContentProvider(notification.getContent().asReadOnlyByteBuffer()))
+                 httpClient.POST(notification.url)
+                         .content(new ByteBufferContentProvider(notification.content.asReadOnlyByteBuffer()))
                          .timeout(notificationTimeoutSeconds, TimeUnit.SECONDS)
                          .header(BasicAuth.AUTH_HEADER_NAME, auth.get().headerValue)
                          .send() :
-                 httpClient.POST(notification.getTopic().getURL())
-                         .content(new ByteBufferContentProvider(notification.getContent().asReadOnlyByteBuffer()))
+                 httpClient.POST(notification.url)
+                         .content(new ByteBufferContentProvider(notification.content.asReadOnlyByteBuffer()))
                          .timeout(notificationTimeoutSeconds, TimeUnit.SECONDS)
                          .send();
 
          int code = response.getStatus();
-         if(code == Response.Code.ACCEPTED) {
+         if(code == HTTP_ACCEPTED) {
             return ACCEPTED_RESULT;
          } else {
             String message = response.getContentAsString();
@@ -147,7 +169,7 @@ public class AsyncPublisher implements Publisher {
     * @throws Exception on start error.
     */
    public void start() throws Exception {
-      this.httpClient.start();
+      httpClient.start();
    }
 
    /**
@@ -156,12 +178,17 @@ public class AsyncPublisher implements Publisher {
     * @throws Exception on shutdown error.
     */
    public void shutdown(int maxWaitSeconds) throws Exception {
-      this.notificationExecutor.shutdown();
-      this.notificationExecutor.awaitTermination(maxWaitSeconds, TimeUnit.SECONDS);
-      if(!this.notificationExecutor.isShutdown()) {
-         this.notificationExecutor.shutdownNow();
+      shutdown(this.notificationExecutor, this.httpClient, maxWaitSeconds);
+   }
+
+   private static void shutdown(final ListeningExecutorService notificationExecutor,
+                                final HttpClient httpClient, final int maxWaitSeconds) throws Exception {
+      notificationExecutor.shutdown();
+      notificationExecutor.awaitTermination(maxWaitSeconds, TimeUnit.SECONDS);
+      if(!notificationExecutor.isShutdown()) {
+         notificationExecutor.shutdownNow();
       }
-      this.httpClient.stop();
+      httpClient.stop();
    }
 
    /**

@@ -1,0 +1,41 @@
+<project name="pubsubhub_publisher" default="dist" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+    <description>Build the Attribyte, LLC pubsub project</description>
+
+    <path id="classpath">
+        <fileset refid="ivy.fileset"/>
+        <pathelement location="build/"/>
+    </path>
+
+    <target name="resolve" description="Use ivy to resolve classpaths">
+        <ivy:resolve file="ivy_publisher.xml" conf="compile"/>
+        <ivy:cachefileset setid="ivy.fileset" conf="compile"/>
+    </target>
+
+    <target name="init" depends="resolve">
+        <tstamp/>
+        <mkdir dir="build/"/>
+    </target>
+
+    <target name="compile" depends="init" description="Compiles the source">
+        <javac includeantruntime="false"
+               srcdir="src/main/java"
+               includes="org/attribyte/api/pubsub/impl/client/AsyncPublisher.java,
+                         org/attribyte/api/pubsub/impl/client/BasicAuth.java,
+                         org/attribyte/api/pubsub/impl/client/Publisher.java"
+               destdir="build" debug="on">
+            <classpath refid="classpath"/>
+        </javac>
+    </target>
+
+    <target name="dist" depends="compile" description="Creates the distribution">
+        <mkdir dir="dist/lib"/>
+        <jar jarfile="dist/lib/attribyte-pubsub-publisher.0.1.0.jar" basedir="build"/>
+    </target>
+
+    <target name="clean" description="Removes all build files">
+        <delete dir="build"/>
+        <delete dir="dist"/>
+    </target>
+
+</project>

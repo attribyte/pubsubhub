@@ -4,8 +4,7 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.attribyte.api.http.Response;
-import org.attribyte.api.pubsub.Notification;
+import com.google.protobuf.ByteString;
 
 import java.util.Map;
 
@@ -13,6 +12,22 @@ import java.util.Map;
  * Asynchronously pushes notifications to hubs.
  */
 public interface Publisher extends MetricSet {
+
+   public static class Notification {
+
+      /**
+       * Creates a notification.
+       * @param url The hub URL that will accept the notification.
+       * @param content The content.
+       */
+      public Notification(final String url, final ByteString content) {
+         this.url = url;
+         this.content = content;
+      }
+
+      public final String url;
+      public final ByteString content;
+   }
 
    /**
     * A notification publish result.
@@ -84,8 +99,13 @@ public interface Publisher extends MetricSet {
    public Map<String, Metric> getMetrics();
 
    /**
+    * The HTTP 'Accepted' code (202).
+    */
+   static final int HTTP_ACCEPTED = 202;
+
+   /**
     * The single instance of accepted result. New instances of result will only be
     * created on errors.
     */
-   static final NotificationResult ACCEPTED_RESULT = new NotificationResult(Response.Code.ACCEPTED, "", null, null);
+   static final NotificationResult ACCEPTED_RESULT = new NotificationResult(HTTP_ACCEPTED, "", null, null);
 }
