@@ -47,15 +47,30 @@ public class BasicAuthFilter implements URLFilter {
          this.pattern = pattern;
          this.username = username;
          this.password = password;
+         this.expectedHeaderValue = BasicAuthScheme.buildAuthHeaderValue(username, password);
       }
 
       final Pattern pattern;
       final String username;
       final String password;
+      final String expectedHeaderValue;
+   }
+
+   public boolean reject(final String url, final String authHeaderValue) {
+      if(patterns != null) {
+         for(PatternAuth patternAuth : patterns) {
+            if(patternAuth.pattern.matcher(url).matches()) {
+               return authHeaderValue == null || !authHeaderValue.equals(patternAuth.expectedHeaderValue);
+            }
+         }
+         return false;
+      } else {
+         return false;
+      }
    }
 
    @Override
-   public boolean reject(String url, Request request) {
+   public boolean reject(final String url, final Request request) {
       if(patterns != null) {
          for(PatternAuth patternAuth : patterns) {
             if(patternAuth.pattern.matcher(url).matches()) {

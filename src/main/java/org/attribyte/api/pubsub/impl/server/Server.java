@@ -11,10 +11,13 @@ import com.codahale.metrics.servlets.MetricsServlet;
 import com.codahale.metrics.servlets.PingServlet;
 import com.codahale.metrics.servlets.ThreadDumpServlet;
 import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import org.apache.log4j.PropertyConfigurator;
 import org.attribyte.api.Logger;
+import org.attribyte.api.pubsub.BasicAuthFilter;
 import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Topic;
+import org.attribyte.api.pubsub.URLFilter;
 import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -31,6 +34,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -163,7 +167,16 @@ public class Server {
       HubServlet hubServlet = new HubServlet(endpoint, logger);
       rootContext.addServlet(new ServletHolder(hubServlet), "/subscribe/*");
 
-      BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, logger);
+      InitUtil filterInit = new InitUtil("publish.", props);
+      List<BasicAuthFilter> publishURLFilters = Lists.newArrayList();
+      List<Object> publishURLFilterObjects = filterInit.initClassList("topicURLFilters", BasicAuthFilter.class);
+      for(Object o : publishURLFilterObjects) {
+         BasicAuthFilter filter = (BasicAuthFilter)o;
+         filter.init(filterInit.getProperties());
+         publishURLFilters.add(filter);
+      }
+
+      BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, logger, publishURLFilters);
       rootContext.addServlet(new ServletHolder(broadcastServlet), "/notify/*");
 
       MetricsServlet metricsServlet = new MetricsServlet(registry);

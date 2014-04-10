@@ -15,20 +15,26 @@
 
 package org.attribyte.api.pubsub.impl.server;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
+import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
 import org.attribyte.api.http.impl.servlet.Bridge;
+import org.attribyte.api.pubsub.BasicAuthFilter;
 import org.attribyte.api.pubsub.HubDatastore;
 import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
+import org.attribyte.api.pubsub.URLFilter;
+import org.attribyte.api.pubsub.impl.client.BasicAuth;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -42,19 +48,22 @@ public class BroadcastServlet extends ServletBase {
     * Creates a servlet with a maximum body size of 1MB.
     * @param endpoint The hub endpoint.
     */
-   public BroadcastServlet(final HubEndpoint endpoint, final Logger logger) {
-      this(endpoint, 1024 * 1000, logger);
+   public BroadcastServlet(final HubEndpoint endpoint, final Logger logger,
+                           final List<BasicAuthFilter> filters) {
+      this(endpoint, 1024 * 1000, logger, filters);
    }
 
    /**
     * Creates a servlet with a specified maximum body size.
     * @param endpoint The hub endpoint.
     */
-   public BroadcastServlet(final HubEndpoint endpoint, final int maxBodyBytes, final Logger logger) {
+   public BroadcastServlet(final HubEndpoint endpoint, final int maxBodyBytes, final Logger logger,
+                           final List<BasicAuthFilter> filters) {
       this.endpoint = endpoint;
       this.datastore = endpoint.getDatastore();
       this.maxBodyBytes = maxBodyBytes;
       this.logger = logger;
+      this.filters = filters != null ? ImmutableList.<BasicAuthFilter>copyOf(filters) : ImmutableList.<BasicAuthFilter>of();
    }
 
    @Override
@@ -69,6 +78,16 @@ public class BroadcastServlet extends ServletBase {
       String topicURL = request.getPathInfo();
       Response endpointResponse;
       if(topicURL != null) {
+         if(filters.size() > 0) {
+            String checkHeader = request.getHeader(BasicAuth.AUTH_HEADER_NAME);
+            for(BasicAuthFilter filter : filters) {
+               if(filter.reject(topicURL, checkHeader)) {
+                  response.sendError(Response.Code.UNAUTHORIZED, "Unauthorized");
+                  return;
+               }
+            }
+         }
+
          try {
             Topic topic = datastore.getTopic(topicURL, false);
             if(topic != null) {
@@ -129,5 +148,10 @@ public class BroadcastServlet extends ServletBase {
     * Ensure shutdown happens only once.
     */
    private AtomicBoolean isShutdown = new AtomicBoolean(false);
+
+   /**
+    * A list of basic auth filters.
+    */
+   private final List<BasicAuthFilter> filters;
 
 }
