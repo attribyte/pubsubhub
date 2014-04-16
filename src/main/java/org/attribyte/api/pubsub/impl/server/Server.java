@@ -17,7 +17,6 @@ import org.attribyte.api.Logger;
 import org.attribyte.api.pubsub.BasicAuthFilter;
 import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Topic;
-import org.attribyte.api.pubsub.URLFilter;
 import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -26,7 +25,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import com.codahale.metrics.jetty9.InstrumentedHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 import java.io.File;
@@ -143,13 +141,13 @@ public class Server {
       ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
 
-      //TODO: Next version of metrics allows the prefix to be set...
-
+      //TODO: Introduces incompatible dependency...
+      /*
       InstrumentedHandler instrumentedHandler = new InstrumentedHandler(registry);
       instrumentedHandler.setName("http-server");
       instrumentedHandler.setHandler(rootContext);
-
       serverHandlers.addHandler(instrumentedHandler);
+      */
 
       /*
       NCSARequestLog requestLog = new NCSARequestLog(requestLogPath+requestLogBase+"-yyyy_mm_dd.request.log");
