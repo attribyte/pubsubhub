@@ -140,6 +140,7 @@ public class Server {
 
       ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
+      serverHandlers.addHandler(rootContext);
 
       //TODO: Introduces incompatible dependency...
       /*
