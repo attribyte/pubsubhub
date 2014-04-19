@@ -31,10 +31,6 @@ are available:
 * [MySQL Connector (GPL)](http://dev.mysql.com/downloads/connector/j/)
 * [Typesafe Config](https://github.com/typesafehub/config)
 
-##Additional Dependencies for Default Implementation with Redis-Stored Notifications
-
-* [Jedis](https://github.com/xetorthio/jedis)
-
 ##License
 
 Copyright 2014 [Attribyte, LLC](https://attribyte.com)
