@@ -53,7 +53,7 @@ public class Server {
 
       Properties props = new Properties();
       Properties logProps = new Properties();
-      loadProperties(args, props, logProps);
+      CLI.loadProperties(args, props, logProps);
 
       final Logger logger = initLogger(props, logProps);
       final HubEndpoint endpoint = new HubEndpoint("endpoint.", props, logger, null);
@@ -227,45 +227,6 @@ public class Server {
 
          public void error(final String s, final Throwable throwable) { logger.error(s, throwable); }
       };
-   }
-
-   protected static final void loadProperties(final String[] filenames, final Properties props, final Properties logProps) {
-
-      for(String filename : filenames) {
-
-         File f = new File(filename);
-
-         if(!f.exists()) {
-            System.err.println("Start-up error: The configuration file, '" + f.getAbsolutePath() + " does not exist");
-            System.exit(0);
-         }
-
-         if(!f.canRead()) {
-            System.err.println("Start-up error: The configuration file, '" + f.getAbsolutePath() + " is not readable");
-            System.exit(0);
-         }
-
-         FileInputStream fis = null;
-         Properties currProps = new Properties();
-
-         try {
-            fis = new FileInputStream(f);
-            currProps.load(fis);
-            if(f.getName().startsWith("log.")) {
-               logProps.putAll(currProps);
-            } else {
-               props.putAll(currProps);
-            }
-         } catch(IOException ioe) {
-            //TODO
-         } finally {
-            try {
-               fis.close();
-            } catch(Exception e) {
-               //TODO
-            }
-         }
-      }
    }
 
    /**

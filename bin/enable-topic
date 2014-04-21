@@ -1,0 +1,26 @@
+JAVA_EXE="/usr/local/jdk8/bin/java"
+INSTALL_DIR="/var/attribyte/pubsub"
+LIB_DIR="$INSTALL_DIR/lib"
+EXTLIB_DIR="$INSTALL_DIR/dist/extlib"
+DISTLIB="$INSTALL_DIR/dist/lib/attribyte-pubsub.0.1.0.jar"
+CLASSPATH=$DISTLIB
+
+for jar in `ls $EXTLIB_DIR/*.jar`;
+do
+        CLASSPATH=$CLASSPATH:$jar
+done
+
+
+for jar in `ls $LIB_DIR/*.jar`;
+do
+        CLASSPATH=$CLASSPATH:$jar
+done
+
+export CLASSPATH
+
+if [ "test$1" = "test" ]; then
+    echo "The topic URL Must be specified"
+    exit 1
+fi
+
+$JAVA_EXE org.attribyte.api.pubsub.impl.server.CLI -prefix=endpoint.acp.connection.pubsub. -enableTopic=$1 $INSTALL_DIR/config/config.properties

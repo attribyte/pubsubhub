@@ -50,18 +50,20 @@ public class SimpleJDBCDatastore extends RDBHubDatastore {
 
       InitUtil initProps = new InitUtil(prefix, props);
 
+      this.user = initProps.getProperty("user", "");
+      this.password = initProps.getProperty("password", "");
+      this.driver = initProps.getProperty("driver", "com.mysql.jdbc.Driver");
+
+      try {
+         Class.forName("com.mysql.jdbc.Driver");
+      } catch(Exception e) {
+         throw new InitializationException("Unable to initialize JDBC driver", e);
+      }
+
       if(initProps.getProperty("connectionString") == null) {
          this.host = initProps.getProperty("host", null);
          this.port = initProps.getProperty("port", "3306");
          this.db = initProps.getProperty("db", null);
-         this.user = initProps.getProperty("user", "");
-         this.password = initProps.getProperty("password", "");
-         this.driver = initProps.getProperty("driver", "com.mysql.jdbc.Driver");
-         try {
-            Class.forName("com.mysql.jdbc.Driver");
-         } catch(Exception e) {
-            throw new InitializationException("Unable to initialize JDBC driver", e);
-         }
 
          if(host == null) {
             initProps.throwRequiredException("host");
