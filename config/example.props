@@ -5,15 +5,6 @@
 http.address=127.0.0.1
 http.port=8086
 
-#############################
-# StoredNotificationServlet #
-#############################
-
-redis.host=127.0.0.1
-redis.port=6379
-redis.minPoolSize=32
-redis.maxPoolSize=32
-
 #################
 # Hub Datastore #
 #################
