@@ -21,20 +21,21 @@ import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 public class Server {
@@ -150,18 +151,39 @@ public class Server {
       serverHandlers.addHandler(instrumentedHandler);
       */
 
-      /*
-      NCSARequestLog requestLog = new NCSARequestLog(requestLogPath+requestLogBase+"-yyyy_mm_dd.request.log");
-      requestLog.setRetainDays(requestLogRetainDays);
-      requestLog.setAppend(true);
-      requestLog.setExtended(requestLogExtendedFormat);
-      requestLog.setLogTimeZone(requestLogTimeZone);
-      requestLog.setLogCookies(false);
+      String requestLogPath = props.getProperty("http.log.path", "").trim();
+      if(StringUtil.hasContent(requestLogPath)) {
+         File testFile = new File(requestLogPath);
+         if(!testFile.exists()) {
+            System.err.println("The 'http.log.path', '" + testFile.getAbsolutePath() + "' must exist");
+            System.exit(1);
+         }
+         if(!testFile.isDirectory()) {
+            System.err.println("The 'http.log.path', '" + testFile.getAbsolutePath() + "' must be a directory");
+            System.exit(1);
+         }
+         if(!testFile.canWrite()) {
+            System.err.println("The 'http.log.path', '" + testFile.getAbsolutePath() + "' is not writable");
+            System.exit(1);
+         }
 
-      RequestLogHandler requestLogHandler = new RequestLogHandler();
-      requestLogHandler.setRequestLog(requestLog);
-      serverHandlers.addHandler(requestLogHandler);
-      */
+         int requestLogRetainDays = Integer.parseInt(props.getProperty("http.log.retainDays", "14"));
+         boolean requestLogExtendedFormat = props.getProperty("http.log.extendedFormat", "true").equalsIgnoreCase("true");
+         String requestLogTimeZone = props.getProperty("http.log.timeZone", TimeZone.getDefault().getID());
+         String requestLogPrefix = props.getProperty("http.log.prefix", "");
+
+         NCSARequestLog requestLog = new NCSARequestLog(requestLogPrefix + requestLogPath + "-yyyy_mm_dd.request.log");
+         requestLog.setRetainDays(requestLogRetainDays);
+         requestLog.setAppend(true);
+         requestLog.setExtended(requestLogExtendedFormat);
+         requestLog.setLogTimeZone(requestLogTimeZone);
+         requestLog.setLogCookies(false);
+         requestLog.setPreferProxiedForAddress(true);
+
+         RequestLogHandler requestLogHandler = new RequestLogHandler();
+         requestLogHandler.setRequestLog(requestLog);
+         serverHandlers.addHandler(requestLogHandler);
+      }
 
       HubServlet hubServlet = new HubServlet(endpoint, logger);
       rootContext.addServlet(new ServletHolder(hubServlet), "/subscribe/*");
