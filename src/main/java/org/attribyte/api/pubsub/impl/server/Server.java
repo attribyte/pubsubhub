@@ -153,15 +153,23 @@ public class Server {
 
       String requestLogPath = props.getProperty("http.log.path", "").trim();
       if(StringUtil.hasContent(requestLogPath)) {
+
+         if(!requestLogPath.endsWith("/")) {
+            requestLogPath = requestLogPath + "/";
+         }
+
          File testFile = new File(requestLogPath);
+
          if(!testFile.exists()) {
             System.err.println("The 'http.log.path', '" + testFile.getAbsolutePath() + "' must exist");
             System.exit(1);
          }
+
          if(!testFile.isDirectory()) {
             System.err.println("The 'http.log.path', '" + testFile.getAbsolutePath() + "' must be a directory");
             System.exit(1);
          }
+
          if(!testFile.canWrite()) {
             System.err.println("The 'http.log.path', '" + testFile.getAbsolutePath() + "' is not writable");
             System.exit(1);
@@ -170,9 +178,9 @@ public class Server {
          int requestLogRetainDays = Integer.parseInt(props.getProperty("http.log.retainDays", "14"));
          boolean requestLogExtendedFormat = props.getProperty("http.log.extendedFormat", "true").equalsIgnoreCase("true");
          String requestLogTimeZone = props.getProperty("http.log.timeZone", TimeZone.getDefault().getID());
-         String requestLogPrefix = props.getProperty("http.log.prefix", "");
+         String requestLogPrefix = props.getProperty("http.log.prefix", "requests");
 
-         NCSARequestLog requestLog = new NCSARequestLog(requestLogPrefix + requestLogPath + "-yyyy_mm_dd.request.log");
+         NCSARequestLog requestLog = new NCSARequestLog(requestLogPath + requestLogPrefix + "-yyyy_mm_dd.log");
          requestLog.setRetainDays(requestLogRetainDays);
          requestLog.setAppend(true);
          requestLog.setExtended(requestLogExtendedFormat);
