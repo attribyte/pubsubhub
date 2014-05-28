@@ -45,23 +45,43 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class BroadcastServlet extends ServletBase {
 
    /**
-    * Creates a servlet with a maximum body size of 1MB.
+    * The default maximum body size (1MB).
+    */
+   public static final int DEFAULT_MAX_BODY_BYTES = 1024 * 1000;
+
+
+   /**
+    * The default for topic auto-create (false).
+    */
+   public static final boolean DEFAULT_AUTOCREATE_TOPICS = false;
+
+   /**
+    * Creates a servlet with a maximum body size of 1MB and topics that must exist
+    * before notifications are accepted.
     * @param endpoint The hub endpoint.
+    * @param logger A logger.
+    * @param filters A list of filters to be applied.
     */
    public BroadcastServlet(final HubEndpoint endpoint, final Logger logger,
                            final List<BasicAuthFilter> filters) {
-      this(endpoint, 1024 * 1000, logger, filters);
+      this(endpoint, DEFAULT_MAX_BODY_BYTES, DEFAULT_AUTOCREATE_TOPICS, logger, filters);
    }
 
    /**
     * Creates a servlet with a specified maximum body size.
     * @param endpoint The hub endpoint.
+    * @param maxBodyBytes The maximum size of accepted for a notification body.
+    * @param logger The logger.
+    * @param filters A ist of filters to be applied.
     */
-   public BroadcastServlet(final HubEndpoint endpoint, final int maxBodyBytes, final Logger logger,
+   public BroadcastServlet(final HubEndpoint endpoint, final int maxBodyBytes,
+                           final boolean autocreateTopics,
+                           final Logger logger,
                            final List<BasicAuthFilter> filters) {
       this.endpoint = endpoint;
       this.datastore = endpoint.getDatastore();
       this.maxBodyBytes = maxBodyBytes;
+      this.autocreateTopics = autocreateTopics;
       this.logger = logger;
       this.filters = filters != null ? ImmutableList.<BasicAuthFilter>copyOf(filters) : ImmutableList.<BasicAuthFilter>of();
    }
@@ -89,7 +109,7 @@ public class BroadcastServlet extends ServletBase {
          }
 
          try {
-            Topic topic = datastore.getTopic(topicURL, false);
+            Topic topic = datastore.getTopic(topicURL, autocreateTopics);
             if(topic != null) {
                Notification notification = new Notification(topic, null, broadcastContent); //No custom headers...
                endpoint.enqueueNotification(notification);
@@ -153,5 +173,11 @@ public class BroadcastServlet extends ServletBase {
     * A list of basic auth filters.
     */
    private final List<BasicAuthFilter> filters;
+
+
+   /**
+    * Should unknown topics be automatically created?
+    */
+   private final boolean autocreateTopics;
 
 }

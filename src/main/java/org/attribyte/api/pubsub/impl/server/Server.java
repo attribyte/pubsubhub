@@ -205,7 +205,10 @@ public class Server {
          publishURLFilters.add(filter);
       }
 
-      BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, logger, publishURLFilters);
+      int maxBodySizeBytes = filterInit.getIntProperty("maxBodySizeBytes", BroadcastServlet.DEFAULT_MAX_BODY_BYTES);
+      boolean autocreateTopics = filterInit.getProperty("autocreateTopics", "false").equalsIgnoreCase("true");
+
+      BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics, logger, publishURLFilters);
       rootContext.addServlet(new ServletHolder(broadcastServlet), "/notify/*");
 
       MetricsServlet metricsServlet = new MetricsServlet(registry);
