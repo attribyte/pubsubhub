@@ -619,7 +619,11 @@ public class HubEndpoint implements MetricSet {
             Thread.currentThread().interrupt();
          }
 
-         httpClient.shutdown();
+         try {
+            httpClient.shutdown();
+         } catch(Exception e) {
+            logger.error("HTTP client shutdown abnormally", e);
+         }
          datastore.shutdown();
 
          logger.info("Endpoint shutdown complete.");
