@@ -103,7 +103,7 @@ endpoint.maxLeaseDays=3650
 # General #
 ###########
 
-endpoint.httpclient.class=org.attribyte.api.http.impl.commons.Client
+endpoint.httpclient.class=org.attribyte.api.http.impl.commons.Commons3Client
 endpoint.httpclient.connectionTimeoutMillis=5000
 endpoint.httpclient.socketTimeoutMillis=5000
 endpoint.httpclient.userAgent=Attribyte/PubSub
@@ -123,3 +123,4 @@ publish.topicURLFilters=org.attribyte.api.pubsub.BasicAuthFilter
 publish.basicauth.00.pattern=/.*
 publish.basicauth.00.username=test23
 publish.basicauth.00.password=test23
+publish.autocreateTopics=true
