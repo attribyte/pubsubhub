@@ -93,8 +93,8 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
             verifyRequest = hub.getDatastore().addAuth(subscriber, verifyRequest);
          }
 
-         Response verifyResponse = hub.getHttpClient().send(verifyRequest, true, hub.getMaxParameterBytes());
-         int responseCode = verifyResponse.getResponseCode();
+         Response verifyResponse = hub.getHttpClient().send(verifyRequest);
+         int responseCode = verifyResponse.getStatusCode();
 
          String charset = verifyResponse.getCharset(hub.getDefaultEncoding());
          String body = verifyResponse.getBody() == null ? "" : verifyResponse.getBody().toString(charset);

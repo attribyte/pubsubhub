@@ -52,7 +52,7 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
          } finally {
             ctx.stop();
          }
-         if(!Response.Code.isOK(response.getResponseCode())) {
+         if(!Response.Code.isOK(response.getStatusCode())) {
             failedCallbacks.mark();
             boolean enqueued = hub.enqueueFailedCallback(this);
             if(!enqueued) {
