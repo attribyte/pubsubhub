@@ -22,7 +22,12 @@ import org.attribyte.api.DatastoreException;
 import org.attribyte.api.http.GetRequestBuilder;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
-import org.attribyte.api.pubsub.*;
+import org.attribyte.api.pubsub.HubDatastore;
+import org.attribyte.api.pubsub.HubEndpoint;
+import org.attribyte.api.pubsub.Subscriber;
+import org.attribyte.api.pubsub.Subscription;
+import org.attribyte.api.pubsub.SubscriptionRequest;
+import org.attribyte.api.pubsub.Topic;
 import org.attribyte.util.StringUtil;
 import org.attribyte.util.URIEncoder;
 
@@ -98,6 +103,7 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
 
          String charset = verifyResponse.getCharset(hub.getDefaultEncoding());
          String body = verifyResponse.getBody() == null ? "" : verifyResponse.getBody().toString(charset);
+         boolean bodyMatchesChallenge = body.trim().equals(challenge);
 
          SubscriptionRequest.Mode requestMode = SubscriptionRequest.Mode.fromString(mode);
          Subscription.Status status;
@@ -111,7 +117,7 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
 
          if(responseCode == Response.Code.NOT_FOUND) {
             failedMeter.mark();
-         } else if(Response.Code.isOK(responseCode) && body.trim().equals(challenge)) {
+         } else if(Response.Code.isOK(responseCode) && bodyMatchesChallenge) {
             HubDatastore datastore = hub.getDatastore();
             Subscription subscription = datastore.getSubscription(topicURL, callbackURL);
             Subscription.Builder builder;
@@ -126,6 +132,8 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
             builder.setLeaseSeconds(Integer.parseInt(leaseSecondsStr));
             builder.setSecret(hubSecret);
             datastore.updateSubscription(builder.create(), true); //Extend lease...
+         } else if(!bodyMatchesChallenge) {
+            failedMeter.mark();
          } else { //Async verification error
             boolean enqueued = hub.enqueueVerifierRetry(this);
             if(!enqueued) {
@@ -142,7 +150,7 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
          }
       } catch(DatastoreException de) {
          failedMeter.mark();
-         hub.getLogger().error("Problem setting auth for subscriber", de);
+         hub.getLogger().error("Problem updating subscription", de);
       } finally {
          ctx.stop();
       }
