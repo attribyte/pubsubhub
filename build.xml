@@ -32,17 +32,13 @@
         <jar jarfile="dist/lib/attribyte-pubsub.0.1.0.jar" basedir="build"/>
     </target>
 
-    <target name="full-dist" depends="compile" description="Creates the distribution">
-        <mkdir dir="dist/lib"/>
-        <mkdir dir="dist/extlib"/>
-        <jar jarfile="dist/lib/attribyte-pubsub.0.1.0.jar" basedir="build"/>
+    <target name="full-dist" depends="dist" description="Creates the distribution">
         <ivy:retrieve pattern="dist/extlib/[organisation]-[artifact]-[revision].[ext]"
-             conf="compile"/>
+                      conf="compile"/>
     </target>
 
     <target name="clean" description="Removes all build files">
         <delete dir="build"/>
         <delete dir="dist"/>
     </target>
-
 </project>

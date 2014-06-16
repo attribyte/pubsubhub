@@ -17,7 +17,6 @@ package org.attribyte.api.pubsub;
 
 import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.google.common.collect.ImmutableMap;
@@ -762,8 +761,7 @@ public class HubEndpoint implements MetricSet {
     * @param subscription The verified subscription.
     */
    public void subscriptionVerified(Subscription subscription) {
-      failedCallbackMeters.remove(subscription.getId());
-      abandonedCallbackMeters.remove(subscription.getId());
+      subscriptionCallbackMeters.remove(subscription.getId());
    }
 
    /**
@@ -801,6 +799,12 @@ public class HubEndpoint implements MetricSet {
     */
    public void enqueueCallback(final Callback callback) {
       callback.incrementAttempts();
+      SubscriptionCallbackMeters meters = subscriptionCallbackMeters.get(callback.subscriptionId);
+      if(meters == null) {
+         meters = new SubscriptionCallbackMeters(callback.subscriptionId);
+         subscriptionCallbackMeters.put(callback.subscriptionId, meters);
+      }
+      meters.callbackMeter.mark();
       callbackService.submit(callback);
    }
 
@@ -817,20 +821,20 @@ public class HubEndpoint implements MetricSet {
       long backoffMillis = failedCallbackRetryStrategy.backoffMillis(attempts);
       if(backoffMillis > 0L) {
          failedCallbackService.schedule(callback, backoffMillis, TimeUnit.MILLISECONDS);
-         Meter failedCallbackMeter = failedCallbackMeters.get(callback.subscriptionId);
-         if(failedCallbackMeter == null) {
-            failedCallbackMeter = new Meter();
-            failedCallbackMeters.put(callback.subscriptionId, failedCallbackMeter);
+         SubscriptionCallbackMeters meters = subscriptionCallbackMeters.get(callback.subscriptionId);
+         if(meters == null) {
+            meters = new SubscriptionCallbackMeters(callback.subscriptionId);
+            subscriptionCallbackMeters.put(callback.subscriptionId, meters);
          }
-         failedCallbackMeter.mark();
+         meters.failedCallbackMeter.mark();
          return true;
       } else {
-         Meter abandonedCallbackMeter = abandonedCallbackMeters.get(callback.subscriptionId);
-         if(abandonedCallbackMeter == null) {
-            abandonedCallbackMeter = new Meter();
-            abandonedCallbackMeters.put(callback.subscriptionId, abandonedCallbackMeter);
+         SubscriptionCallbackMeters meters = subscriptionCallbackMeters.get(callback.subscriptionId);
+         if(meters == null) {
+            meters = new SubscriptionCallbackMeters(callback.subscriptionId);
+            subscriptionCallbackMeters.put(callback.subscriptionId, meters);
          }
-         abandonedCallbackMeter.mark();
+         meters.abandonedCallbackMeter.mark();
          maybeDisableSubscription(callback);
          return false;
       }
@@ -840,9 +844,9 @@ public class HubEndpoint implements MetricSet {
       try {
          Subscription subscription = datastore.getSubscription(callback.subscriptionId);
          if(subscription != null) {
-            Meter failedCallbackMeter = failedCallbackMeters.get(callback.subscriptionId);
-            Meter abandonedCallbackMeter = abandonedCallbackMeters.get(callback.subscriptionId);
-            if(disableSubscriptionStrategy.disableSubscription(subscription, failedCallbackMeter, abandonedCallbackMeter)) {
+            SubscriptionCallbackMeters meters = subscriptionCallbackMeters.get(callback.subscriptionId);
+            if(meters != null && disableSubscriptionStrategy.disableSubscription(subscription,
+                    meters.callbackMeter, meters.failedCallbackMeter, meters.abandonedCallbackMeter)) {
                datastore.changeSubscriptionStatus(callback.subscriptionId, Subscription.Status.REMOVED, 0);
                autoDisabledSubscriptions.inc();
                logger.warn("Auto-disabled subscription '" + subscription.callbackURL + "' (" + callback.subscriptionId + ")");
@@ -896,14 +900,19 @@ public class HubEndpoint implements MetricSet {
    private Counter autoDisabledSubscriptions = new Counter();
 
    /**
-    * Tracks failed callback vs subscription id.
+    * Gets meters for a subscription.
+    * @param subscriptionId The subscription id.
+    * @return The meters or <code>null</code> if the subscription does not exist or no callbacks have been made.
     */
-   private final Map<Long, Meter> failedCallbackMeters = Maps.newConcurrentMap();
+   public SubscriptionCallbackMeters getCallbackMeters(final long subscriptionId) {
+      return subscriptionCallbackMeters.get(subscriptionId);
+   }
 
    /**
-    * Tracks abandoned callback vs subscription id.
+    * Tracks callback stats vs subscription id.
     */
-   private final Map<Long, Meter> abandonedCallbackMeters = Maps.newConcurrentMap();
+   private final Map<Long, SubscriptionCallbackMeters> subscriptionCallbackMeters = Maps.newConcurrentMap();
+
 
    private SubscriptionVerifierFactory verifierFactory;
    private ExecutorService verifierService;

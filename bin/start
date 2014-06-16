@@ -1,4 +1,4 @@
-JAVA_EXE="/usr/local/bin/java"
+JAVA_EXE="/usr/local/jdk8/bin/java"
 INSTALL_DIR="/var/attribyte/pubsub"
 LIB_DIR="$INSTALL_DIR/lib"
 EXTLIB_DIR="$INSTALL_DIR/dist/extlib"

@@ -18,6 +18,7 @@ public interface DisableSubscriptionStrategy {
 
       @Override
       public boolean disableSubscription(final Subscription subscription,
+                                         final Meter callbackMeter,
                                          final Meter failedCallbackMeter, final Meter abandonedCallbackMeter) {
          return false;
       }
@@ -30,11 +31,13 @@ public interface DisableSubscriptionStrategy {
    /**
     * Determine if a subscription should be disabled.
     * @param subscription The subscription.
+    * @param callbackMeter Measurement of all callbacks.
     * @param failedCallbackMeter Measurement of failed callbacks since subscription was enabled.
     * @param abandonedCallbackMeter Measurement of abandoned callbacks since subscription was enabled.
     * @return Should the subscription be disabled?
     */
    public boolean disableSubscription(Subscription subscription,
+                                      Meter callbackMeter,
                                       Meter failedCallbackMeter, Meter abandonedCallbackMeter);
 
    /**
