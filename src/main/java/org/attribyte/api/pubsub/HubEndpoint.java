@@ -826,6 +826,7 @@ public class HubEndpoint implements MetricSet {
             meters = new SubscriptionCallbackMeters(callback.subscriptionId);
             subscriptionCallbackMeters.put(callback.subscriptionId, meters);
          }
+         meters.callbackMeter.mark();
          meters.failedCallbackMeter.mark();
          return true;
       } else {
@@ -834,6 +835,7 @@ public class HubEndpoint implements MetricSet {
             meters = new SubscriptionCallbackMeters(callback.subscriptionId);
             subscriptionCallbackMeters.put(callback.subscriptionId, meters);
          }
+         meters.callbackMeter.mark();
          meters.abandonedCallbackMeter.mark();
          maybeDisableSubscription(callback);
          return false;
