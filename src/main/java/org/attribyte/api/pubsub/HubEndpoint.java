@@ -24,13 +24,29 @@ import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InitializationException;
 import org.attribyte.api.InvalidURIException;
 import org.attribyte.api.Logger;
-import org.attribyte.api.http.*;
+import org.attribyte.api.http.AuthScheme;
+import org.attribyte.api.http.Client;
+import org.attribyte.api.http.Request;
+import org.attribyte.api.http.Response;
+import org.attribyte.api.http.ResponseBuilder;
 import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 import org.attribyte.util.URIEncoder;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -727,6 +743,14 @@ public class HubEndpoint implements MetricSet {
 
       verifierService.execute(verifier);
       return new ResponseBuilder(Response.Code.ACCEPTED).create();
+   }
+
+   /**
+    * Reports the successful completion of subscription verification.
+    * @param subscription The verified subscription.
+    */
+   public void subscriptionVerified(Subscription subscription) {
+
    }
 
    /**
