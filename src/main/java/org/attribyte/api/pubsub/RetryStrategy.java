@@ -1,5 +1,7 @@
 package org.attribyte.api.pubsub;
 
+import org.attribyte.api.InitializationException;
+
 import java.util.Properties;
 
 /**
@@ -36,6 +38,10 @@ public interface RetryStrategy {
          return numAttempts < maxAttempts ? ((long)Math.pow(2, numAttempts) * delayIntervalMillis) : -1L;
       }
 
+      public void init(Properties props) throws InitializationException {
+         //Nothing to do...
+      }
+
       private final int maxAttempts;
       private final long delayIntervalMillis;
    }
@@ -46,4 +52,11 @@ public interface RetryStrategy {
     * @return The number of milliseconds. If less than zero, retry will not be attempted.
     */
    public long backoffMillis(final int numAttempts);
+
+   /**
+    * Initialize the strategy.
+    * @param props The properties.
+    * @throws InitializationException on initialization error.
+    */
+   public void init(Properties props) throws InitializationException;
 }

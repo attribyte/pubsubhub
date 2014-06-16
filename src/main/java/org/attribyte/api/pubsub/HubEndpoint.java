@@ -16,9 +16,12 @@
 package org.attribyte.api.pubsub;
 
 import com.codahale.metrics.CachedGauge;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InitializationException;
@@ -410,10 +413,19 @@ public class HubEndpoint implements MetricSet {
          String failedCallbackRetryStrategyClass = initUtil.getProperty("failedCallbackRetryStrategyClass");
          if(failedCallbackRetryStrategyClass != null) {
             failedCallbackRetryStrategy = (RetryStrategy)initUtil.initClass("failedCallbackRetryStrategyClass", RetryStrategy.class);
+            failedCallbackRetryStrategy.init(initUtil.getProperties());
          } else {
             int maxAttempts = initUtil.getIntProperty("failedCallbackRetryMaxAttempts", 14);
             long delayIntervalMillis = initUtil.getIntProperty("failedCallbackRetryDelayIntervalMillis", 100);
             failedCallbackRetryStrategy = new RetryStrategy.ExponentialBackoff(maxAttempts, delayIntervalMillis);
+         }
+
+         String disableSubscriptionStrategyClass = initUtil.getProperty("disableSubscriptionStrategyClass");
+         if(disableSubscriptionStrategyClass != null) {
+            disableSubscriptionStrategy = (DisableSubscriptionStrategy)initUtil.initClass("disableSubscriptionStrategyClass", DisableSubscriptionStrategy.class);
+            disableSubscriptionStrategy.init(initUtil.getProperties());
+         } else {
+            disableSubscriptionStrategy = DisableSubscriptionStrategy.NEVER_DISABLE;
          }
 
          verifierFactory = (SubscriptionVerifierFactory)initUtil.initClass("verifierFactoryClass", SubscriptionVerifierFactory.class);
@@ -750,7 +762,8 @@ public class HubEndpoint implements MetricSet {
     * @param subscription The verified subscription.
     */
    public void subscriptionVerified(Subscription subscription) {
-
+      failedCallbackMeters.remove(subscription.getId());
+      abandonedCallbackMeters.remove(subscription.getId());
    }
 
    /**
@@ -797,13 +810,46 @@ public class HubEndpoint implements MetricSet {
     * @return Was the callback queued?
     */
    public boolean enqueueFailedCallback(final Callback callback) {
+
+      //Track abandoned and failed callbacks to allow failed/offline server heuristic...
+
       int attempts = callback.incrementAttempts();
       long backoffMillis = failedCallbackRetryStrategy.backoffMillis(attempts);
       if(backoffMillis > 0L) {
          failedCallbackService.schedule(callback, backoffMillis, TimeUnit.MILLISECONDS);
+         Meter failedCallbackMeter = failedCallbackMeters.get(callback.subscriptionId);
+         if(failedCallbackMeter == null) {
+            failedCallbackMeter = new Meter();
+            failedCallbackMeters.put(callback.subscriptionId, failedCallbackMeter);
+         }
+         failedCallbackMeter.mark();
          return true;
       } else {
+         Meter abandonedCallbackMeter = abandonedCallbackMeters.get(callback.subscriptionId);
+         if(abandonedCallbackMeter == null) {
+            abandonedCallbackMeter = new Meter();
+            abandonedCallbackMeters.put(callback.subscriptionId, abandonedCallbackMeter);
+         }
+         abandonedCallbackMeter.mark();
+         maybeDisableSubscription(callback);
          return false;
+      }
+   }
+
+   private void maybeDisableSubscription(Callback callback) {
+      try {
+         Subscription subscription = datastore.getSubscription(callback.subscriptionId);
+         if(subscription != null) {
+            Meter failedCallbackMeter = failedCallbackMeters.get(callback.subscriptionId);
+            Meter abandonedCallbackMeter = abandonedCallbackMeters.get(callback.subscriptionId);
+            if(disableSubscriptionStrategy.disableSubscription(subscription, failedCallbackMeter, abandonedCallbackMeter)) {
+               datastore.changeSubscriptionStatus(callback.subscriptionId, Subscription.Status.REMOVED, 0);
+               autoDisabledSubscriptions.inc();
+               logger.warn("Auto-disabled subscription '" + subscription.callbackURL + "' (" + callback.subscriptionId + ")");
+            }
+         }
+      } catch(DatastoreException de) {
+         logger.error("Problem checking subscription for disable", de);
       }
    }
 
@@ -823,6 +869,7 @@ public class HubEndpoint implements MetricSet {
       if(callbackServiceQueueSize != null) {
          builder.put("callback-service-queue-size", callbackServiceQueueSize);
       }
+      builder.put("auto-disabled-subscriptions", autoDisabledSubscriptions);
       return builder.build();
    }
 
@@ -845,7 +892,18 @@ public class HubEndpoint implements MetricSet {
     */
    private ScheduledExecutorService failedCallbackService;
    private RetryStrategy failedCallbackRetryStrategy;
+   private DisableSubscriptionStrategy disableSubscriptionStrategy;
+   private Counter autoDisabledSubscriptions = new Counter();
 
+   /**
+    * Tracks failed callback vs subscription id.
+    */
+   private final Map<Long, Meter> failedCallbackMeters = Maps.newConcurrentMap();
+
+   /**
+    * Tracks abandoned callback vs subscription id.
+    */
+   private final Map<Long, Meter> abandonedCallbackMeters = Maps.newConcurrentMap();
 
    private SubscriptionVerifierFactory verifierFactory;
    private ExecutorService verifierService;
