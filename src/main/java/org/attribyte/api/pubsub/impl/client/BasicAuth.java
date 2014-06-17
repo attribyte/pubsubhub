@@ -1,7 +1,6 @@
 package org.attribyte.api.pubsub.impl.client;
 
-import com.google.common.base.Charsets;
-import org.apache.commons.codec.binary.Base64;
+import com.google.common.io.BaseEncoding;
 
 /**
  * Holds HTTP 'Basic' auth information.
@@ -46,10 +45,9 @@ public class BasicAuth {
       buf.append(password.trim());
       String up = buf.toString();
       buf.setLength(0);
-
-      byte[] bytes = Base64.encodeBase64(up.getBytes());
+      String headerValue = BaseEncoding.base64().encode(up.getBytes());
       buf.append("Basic ");
-      buf.append(new String(bytes, Charsets.UTF_8));
+      buf.append(headerValue);
       return buf.toString();
    }
 }
