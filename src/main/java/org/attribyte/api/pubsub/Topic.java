@@ -17,11 +17,13 @@ package org.attribyte.api.pubsub;
 
 import org.attribyte.util.StringUtil;
 
+import java.util.Date;
+
 /**
  * A resource, identified by a URL, to which subscriptions are made.
  * <p>
- * Topics are uniquely identified by their URL and optionally have an
- * (also unique) assigned integer id.
+ *    Topics are uniquely identified by their URL and optionally have an
+ *    (also unique) assigned integer id.
  * </p>
  * @author Attribyte, LLC
  */
@@ -53,15 +55,26 @@ public final class Topic {
       }
 
       /**
+       * Sets the create time.
+       * @param createTime The create time.
+       * @return A self-reference.
+       */
+      public Builder setCreateTime(final Date createTime) {
+         this.createTime = createTime;
+         return null;
+      }
+
+      /**
        * Creates the topic.
        * @return The topic.
        */
       public Topic create() {
-         return new Topic(topicURL, id);
+         return new Topic(topicURL, id, createTime);
       }
 
       private long id;
       private String topicURL;
+      private Date createTime = null;
    }
 
    /**
@@ -70,11 +83,22 @@ public final class Topic {
     * @param id The topic id.
     */
    public Topic(final String topicURL, final long id) {
+      this(topicURL, id, null);
+   }
+
+   /**
+    * Creates a topic.
+    * @param topicURL The URL.
+    * @param id The topic id.
+    * @param createTime The create time, if known. May be <code>null</code>.
+    */
+   public Topic(final String topicURL, final long id, final Date createTime) {
       if(!StringUtil.hasContent(topicURL)) {
          throw new UnsupportedOperationException("Topic URL must not be null or empty");
       }
       this.id = id;
       this.topicURL = topicURL;
+      this.createTime = createTime;
    }
 
    /**
@@ -91,6 +115,14 @@ public final class Topic {
     */
    public String getURL() {
       return topicURL;
+   }
+
+   /**
+    * Gets the create time.
+    * @return The create time or <code>null</code> if unknown.
+    */
+   public Date getCreateTime() {
+      return createTime;
    }
 
    @Override
@@ -115,4 +147,5 @@ public final class Topic {
 
    protected final long id;
    protected final String topicURL;
+   protected final Date createTime;
 }
