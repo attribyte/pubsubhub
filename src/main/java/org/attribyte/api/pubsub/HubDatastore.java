@@ -23,6 +23,7 @@ import org.attribyte.api.Logger;
 import org.attribyte.api.http.AuthScheme;
 import org.attribyte.api.http.Request;
 
+import javax.xml.crypto.Data;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +103,15 @@ public interface HubDatastore {
    public Topic getTopic(String topicURL, boolean create) throws DatastoreException;
 
    /**
+    * Gets a list of all topics sorted by create time.
+    * @param start The start index.
+    * @param limit The maximum number returned.
+    * @return The list of topics.
+    * @throws DatastoreException on datastore error.
+    */
+   public List<Topic> getTopics(int start, int limit) throws DatastoreException;
+
+   /**
     * Gets a subscription by id.
     * @param subscriptionId The id.
     * @return The subscription or <code>null</code> if not found.
@@ -110,13 +120,28 @@ public interface HubDatastore {
    public Subscription getSubscription(long subscriptionId) throws DatastoreException;
 
    /**
-    * Gets a list of all subscriptions.
+    * Gets a list of subscriptions.
+    * @param status A collection of subscription status to include. If empty, all will be returned.
     * @param start The start index.
     * @param limit The maximum number returned.
     * @return The list of subscriptions.
     * @throws DatastoreException on datastore error.
     */
-   public List<Subscription> getSubscriptions(int start, int limit) throws DatastoreException;
+   public List<Subscription> getSubscriptions(final Collection<Subscription.Status> status,
+                                              int start, int limit) throws DatastoreException;
+
+   /**
+    * Gets a list of all subscriptions for a host.
+    * @param callbackHost The host.
+    * @param status A collection of subscription status to include. If empty, all will be returned.
+    * @param start The start index.
+    * @param limit The maximum number returned.
+    * @return The list of subscriptions.
+    * @throws DatastoreException on datastore error.
+    */
+   public List<Subscription> getHostSubscriptions(String callbackHost,
+                                                  final Collection<Subscription.Status> status,
+                                                  int start, int limit) throws DatastoreException;
 
    /**
     * Updates a subscription for a topic and callback.
@@ -151,11 +176,11 @@ public interface HubDatastore {
    /**
     * Gets the ids of active subscriptions for a topic.
     * <p>
-    * This method allows efficient, but not the most straightforward, paging
-    * by returning subscription ids in the order they were created (ascending id).
-    * The method returns the id that will start the next page.
-    * If this id is <code>LAST_ID</code>, there are no more pages. Otherwise, the returned id is passed
-    * into the next call as <code>startId</code> to get the next page.
+    *    This method allows efficient, but not the most straightforward, paging
+    *    by returning subscription ids in the order they were created (ascending id).
+    *    The method returns the id that will start the next page.
+    *    If this id is <code>LAST_ID</code>, there are no more pages. Otherwise, the returned id is passed
+    *    into the next call as <code>startId</code> to get the next page.
     * </p>
     * @param topic The topic.
     * @param subscriptions A collection to fill with subscriptions.
@@ -167,6 +192,18 @@ public interface HubDatastore {
    public long getActiveSubscriptions(Topic topic, Collection<Subscription> subscriptions, long startId, int maxReturned) throws DatastoreException;
 
    /**
+    * Gets the subscription state for a topic.
+    * <p>
+    *    The returned state may be used to determine if cached subscriptions
+    *    are still valid.
+    * </p>
+    * @param topic The topic.
+    * @return The state.
+    * @throws DatastoreException on datastore error.
+    */
+   public SubscriptionState getSubscriptionState(Topic topic) throws DatastoreException;
+
+   /**
     * Determine if a topic has any active subscriptions.
     * @param topicId The topic id.
     * @return Does the topic have any active subscriptions?
@@ -175,12 +212,37 @@ public interface HubDatastore {
    public boolean hasActiveSubscriptions(long topicId) throws DatastoreException;
 
    /**
+    * Counts the number of active subscriptions for a topic.
+    * @param topicId The topic id.
+    * @return Does the topic have any active subscriptions?
+    * @throws DatastoreException on datastore error.
+    */
+   public int countActiveSubscriptions(long topicId) throws DatastoreException;
+
+   /**
     * Determine if a callback URL has any associated active subscriptions.
     * @param callbackURL The callback URL.
     * @return Does the callback have any active subscriptions?
-    * @throws DatastoreException on datastore err.r
+    * @throws DatastoreException on datastore error.
     */
    public boolean hasActiveSubscriptions(String callbackURL) throws DatastoreException;
+
+   /**
+    * Gets a list of all unique endpoints to which subscriptions are sent.
+    * @param start The start index.
+    * @param limit The maximum returned.
+    * @return The list of endpoints, most recent first.
+    * @throws DatastoreException on datastore error.
+    */
+   public List<Endpoint> getSubscriptionEndpoints(int start, int limit) throws DatastoreException;
+
+   /**
+    * Counts the number of active subscriptions for an endpoint.
+    * @param endpointId The endpoint id.
+    * @return The number of active subscriptions.
+    * @throws DatastoreException on datastore error.
+    */
+   public int countActiveEndpointSubscriptions(long endpointId) throws DatastoreException;
 
    /**
     * Gets a list of all subscriptions mapped to a callback path.

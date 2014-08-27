@@ -18,6 +18,8 @@ package org.attribyte.api.pubsub;
 import org.attribyte.api.http.AuthScheme;
 import org.attribyte.util.StringUtil;
 
+import java.util.Date;
+
 /**
  * An endpoint (endpoint or subscriber).
  * @author Attribyte, LLC
@@ -37,6 +39,24 @@ public class Endpoint {
       this.endpointURL = endpointURL;
       this.authScheme = null;
       this.authId = null;
+      this.createTime = null;
+   }
+
+   /**
+    * Creates an (immutable) endpoint with the create time specified.
+    * @param endpointURL The endpoint URL.
+    * @param id The endpoint id.
+    * @param createTime The create time.
+    */
+   public Endpoint(final String endpointURL, final long id, final Date createTime) {
+      if(!StringUtil.hasContent(endpointURL)) {
+         throw new UnsupportedOperationException("Endpoint URL must not be null or empty");
+      }
+      this.id = id;
+      this.endpointURL = endpointURL;
+      this.authScheme = null;
+      this.authId = null;
+      this.createTime = createTime;
    }
 
    /**
@@ -54,6 +74,7 @@ public class Endpoint {
       this.endpointURL = endpointURL;
       this.authScheme = authScheme;
       this.authId = authId;
+      this.createTime = null;
    }
 
    /**
@@ -65,6 +86,7 @@ public class Endpoint {
       this.endpointURL = other.endpointURL;
       this.authScheme = other.authScheme;
       this.authId = other.authId;
+      this.createTime = other.createTime;
    }
 
    /**
@@ -77,6 +99,7 @@ public class Endpoint {
       this.endpointURL = other.endpointURL;
       this.authScheme = other.authScheme;
       this.authId = other.authId;
+      this.createTime = other.createTime;
    }
 
    /**
@@ -111,6 +134,14 @@ public class Endpoint {
       return endpointURL;
    }
 
+   /**
+    * Gets the create time.
+    * @return The create time or <code>null</code> if unspecified.
+    */
+   public Date getCreateTime() {
+      return createTime;
+   }
+
    @Override
    public int hashCode() {
       return endpointURL.hashCode();
@@ -133,4 +164,5 @@ public class Endpoint {
    protected final String endpointURL;
    protected final AuthScheme authScheme;
    protected final String authId;
+   protected final Date createTime;
 }
