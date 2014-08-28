@@ -16,6 +16,7 @@
 package org.attribyte.api.pubsub.impl;
 
 import com.codahale.metrics.Timer;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InvalidURIException;
@@ -34,8 +35,11 @@ import java.util.List;
  */
 public class Notifier extends org.attribyte.api.pubsub.Notifier {
 
-   public Notifier(final Notification notification, final HubEndpoint hub, final Timer timer) {
+   public Notifier(final Notification notification, final HubEndpoint hub,
+                   final SubscriptionCache subscriptionCache,
+                   final Timer timer) {
       super(notification, hub);
+      this.subscriptionCache = subscriptionCache;
       this.timer = timer;
    }
 
@@ -43,24 +47,50 @@ public class Notifier extends org.attribyte.api.pubsub.Notifier {
    public void run() {
       final Timer.Context ctx = timer.time();
       try {
+
+         if(subscriptionCache != null) {
+            List<Subscription> cachedSubscriptions = subscriptionCache.getSubscriptions(notification.getTopic());
+            if(cachedSubscriptions != null) {
+               sendNotifications(cachedSubscriptions);
+               return;
+            }
+         }
+
          if(!hub.getDatastore().hasActiveSubscriptions(notification.getTopic().getId())) {
+            if(subscriptionCache != null) {
+               subscriptionCache.cacheSubscriptions(notification.getTopic(), ImmutableList.<Subscription>of());
+            }
             return;
          }
 
          final List<Subscription> subscriptions = Lists.newArrayListWithExpectedSize(1024);
-         long nextSelectId = 0L;
+         final ImmutableList.Builder<Subscription> cachedSubscriptions =
+                 subscriptionCache != null ? ImmutableList.<Subscription>builder() : null;
 
+         long nextSelectId = 0L;
          do {
             nextSelectId = hub.getDatastore().getActiveSubscriptions(notification.getTopic(), subscriptions, nextSelectId, 1024);
-            for(Subscription subscription : subscriptions) {
-               sendNotification(notification, subscription);
+            sendNotifications(subscriptions);
+            if(subscriptionCache != null) {
+               cachedSubscriptions.addAll(subscriptions);
             }
             subscriptions.clear();
          } while(nextSelectId != HubDatastore.LAST_ID);
+
+         if(subscriptionCache != null) {
+            subscriptionCache.cacheSubscriptions(notification.getTopic(), cachedSubscriptions.build());
+         }
+
       } catch(DatastoreException de) {
          hub.getLogger().error("Problem selecting subscriptions for notification", de);
       } finally {
          ctx.stop();
+      }
+   }
+
+   private void sendNotifications(List<Subscription> subscriptions) {
+      for(Subscription subscription : subscriptions) {
+         sendNotification(notification, subscription);
       }
    }
 
@@ -115,5 +145,6 @@ public class Notifier extends org.attribyte.api.pubsub.Notifier {
    }
 
    private final Timer timer;
+   private final SubscriptionCache subscriptionCache;
 
 }

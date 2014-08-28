@@ -28,22 +28,43 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
 
    @Override
    public Notifier create(final Notification notification, final HubEndpoint hub) {
-      return new Notifier(notification, hub, notificationTimer);
+      return new Notifier(notification, hub, subscriptionCache, notificationTimer);
    }
 
    @Override
    public Map<String, Metric> getMetrics() {
-      return ImmutableMap.<String, Metric>of(
-              "notifications", notificationTimer
-      );
+
+      if(subscriptionCache == null) {
+         return ImmutableMap.<String, Metric>of(
+                 "notifications", notificationTimer
+         );
+      } else {
+         return ImmutableMap.<String, Metric>of(
+                 "notifications", notificationTimer,
+                 "callback-subscription-requests", subscriptionCache.requests,
+                 "callback-subscription-cache-hits", subscriptionCache.hits,
+                 "callback-subscription-cache-hit-ratio", subscriptionCache.hitRatio,
+                 "callback-subscription-cache-size", subscriptionCache.cacheSizeGauge
+         );
+      }
    }
 
    @Override
    public void init(final Properties props) {
+      long maxAgeMillis = Long.parseLong(props.getProperty("subscriptionCache.maxAgeSeconds", "0")) * 1000L;
+      int monitorFrequencyMinutes = Integer.parseInt(props.getProperty("subscriptionCache.monitorFrequencyMinutes", "15"));
+      if(maxAgeMillis > 0) {
+         subscriptionCache = new SubscriptionCache(maxAgeMillis, monitorFrequencyMinutes);
+      } else {
+         subscriptionCache = null;
+      }
    }
 
    @Override
    public boolean shutdown(final int waitTimeSeconds) {
+      if(subscriptionCache != null) {
+         subscriptionCache.shutdown();
+      }
       return true;
    }
 
@@ -51,5 +72,7 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
     * Measures the notification rate and the time required to
     * select subscriptions and enqueue callbacks.
     */
-   static final Timer notificationTimer = new Timer();
+   final Timer notificationTimer = new Timer();
+
+   private SubscriptionCache subscriptionCache = null;
 }

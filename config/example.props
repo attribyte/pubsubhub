@@ -66,15 +66,19 @@ endpoint.acp.pool.pubsub.segment1.size=5
 # A notification contains the message to be broadcast to all
 # subscribers to its topic. This queue/pool performs the following tasks
 # when a notification is enqueue:
-#  - Retrieve all subscribers associated with the topic
+#  - Retrieve all subscribers associated with the topic from cache (if configured) or datastore.
 #  - Build the HTTP POST to be sent to all subscribers
-#  - Enqueue the HTTP Post for callback.
+#  - Enqueue the HTTP POST for callback.
 
 endpoint.notifierFactoryClass=org.attribyte.api.pubsub.impl.NotifierFactory
 endpoint.baseConcurrentNotifiers=4
 endpoint.maxConcurrentNotifiers=16
 endpoint.maxNotifierQueueSize=4096
 endpoint.notifierThreadKeepAliveMinutes=2
+
+#If not present, or value is < 1, no cache is configured.
+endpoint.subscriptionCache.maxAgeSeconds=60
+endpoint.subscriptionCache.monitorFrequencyMinutes=15
 
 #######################
 # Subscriber Callback #
