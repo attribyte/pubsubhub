@@ -128,3 +128,15 @@ publish.basicauth.00.pattern=/.*
 publish.basicauth.00.username=test23
 publish.basicauth.00.password=test23
 publish.autocreateTopics=true
+
+#################
+# Admin Console #
+#################
+
+admin.enabled=true
+admin.assetDirectory=/var/attribyte/pubsub/admin/htdocs
+admin.templateDirectory=/var/attribyte/pubsub/admin/templates
+admin.assetPaths=/css/*, /img/*, /js/*, /robots.txt, /favicon.ico
+admin.path=/admin
+admin.username=admin
+admin.password=314x159
