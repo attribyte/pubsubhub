@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
-import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
 import org.attribyte.api.http.impl.servlet.Bridge;
 import org.attribyte.api.pubsub.BasicAuthFilter;

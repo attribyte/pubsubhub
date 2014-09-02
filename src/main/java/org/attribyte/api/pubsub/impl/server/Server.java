@@ -11,12 +11,15 @@ import com.codahale.metrics.servlets.MetricsServlet;
 import com.codahale.metrics.servlets.PingServlet;
 import com.codahale.metrics.servlets.ThreadDumpServlet;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.log4j.PropertyConfigurator;
 import org.attribyte.api.Logger;
 import org.attribyte.api.pubsub.BasicAuthFilter;
 import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Topic;
+import org.attribyte.api.pubsub.impl.server.admin.AdminAuth;
+import org.attribyte.api.pubsub.impl.server.admin.AdminConsole;
 import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -141,6 +144,66 @@ public class Server {
 
       ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
       rootContext.setContextPath("/");
+
+      final AdminConsole adminConsole;
+      final List<String> allowedAssetPaths;
+
+      if(props.getProperty("admin.enabled", "false").equalsIgnoreCase("true")) {
+         String assetDir = props.getProperty("admin.assetDirectory", "");
+         File assetDirFile = new File(assetDir);
+         if(!assetDirFile.exists()) {
+            System.err.println("The 'admin.assetDirectory'" + assetDirFile.getAbsolutePath() + "' must exist");
+            System.exit(1);
+         }
+
+         if(!assetDirFile.isDirectory()) {
+            System.err.println("The 'admin.assetDirectory'" + assetDirFile.getAbsolutePath() + "' must be a directory");
+            System.exit(1);
+         }
+
+         if(!assetDirFile.canRead()) {
+            System.err.println("The 'admin.assetDirectory'" + assetDirFile.getAbsolutePath() + "' must be readable");
+            System.exit(1);
+         }
+
+         char[] adminUsername = props.getProperty("admin.username", "").toCharArray();
+         char[] adminPassword = props.getProperty("admin.password", "").toCharArray();
+         String adminRealm = props.getProperty("admin.realm", "pubsubhub");
+
+         if(adminUsername.length == 0 || adminPassword.length == 0) {
+            System.err.println("The 'admin.username' and 'admin.password' must be specified");
+            System.exit(1);
+         }
+
+         String templateDir = props.getProperty("admin.templateDirectory", "");
+         File templateDirFile = new File(templateDir);
+         if(!templateDirFile.exists()) {
+            System.err.println("The 'admin.templateDirectory'" + assetDirFile.getAbsolutePath() + "' must exist");
+            System.exit(1);
+         }
+
+         if(!templateDirFile.isDirectory()) {
+            System.err.println("The 'admin.templateDirectory'" + assetDirFile.getAbsolutePath() + "' must be a directory");
+            System.exit(1);
+         }
+
+         if(!templateDirFile.canRead()) {
+            System.err.println("The 'admin.templateDirectory'" + assetDirFile.getAbsolutePath() + "' must be readable");
+            System.exit(1);
+         }
+
+         adminConsole = new AdminConsole(rootContext, assetDir, endpoint.getDatastore(),
+                 new AdminAuth(adminRealm, adminUsername, adminPassword), templateDir, logger);
+
+         allowedAssetPaths = Lists.newArrayList(
+                 Splitter.on(',').omitEmptyStrings().trimResults().split(props.getProperty("admin.assetPaths", ""))
+         );
+         System.out.println("Admin console is enabled...");
+      } else {
+         adminConsole = null;
+         allowedAssetPaths = ImmutableList.of();
+      }
+
       serverHandlers.addHandler(rootContext);
 
       //TODO: Introduces incompatible dependency...
@@ -232,6 +295,11 @@ public class Server {
       ThreadDumpServlet threadDumpServlet = new ThreadDumpServlet();
       rootContext.addServlet(new ServletHolder(threadDumpServlet), "/threads/*");
 
+      if(adminConsole != null && allowedAssetPaths.size() > 0) {
+         String adminPath = props.getProperty("admin.path", "/admin/");
+         adminConsole.initServlets(rootContext, adminPath, allowedAssetPaths);
+      }
+
       server.setDumpBeforeStop(false);
       server.setStopAtShutdown(true);
       server.start();
@@ -244,7 +312,7 @@ public class Server {
     * @param logProps The logging properties.
     * @return The logger.
     */
-   protected static final Logger initLogger(final Properties props, final Properties logProps) {
+   protected static Logger initLogger(final Properties props, final Properties logProps) {
       PropertyConfigurator.configure(logProps);
       final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(props.getProperty("logger.name", "pubsub"));
       return new Logger() {

@@ -316,7 +316,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
                                                         final int start, final int limit) throws DatastoreException {
 
       StringBuilder sql = new StringBuilder(getSubscriptionSQL);
-      sql.append(" AND callbackHost=? AND ");
+      sql.append(" callbackHost=? AND ");
       inStatus(status, sql);
       sql.append(" ORDER BY id ASC LIMIT ?,?");
 
@@ -351,6 +351,47 @@ public abstract class RDBHubDatastore implements HubDatastore {
             builder.setTopic(topic);
             subscriptions.add(builder.create());
          }
+      }
+
+      return subscriptions;
+   }
+
+   @Override
+   public List<Subscription> getTopicSubscriptions(Topic topic,
+                                                   final Collection<Subscription.Status> status,
+                                                   int start, int limit) throws DatastoreException {
+
+      StringBuilder sql = new StringBuilder(getSubscriptionSQL);
+      sql.append(" topicId=? AND ");
+      inStatus(status, sql);
+      sql.append(" ORDER BY id ASC LIMIT ?,?");
+
+      Connection conn = null;
+      PreparedStatement stmt = null;
+      ResultSet rs = null;
+      List<Subscription.Builder> subscriptionBuilders = Lists.newArrayListWithExpectedSize(limit < 1024 ? limit : 1024);
+
+      try {
+         conn = getConnection();
+         stmt = conn.prepareStatement(sql.toString());
+         stmt.setLong(1, topic.getId());
+         stmt.setInt(2, start);
+         stmt.setInt(3, limit);
+         rs = stmt.executeQuery();
+         while(rs.next()) {
+            subscriptionBuilders.add(getSubscription(rs));
+         }
+      } catch(SQLException se) {
+         throw new DatastoreException("Problem getting subscriptions", se);
+      } finally {
+         SQLUtil.closeQuietly(conn, stmt, rs);
+      }
+
+      List<Subscription> subscriptions = Lists.newArrayListWithCapacity(subscriptionBuilders.size());
+
+      for(Subscription.Builder builder : subscriptionBuilders) {
+         builder.setTopic(topic);
+         subscriptions.add(builder.create());
       }
 
       return subscriptions;
@@ -815,16 +856,16 @@ public abstract class RDBHubDatastore implements HubDatastore {
       }
    }
 
-   private static final String getSubscriptionEndpointsSQL = "SELECT endpointURL, id, createTime FROM subscriber " +
-           "ORDER BY id DESC LIMIT ?,?";
+   private static final String getSubscriptionEndpointsSQL = "SELECT DISTINCT callbackHost FROM subscription " +
+           "ORDER BY callbackHost ASC LIMIT ?,?";
 
    @Override
-   public List<Endpoint> getSubscriptionEndpoints(int start, int limit) throws DatastoreException {
+   public List<String> getSubscribedHosts(int start, int limit) throws DatastoreException {
 
       Connection conn = null;
       PreparedStatement stmt = null;
       ResultSet rs = null;
-      List<Endpoint> endpoints = Lists.newArrayListWithExpectedSize(limit < 64 ? limit : 64);
+      List<String> hosts = Lists.newArrayListWithExpectedSize(limit < 64 ? limit : 64);
       try {
          conn = getConnection();
          stmt = conn.prepareStatement(getSubscriptionEndpointsSQL);
@@ -832,22 +873,22 @@ public abstract class RDBHubDatastore implements HubDatastore {
          stmt.setInt(2, limit);
          rs = stmt.executeQuery();
          while(rs.next()) {
-            endpoints.add(new Endpoint(rs.getString(1), rs.getLong(2), new Date(rs.getTimestamp(3).getTime())));
+            hosts.add(rs.getString(1));
          }
-         return endpoints;
+         return hosts;
 
       } catch(SQLException se) {
-         throw new DatastoreException("Problem getting subscription endpoints", se);
+         throw new DatastoreException("Problem getting subscribed hosts", se);
       } finally {
          SQLUtil.closeQuietly(conn, stmt, rs);
       }
    }
 
-   private static final String countActiveEndpointSubscriptionsSQL = "SELECT COUNT(id) FROM subscription " +
-           "WHERE endpointId=?";
+   private static final String countActiveHostSubscriptionsSQL = "SELECT COUNT(id) FROM subscription " +
+           "WHERE callbackHost=?";
 
    @Override
-   public int countActiveEndpointSubscriptions(long endpointId) throws DatastoreException {
+   public int countActiveHostSubscriptions(String host) throws DatastoreException {
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -855,12 +896,12 @@ public abstract class RDBHubDatastore implements HubDatastore {
 
       try {
          conn = getConnection();
-         stmt = conn.prepareStatement(countActiveEndpointSubscriptionsSQL);
-         stmt.setLong(1, endpointId);
+         stmt = conn.prepareStatement(countActiveHostSubscriptionsSQL);
+         stmt.setString(1, host);
          rs = stmt.executeQuery();
          return rs.next() ? rs.getInt(1) : 0;
       } catch(SQLException se) {
-         throw new DatastoreException("Problem counting active endpoint subscriptions", se);
+         throw new DatastoreException("Problem counting active host subscriptions", se);
       } finally {
          SQLUtil.closeQuietly(conn, stmt, rs);
       }
