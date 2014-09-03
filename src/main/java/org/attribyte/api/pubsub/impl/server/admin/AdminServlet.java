@@ -3,26 +3,28 @@ package org.attribyte.api.pubsub.impl.server.admin;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
-import org.attribyte.api.pubsub.Endpoint;
 import org.attribyte.api.pubsub.HubDatastore;
 import org.attribyte.api.pubsub.Subscription;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplaySubscribedHost;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayTopic;
-import org.attribyte.util.URIEncoder;
+import org.stringtemplate.v4.DateRenderer;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STErrorListener;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupDir;
+import org.stringtemplate.v4.STGroupFile;
 import org.stringtemplate.v4.misc.STMessage;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -35,11 +37,33 @@ public class AdminServlet extends HttpServlet {
       this.auth = auth;
       this.templateGroup = new STGroupDir(templateDirectory, '$', '$');
       this.templateGroup.setListener(new ErrorListener());
+      this.templateGroup.registerRenderer(java.util.Date.class, new DateRenderer());
+
+      File globalConstantsFile = new File(templateDirectory, "constants.stg");
+      STGroupFile globalConstants = null;
+      if(globalConstantsFile.exists()) {
+         globalConstants = new STGroupFile(globalConstantsFile.getAbsolutePath());
+         this.templateGroup.importTemplates(globalConstants);
+      }
+
       this.logger = logger;
    }
 
    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
       if(!auth.authIsValid(request, response)) return;
+      List<String> path = splitPath(request);
+      String obj = path.size() > 0 ? path.get(0) : null;
+      if(obj != null) {
+         if(obj.equals("subscription")) {
+            postSubscriptionEdit(request, response);
+         } else if(obj.equals("topic")) {
+            postTopicAdd(request, response);
+         } else {
+            sendNotFound(response);
+         }
+      } else {
+         sendNotFound(response);
+      }
    }
 
    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -48,25 +72,29 @@ public class AdminServlet extends HttpServlet {
       String obj = path.size() > 0 ? path.get(0) : null;
 
       if(obj == null || obj.equals("topics")) {
-         renderTopics(request, response);
+         boolean activeOnly = obj == null || path.size() > 1 && path.get(1).equals("active");
+         renderTopics(request, activeOnly, response);
       } else if(obj.equals("subscribers")) {
          renderSubscribers(request, response);
       } else if(obj.equals("topic")) {
          if(path.size() > 1) {
-            renderTopicSubscriptions(path.get(1), request, response);
+            boolean activeOnly = path.size() > 2 && path.get(2).equals("active");
+            renderTopicSubscriptions(path.get(1), request, activeOnly, response);
          } else {
-            response.sendError(404, "Not Found");
+            sendNotFound(response);
          }
       } else if(obj.equals("host")) {
          if(path.size() > 1) {
-            renderHostSubscriptions(path.get(1), request, response);
+            boolean activeOnly = path.size() > 2 && path.get(2).equals("active");
+            renderHostSubscriptions(path.get(1), request, activeOnly, response);
          } else {
-            response.sendError(404, "Not Found");
+            sendNotFound(response);
          }
       } else if(obj.equals("subscriptions")) {
-         renderAllSubscriptions(request, response);
+         boolean activeOnly = path.size() > 1 && path.get(1).equals("active");
+         renderAllSubscriptions(request, activeOnly, response);
       } else {
-         response.sendError(404, "Not Found");
+         sendNotFound(response);
       }
    }
 
@@ -108,6 +136,7 @@ public class AdminServlet extends HttpServlet {
    }
 
    private void renderTopics(final HttpServletRequest request,
+                             boolean activeOnly,
                              final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
@@ -115,11 +144,13 @@ public class AdminServlet extends HttpServlet {
 
       try {
          List<DisplayTopic> displayTopics = Lists.newArrayListWithExpectedSize(25);
-         List<Topic> topics = datastore.getTopics(0, 50);
+
+         List<Topic> topics = activeOnly ? datastore.getActiveTopics(0, 50) : datastore.getTopics(0, 50);
          for(Topic topic : topics) {
             displayTopics.add(new DisplayTopic(topic, datastore.countActiveSubscriptions(topic.getId())));
          }
          subscriberTemplate.add("topics", displayTopics);
+         subscriberTemplate.add("activeOnly", activeOnly);
          mainTemplate.add("content", subscriberTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
@@ -130,7 +161,13 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
-   private Set<Subscription.Status> getSubscriptionStatus(HttpServletRequest request) {
+
+   private Set<Subscription.Status> getSubscriptionStatus(HttpServletRequest request, final boolean activeOnly) {
+
+      if(activeOnly) {
+         return Collections.singleton(Subscription.Status.ACTIVE);
+      }
+
       String[] status = request.getParameterValues("status");
       if(status == null || status.length == 0) {
          return Collections.emptySet();
@@ -148,6 +185,7 @@ public class AdminServlet extends HttpServlet {
    }
 
    private void renderTopicSubscriptions(final String topicIdStr, final HttpServletRequest request,
+                                         final boolean activeOnly,
                                          final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
@@ -157,13 +195,14 @@ public class AdminServlet extends HttpServlet {
          long topicId = Long.parseLong(topicIdStr);
          Topic topic = datastore.getTopic(topicId);
          if(topic == null) {
-            response.sendError(404, "Not Found");
+            sendNotFound(response);
             return;
          }
 
-         List<Subscription> subscriptions = datastore.getTopicSubscriptions(topic, getSubscriptionStatus(request), 0, 50);
+         List<Subscription> subscriptions = datastore.getTopicSubscriptions(topic, getSubscriptionStatus(request, activeOnly), 0, 50);
          subscriptionsTemplate.add("subscriptions", subscriptions);
          subscriptionsTemplate.add("topic", new DisplayTopic(topic, 0));
+         subscriptionsTemplate.add("activeOnly", activeOnly);
          mainTemplate.add("content", subscriptionsTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
@@ -177,6 +216,7 @@ public class AdminServlet extends HttpServlet {
    }
 
    private void renderHostSubscriptions(final String host, final HttpServletRequest request,
+                                        final boolean activeOnly,
                                         final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
@@ -184,9 +224,10 @@ public class AdminServlet extends HttpServlet {
 
       try {
 
-         List<Subscription> subscriptions = datastore.getHostSubscriptions(host, getSubscriptionStatus(request), 0, 50);
+         List<Subscription> subscriptions = datastore.getHostSubscriptions(host, getSubscriptionStatus(request, activeOnly), 0, 50);
          subscriptionsTemplate.add("subscriptions", subscriptions);
          subscriptionsTemplate.add("host", host);
+         subscriptionsTemplate.add("activeOnly", activeOnly);
          mainTemplate.add("content", subscriptionsTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
@@ -200,6 +241,7 @@ public class AdminServlet extends HttpServlet {
    }
 
    private void renderAllSubscriptions(final HttpServletRequest request,
+                                       final boolean activeOnly,
                                        final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
@@ -207,8 +249,9 @@ public class AdminServlet extends HttpServlet {
 
       try {
 
-         List<Subscription> subscriptions = datastore.getSubscriptions(getSubscriptionStatus(request), 0, 50);
+         List<Subscription> subscriptions = datastore.getSubscriptions(getSubscriptionStatus(request, activeOnly), 0, 50);
          subscriptionsTemplate.add("subscriptions", subscriptions);
+         subscriptionsTemplate.add("activeOnly", activeOnly);
          mainTemplate.add("content", subscriptionsTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
@@ -221,6 +264,84 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
+   private void postTopicAdd(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
+      String url = request.getParameter("url");
+      if(url == null || url.trim().length() == 0) {
+         response.sendError(400);
+         return;
+      }
+
+      try {
+         Topic topic = datastore.getTopic(url.trim(), false);
+         if(topic != null) { //Exists
+            response.setStatus(200);
+            response.getWriter().println("false");
+         } else {
+            topic = datastore.getTopic(url.trim(), true);
+            response.setStatus(201);
+            response.getWriter().println("true");
+         }
+      } catch(Exception se) {
+         logger.error("Problem adding topic", se);
+         response.sendError(500);
+      }
+   }
+
+   private void postSubscriptionEdit(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
+      String idStr = request.getParameter("id");
+      if(idStr == null || idStr.trim().length() == 0) {
+         response.sendError(400);
+         return;
+      }
+
+      String action = request.getParameter("op");
+      //Expect: 'enable', disable', 'expire', 'extend'
+
+      try {
+         long id = Long.parseLong(idStr);
+         Subscription subscription = datastore.getSubscription(id);
+         if(subscription != null) {
+            if(action.equals("enable")) {
+               datastore.changeSubscriptionStatus(id, Subscription.Status.ACTIVE, 0);
+               response.setStatus(200);
+               response.getWriter().print("ACTIVE");
+            } else if(action.equals("disable")) {
+               datastore.changeSubscriptionStatus(id, Subscription.Status.REMOVED, 0);
+               response.setStatus(200);
+               response.getWriter().print("REMOVED");
+            } else if(action.equals("expire")) {
+               datastore.expireSubscription(id);
+               response.setStatus(200);
+               response.getWriter().print("EXPIRED");
+            } else if(action.equals("extend")) {
+               String extendLeaseDays = request.getParameter("extendLeaseDays");
+               if(extendLeaseDays != null) {
+                  int extendLeaseSeconds = Integer.parseInt(extendLeaseDays) * 24 * 3600;
+                  if(extendLeaseSeconds < 1) {
+                     response.sendError(400, "The 'extendLeaseDays' must be positive");
+                  }
+                  datastore.changeSubscriptionStatus(id, subscription.getStatus(), extendLeaseSeconds);
+                  response.getWriter().print("ACTIVE");
+                  response.setStatus(200);
+               } else {
+                  response.sendError(400, "The 'extendLeaseDays' must be specified");
+               }
+            } else {
+               response.sendError(400, "Unknown operation, '" + action + "'");
+            }
+         } else {
+            sendNotFound(response);
+         }
+      } catch(Exception se) {
+         logger.error("Problem editing subscription", se);
+         response.sendError(500);
+      }
+   }
+
+   private void sendNotFound(HttpServletResponse response) throws IOException {
+      response.sendError(404, "Not Found");
+   }
+
    /**
     * Gets a template instance.
     * @param name The template name.
@@ -229,7 +350,12 @@ public class AdminServlet extends HttpServlet {
    private ST getTemplate(final String name) {
       try {
          if(debug) templateGroup.unload();
-         return templateGroup.getInstanceOf(name);
+         ST template = templateGroup.getInstanceOf(name);
+         if(template != null && name.equals("main")) { //Add metadata...
+            template.add("hostname", InetAddress.getLocalHost().getHostName());
+            template.add("time", new Date());
+         }
+         return template;
       } catch(Exception e) {
          e.printStackTrace();
          return null;

@@ -1,0 +1,7 @@
+constants ::= [
+"logo":"AttribyteLogo.png",
+"imageBase":"/img",
+"jsBase":"/js",
+"cssBase":"/css",
+default:"null"
+]

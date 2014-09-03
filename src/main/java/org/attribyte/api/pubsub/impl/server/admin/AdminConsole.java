@@ -37,6 +37,7 @@ public class AdminConsole {
       rootContext.setInitParameter("org.eclipse.jetty.servlet.Default.gzip", "true");
    }
 
+
    /**
     * Initialize the servlets.
     * @param rootContext The root context.
