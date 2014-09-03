@@ -29,6 +29,10 @@ public class DisplayTopic {
       return activeSubscriptionCount;
    }
 
+   public boolean hasActiveSubscriptions() {
+      return activeSubscriptionCount > 0;
+   }
+
    private final long id;
    private final String topicURL;
    private final Date createTime;
