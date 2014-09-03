@@ -196,6 +196,13 @@ public interface HubDatastore {
    public int expireSubscriptions(int maxExpired) throws DatastoreException;
 
    /**
+    * Immediately expires a subscription.
+    * @param id The subscription id.
+    * @throws DatastoreException on datastore error.
+    */
+   public void expireSubscription(long id) throws DatastoreException;
+
+   /**
     * Gets the ids of active subscriptions for a topic.
     * <p>
     * This method allows efficient, but not the most straightforward, paging

@@ -713,6 +713,26 @@ public abstract class RDBHubDatastore implements HubDatastore {
       }
    }
 
+   private static final String expireSubscriptionIdSQL = "UPDATE subscription SET status=" + Subscription.Status.EXPIRED.getValue() +
+           ", expireTime=NOW() WHERE id=?";
+
+   @Override
+   public void expireSubscription(long id) throws DatastoreException {
+
+      Connection conn = null;
+      PreparedStatement stmt = null;
+      try {
+         conn = getConnection();
+         stmt = conn.prepareStatement(expireSubscriptionIdSQL);
+         stmt.setLong(1, id);
+         stmt.executeUpdate();
+      } catch(SQLException se) {
+         throw new DatastoreException("Problem expiring subscription", se);
+      } finally {
+         SQLUtil.closeQuietly(conn, stmt);
+      }
+   }
+
    /**
     * Gets a subscription builder from a result set.
     * <p>
