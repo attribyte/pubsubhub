@@ -112,6 +112,15 @@ public interface HubDatastore {
    public List<Topic> getTopics(int start, int limit) throws DatastoreException;
 
    /**
+    * Gets a list of all topics with at least one active subscription, sorted by create time.
+    * @param start The start index.
+    * @param limit The maximum number returned.
+    * @return The list of topics.
+    * @throws DatastoreException on datastore error.
+    */
+   public List<Topic> getActiveTopics(int start, int limit) throws DatastoreException;
+
+   /**
     * Gets a subscription by id.
     * @param subscriptionId The id.
     * @return The subscription or <code>null</code> if not found.

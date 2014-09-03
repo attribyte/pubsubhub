@@ -44,7 +44,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
     */
    public abstract Connection getConnection() throws SQLException;
 
-   private static final String getTopicIdSQL = "SELECT topicURL FROM topic WHERE id=?";
+   private static final String getTopicIdSQL = "SELECT topicURL, createTime FROM topic WHERE id=?";
 
    @Override
    public final Topic getTopic(final long topicId) throws DatastoreException {
@@ -58,7 +58,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
          stmt = conn.prepareStatement(getTopicIdSQL);
          stmt.setLong(1, topicId);
          rs = stmt.executeQuery();
-         return rs.next() ? new Topic(rs.getString(1), topicId) : null;
+         return rs.next() ? new Topic(rs.getString(1), topicId, new Date(rs.getTimestamp(2).getTime())) : null;
       } catch(SQLException se) {
          logger.error("Problem getting topic", se);
          throw new DatastoreException("Problem getting topic", se);
@@ -67,7 +67,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       }
    }
 
-   private static final String getTopicSQL = "SELECT id FROM topic WHERE topicURL=?";
+   private static final String getTopicSQL = "SELECT id, createTime FROM topic WHERE topicURL=?";
    private static final String createTopicSQL = "INSERT IGNORE INTO topic (topicURL, topicHash) VALUES (?, MD5(?))";
 
    @Override
@@ -84,7 +84,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
          stmt.setString(1, topicURL);
          rs = stmt.executeQuery();
          if(rs.next()) {
-            return new Topic(topicURL, rs.getLong(1));
+            return new Topic(topicURL, rs.getLong(1), new Date(rs.getTimestamp(2).getTime()));
          } else if(create) {
             SQLUtil.closeQuietly(stmt, rs);
             rs = null;
@@ -101,7 +101,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
             } else {
                rs = stmt.getGeneratedKeys();
                if(rs.next()) {
-                  newTopic = new Topic(topicURL, rs.getLong(1));
+                  newTopic = new Topic(topicURL, rs.getLong(1), new Date());
                   return newTopic;
                } else {
                   throw new DatastoreException("Problem creating topic: Expecting 'id' to be generated.");
@@ -145,6 +145,53 @@ public abstract class RDBHubDatastore implements HubDatastore {
 
       return topics;
    }
+
+   private static final String getActiveTopicIdsSQL =
+           "SELECT DISTINCT topicId FROM subscription WHERE status=" + Subscription.Status.ACTIVE.getValue() +
+                   " ORDER BY topicId DESC";
+
+   @Override
+   public List<Topic> getActiveTopics(int start, int limit) throws DatastoreException {
+
+      Connection conn = null;
+      PreparedStatement stmt = null;
+      ResultSet rs = null;
+      List<Long> topicIds = Lists.newArrayListWithExpectedSize(512);
+      try {
+         conn = getConnection();
+         stmt = conn.prepareStatement(getActiveTopicIdsSQL);
+         rs = stmt.executeQuery();
+         while(rs.next()) {
+            topicIds.add(rs.getLong(1));
+         }
+      } catch(SQLException se) {
+         throw new DatastoreException("Problem selecting topics", se);
+      } finally {
+         SQLUtil.closeQuietly(conn, stmt, rs);
+      }
+
+      if(start >= topicIds.size()) {
+         return Collections.emptyList();
+      }
+
+      List<Topic> topics = Lists.newArrayListWithExpectedSize(limit < 512 ? limit : 512);
+
+      int toIndex = start + limit;
+      if(toIndex > topicIds.size()) {
+         toIndex = topicIds.size();
+      }
+
+      topicIds = topicIds.subList(start, toIndex);
+      for(long topicId : topicIds) {
+         Topic topic = getTopic(topicId);
+         if(topic != null) {
+            topics.add(topic);
+         }
+      }
+
+      return topics;
+   }
+
 
    private static final String hasActiveSubscriptionSQL = "SELECT 1 FROM subscription WHERE topicId=?" +
            " AND status=" + Subscription.Status.ACTIVE.getValue() + " LIMIT 1";
