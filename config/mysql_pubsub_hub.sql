@@ -41,9 +41,9 @@ CREATE TABLE `subscription` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `callbackHash` (`callbackHash`,`topicId`),
   KEY `callback_key` (`callbackURL`(64)),
-  KEY `callback_host_key` (`callbackHost`),
+  KEY `callback_host_key` (`callbackHost`, `status`),
   KEY `callback_path_key` (`callbackPath`(64)),
-  KEY `topic_key` (`topicId`),
+  KEY `topic_key` (`topicId`, `status`),
   KEY `expire_key` (`expireTime`),
   KEY `status_key` (`createTime`,`status`)
 )
