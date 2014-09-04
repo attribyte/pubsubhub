@@ -2,6 +2,7 @@ package org.attribyte.api.pubsub.impl.server.admin;
 
 import org.attribyte.api.Logger;
 import org.attribyte.api.pubsub.HubDatastore;
+import org.attribyte.api.pubsub.HubEndpoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -14,11 +15,12 @@ public class AdminConsole {
 
    public AdminConsole(final ServletContextHandler rootContext,
                        String assetDirectory,
-                       final HubDatastore datastore,
+                       final HubEndpoint endpoint,
                        final AdminAuth auth,
                        final String templateDirectory,
                        final Logger logger) {
-      this.datastore = datastore;
+      this.endpoint = endpoint;
+      this.datastore = endpoint.getDatastore();
       this.auth = auth;
       this.templateDirectory = templateDirectory;
       this.logger = logger;
@@ -58,10 +60,11 @@ public class AdminConsole {
             adminPath = adminPath + "/";
          }
          logger.info("AdminConsole: Enabled on path, '" + adminPath + "'");
-         rootContext.addServlet(new ServletHolder(new AdminServlet(datastore, auth, templateDirectory, logger)), adminPath + "*");
+         rootContext.addServlet(new ServletHolder(new AdminServlet(endpoint, auth, templateDirectory, logger)), adminPath + "*");
       }
    }
 
+   private final HubEndpoint endpoint;
    private final HubDatastore datastore;
    private final AdminAuth auth;
    private final String templateDirectory;

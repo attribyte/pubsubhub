@@ -74,6 +74,7 @@ class CallbackMetricsServlet extends HttpServlet {
          for(HostCallbackMetrics callbackMetrics : metrics) {
             registry.register(callbackMetrics.host, callbackMetrics);
          }
+
          String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(registry);
          response.setContentType("application/json");
          response.getWriter().print(json);

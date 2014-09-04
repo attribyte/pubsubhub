@@ -192,7 +192,7 @@ public class Server {
             System.exit(1);
          }
 
-         adminConsole = new AdminConsole(rootContext, assetDir, endpoint.getDatastore(),
+         adminConsole = new AdminConsole(rootContext, assetDir, endpoint,
                  new AdminAuth(adminRealm, adminUsername, adminPassword), templateDir, logger);
 
          allowedAssetPaths = Lists.newArrayList(

@@ -5,9 +5,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.attribyte.api.Logger;
+import org.attribyte.api.pubsub.CallbackMetrics;
+import org.attribyte.api.pubsub.HostCallbackMetrics;
 import org.attribyte.api.pubsub.HubDatastore;
+import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Subscription;
 import org.attribyte.api.pubsub.Topic;
+import org.attribyte.api.pubsub.impl.server.admin.model.DisplayCallbackMetrics;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplaySubscribedHost;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayTopic;
 import org.stringtemplate.v4.DateRenderer;
@@ -32,10 +36,12 @@ import java.util.Set;
 
 public class AdminServlet extends HttpServlet {
 
-   public AdminServlet(final HubDatastore datastore, final AdminAuth auth,
+   public AdminServlet(final HubEndpoint endpoint,
+                       final AdminAuth auth,
                        final String templateDirectory,
                        final Logger logger) {
-      this.datastore = datastore;
+      this.endpoint = endpoint;
+      this.datastore = endpoint.getDatastore();
       this.auth = auth;
       this.templateGroup = new STGroupDir(templateDirectory, '$', '$');
       this.templateGroup.setListener(new ErrorListener());
@@ -95,6 +101,8 @@ public class AdminServlet extends HttpServlet {
       } else if(obj.equals("subscriptions")) {
          boolean activeOnly = path.size() > 1 && path.get(1).equals("active");
          renderAllSubscriptions(request, activeOnly, response);
+      } else if(obj.equals("metrics")) {
+         renderCallbackMetrics(request, response);
       } else {
          sendNotFound(response);
       }
@@ -250,7 +258,6 @@ public class AdminServlet extends HttpServlet {
       ST subscriptionsTemplate = getTemplate("all_subscriptions");
 
       try {
-
          List<Subscription> subscriptions = datastore.getSubscriptions(getSubscriptionStatus(request, activeOnly), 0, 50);
          subscriptionsTemplate.add("subscriptions", subscriptions);
          subscriptionsTemplate.add("activeOnly", activeOnly);
@@ -260,6 +267,37 @@ public class AdminServlet extends HttpServlet {
          response.getWriter().flush();
       } catch(NumberFormatException nfe) {
          response.sendError(400, "Invalid topic id");
+      } catch(IOException ioe) {
+         throw ioe;
+      } catch(Exception se) {
+         se.printStackTrace();
+         response.sendError(500, "Datastore error");
+      }
+   }
+
+   private void renderCallbackMetrics(final HttpServletRequest request,
+                                      final HttpServletResponse response) throws IOException {
+
+      ST mainTemplate = getTemplate("main");
+      ST metricsTemplate = getTemplate("callback_metrics");
+
+      try {
+
+         CallbackMetrics globalMetrics = endpoint.getGlobalCallbackMetrics();
+         List<HostCallbackMetrics> metrics = endpoint.getHostCallbackMetrics(CallbackMetrics.Sort.THROUGHPUT_DESC, 25);
+
+         List<DisplayCallbackMetrics> displayMetrics = Lists.newArrayListWithCapacity(metrics.size() + 1);
+         displayMetrics.add(new DisplayCallbackMetrics("[all]", globalMetrics));
+         for(HostCallbackMetrics hcm : metrics) {
+            displayMetrics.add(new DisplayCallbackMetrics(hcm.host, hcm));
+         }
+         metricsTemplate.add("metrics", displayMetrics);
+         mainTemplate.add("content", metricsTemplate.render());
+         response.setContentType("text/html");
+         response.getWriter().print(mainTemplate.render());
+         response.getWriter().flush();
+      } catch(IOException ioe) {
+         throw ioe;
       } catch(Exception se) {
          se.printStackTrace();
          response.sendError(500, "Datastore error");
@@ -402,6 +440,7 @@ public class AdminServlet extends HttpServlet {
    }
 
    private final HubDatastore datastore;
+   private final HubEndpoint endpoint;
    private final Logger logger;
    private final AdminAuth auth;
    private final STGroup templateGroup;

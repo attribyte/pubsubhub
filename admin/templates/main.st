@@ -23,7 +23,8 @@ $head()$
             <li><a href="#" data-reveal-id="topic-add-modal">&nbsp; &nbsp;New Topic</a></li>
             </li>
             <li><a href="/admin/subscribers">Subscribers</a></li>
-            <li><a href="/admin/subscriptions">All Subscriptions</a></li>
+            <li><a href="/admin/subscriptions">Subscriptions</a></li>
+            <li><a href="/admin/metrics">Metrics</a></li>
         </ul>
     </div>
 </div>
