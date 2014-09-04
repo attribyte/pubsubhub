@@ -1,6 +1,7 @@
 package org.attribyte.api.pubsub.impl.server.admin;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.attribyte.api.Logger;
@@ -26,6 +27,7 @@ import java.net.InetAddress;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class AdminServlet extends HttpServlet {
@@ -287,6 +289,19 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
+   private final Map<String, Integer> extendLeaseValues = ImmutableMap.of(
+           "hour", 3600,
+           "day", 24 * 3600,
+           "week", 24 * 7 * 3600,
+           "month", 24 * 7 * 30 * 3600,
+           "never", Integer.MAX_VALUE
+   );
+
+   private int translateExtendLease(final String extendLease) {
+      Integer extendLeaseSeconds = extendLeaseValues.get(extendLease != null ? extendLease : "week");
+      return extendLeaseSeconds != null ? extendLeaseSeconds : extendLeaseValues.get("week");
+   }
+
    private void postSubscriptionEdit(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
       String idStr = request.getParameter("id");
       if(idStr == null || idStr.trim().length() == 0) {
@@ -297,41 +312,46 @@ public class AdminServlet extends HttpServlet {
       String action = request.getParameter("op");
       //Expect: 'enable', disable', 'expire', 'extend'
 
+      int extendLeaseSeconds = translateExtendLease(request.getParameter("extendLease"));
+
       try {
          long id = Long.parseLong(idStr);
          Subscription subscription = datastore.getSubscription(id);
          if(subscription != null) {
-            if(action.equals("enable")) {
-               datastore.changeSubscriptionStatus(id, Subscription.Status.ACTIVE, 0);
+            if(action == null || action.length() == 0) {
+               response.getWriter().print(subscription.getStatus().toString());
+               response.setStatus(200);
+            } else if(action.equals("enable")) {
+               if(!subscription.isActive()) {
+                  datastore.changeSubscriptionStatus(id, Subscription.Status.ACTIVE, extendLeaseSeconds);
+               }
                response.setStatus(200);
                response.getWriter().print("ACTIVE");
             } else if(action.equals("disable")) {
-               datastore.changeSubscriptionStatus(id, Subscription.Status.REMOVED, 0);
+               if(!subscription.isRemoved()) {
+                  datastore.changeSubscriptionStatus(id, Subscription.Status.REMOVED, 0);
+               }
                response.setStatus(200);
                response.getWriter().print("REMOVED");
             } else if(action.equals("expire")) {
-               datastore.expireSubscription(id);
+               if(!subscription.isExpired()) {
+                  datastore.expireSubscription(id);
+               }
                response.setStatus(200);
                response.getWriter().print("EXPIRED");
             } else if(action.equals("extend")) {
-               String extendLeaseDays = request.getParameter("extendLeaseDays");
-               if(extendLeaseDays != null) {
-                  int extendLeaseSeconds = Integer.parseInt(extendLeaseDays) * 24 * 3600;
-                  if(extendLeaseSeconds < 1) {
-                     response.sendError(400, "The 'extendLeaseDays' must be positive");
-                  }
-                  datastore.changeSubscriptionStatus(id, subscription.getStatus(), extendLeaseSeconds);
-                  response.getWriter().print("ACTIVE");
-                  response.setStatus(200);
-               } else {
-                  response.sendError(400, "The 'extendLeaseDays' must be specified");
-               }
+               datastore.changeSubscriptionStatus(id, Subscription.Status.ACTIVE, extendLeaseSeconds);
+               response.getWriter().print("ACTIVE");
+               response.setStatus(200);
             } else {
-               response.sendError(400, "Unknown operation, '" + action + "'");
+               response.getWriter().print(subscription.getStatus().toString());
+               response.setStatus(200);
             }
          } else {
             sendNotFound(response);
          }
+      } catch(IOException ioe) {
+         throw ioe;
       } catch(Exception se) {
          logger.error("Problem editing subscription", se);
          response.sendError(500);

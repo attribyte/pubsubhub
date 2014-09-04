@@ -49,15 +49,14 @@ function bindSubscriptionEdit() {
         $('#edit-subscription-form-title').html(title);
         $('#edit-subscription-form-sid').val(id);
         if (currStatus == "ACTIVE") {
-            $('#esf-enable').prop('checked', true);
+            $('#esf-extend').prop('checked', true);
         } else if (currStatus == "EXPIRED") {
-            $('#esf-expire').prop('checked', true);
-        } else if (currStatus == "REMOVED") {
-            $('#esf-disable').prop('checked', true);
+            $('#esf-extend').prop('checked', true);
         } else {
             $('#esf-enable').prop('checked', false);
             $('#esf-expire').prop('checked', false);
             $('#esf-disable').prop('checked', false);
+            $('#esf-extend').prop('checked', false);
         }
         $('#edit-subscription-modal').foundation('reveal', 'open');
     });

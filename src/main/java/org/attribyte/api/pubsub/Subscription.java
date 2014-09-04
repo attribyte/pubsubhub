@@ -464,6 +464,30 @@ public class Subscription {
    }
 
    /**
+    * Determines if the subscription is active.
+    * @return Is the subscription active?
+    */
+   public boolean isActive() {
+      return status != null && status == Status.ACTIVE;
+   }
+
+   /**
+    * Determines if the subscription is disabled/removed.
+    * @return Is the subscription removed?
+    */
+   public boolean isRemoved() {
+      return status != null && status == Status.REMOVED;
+   }
+
+   /**
+    * Determines if the subscription is expired.
+    * @return Is the subscription expired?
+    */
+   public boolean isExpired() {
+      return status != null && status == Status.EXPIRED;
+   }
+
+   /**
     * Gets the subscription status.
     * @return The status.
     */

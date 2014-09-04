@@ -51,10 +51,20 @@ modals() ::= <<
         </div>
         <div class="row collapse">
             <div class="small-8 columns">
-                <label><b>Change Status</b></label>
+                <label><b>New Status</b></label>
                 <input type="radio" name="op" value="enable" id="esf-enable"/><label for="esf-enable">Enable</label>
                 <input type="radio" name="op" value="disable" id="esf-disable"/><label for="esf-disable">Disable</label>
                 <input type="radio" name="op" value="expire" id="esf-expire"/><label for="esf-expire">Expire</label>
+                <input type="radio" name="op" value="extend" id="esf-extend"/><label for="esf-extend">Extend</label>
+                <label><b>Expiration</b>
+                    <select name="extendLease">
+                        <option value="hour">One Hour</option>
+                        <option selected="selected" value="day">One Day</option>
+                        <option value="week">One Week</option>
+                        <option value="month">One Month</option>
+                        <option value="never">Never</option>
+                    </select>
+                </label>
             </div>
             <div class="small-2 columns">
                 <input type="submit" class="button postfix" value="Edit"/>
