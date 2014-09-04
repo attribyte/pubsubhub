@@ -12,6 +12,7 @@ import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Subscription;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayCallbackMetrics;
+import org.attribyte.api.pubsub.impl.server.admin.model.DisplayMetricsDetail;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplaySubscribedHost;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayTopic;
 import org.stringtemplate.v4.DateRenderer;
@@ -102,7 +103,11 @@ public class AdminServlet extends HttpServlet {
          boolean activeOnly = path.size() > 1 && path.get(1).equals("active");
          renderAllSubscriptions(request, activeOnly, response);
       } else if(obj.equals("metrics")) {
-         renderCallbackMetrics(request, response);
+         if(path.size() > 1) {
+            renderCallbackMetricsDetail(request, path.get(1), response);
+         } else {
+            renderCallbackMetrics(request, response);
+         }
       } else {
          sendNotFound(response);
       }
@@ -292,6 +297,36 @@ public class AdminServlet extends HttpServlet {
             displayMetrics.add(new DisplayCallbackMetrics(hcm.host, hcm));
          }
          metricsTemplate.add("metrics", displayMetrics);
+         mainTemplate.add("content", metricsTemplate.render());
+         response.setContentType("text/html");
+         response.getWriter().print(mainTemplate.render());
+         response.getWriter().flush();
+      } catch(IOException ioe) {
+         throw ioe;
+      } catch(Exception se) {
+         se.printStackTrace();
+         response.sendError(500, "Datastore error");
+      }
+   }
+
+   private void renderCallbackMetricsDetail(final HttpServletRequest request,
+                                            final String host,
+                                            final HttpServletResponse response) throws IOException {
+
+      ST mainTemplate = getTemplate("main");
+      ST metricsTemplate = getTemplate("metrics_detail");
+
+      try {
+         final CallbackMetrics detailMetrics;
+         final String title;
+         if(host == null || host.equalsIgnoreCase("[all]")) {
+            title = "All Hosts";
+            detailMetrics = endpoint.getGlobalCallbackMetrics();
+         } else {
+            title = host;
+            detailMetrics = endpoint.getHostCallbackMetrics(host);
+         }
+         metricsTemplate.add("metrics", new DisplayMetricsDetail(title, detailMetrics));
          mainTemplate.add("content", metricsTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());

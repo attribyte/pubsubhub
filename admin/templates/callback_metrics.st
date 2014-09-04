@@ -15,7 +15,7 @@ callback_metrics(metrics) ::= <<
     <tbody>
     $metrics:{metric |
     <tr>
-        <td>$metric.host$</td>
+        <td><a href="/admin/metrics/$metric.host$">$metric.host$</a></td>
         <td>$metric.count$</td>
         <td>$metric.rate$</td>
         <td>$metric.timing$</td>
