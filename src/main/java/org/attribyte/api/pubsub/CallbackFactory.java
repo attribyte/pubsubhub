@@ -23,7 +23,7 @@ import java.util.Properties;
 /**
  * Creates instances of <code>Callback</code>.
  */
-public interface CallbackFactory extends MetricSet {
+public interface CallbackFactory {
 
    /**
     * Creates a callback.

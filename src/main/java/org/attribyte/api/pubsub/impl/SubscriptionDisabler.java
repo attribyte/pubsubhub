@@ -1,6 +1,7 @@
 package org.attribyte.api.pubsub.impl;
 
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metered;
 import org.attribyte.api.InitializationException;
 import org.attribyte.api.pubsub.DisableSubscriptionStrategy;
 import org.attribyte.api.pubsub.Subscription;
@@ -31,7 +32,7 @@ public class SubscriptionDisabler implements DisableSubscriptionStrategy {
 
    @Override
    public boolean disableSubscription(final Subscription subscription,
-                                      final Meter callbackMeter,
+                                      final Metered callbackMeter,
                                       final Meter failedCallbackMeter, final Meter abandonedCallbackMeter) {
 
       long callbackCount = callbackMeter.getCount();
@@ -86,7 +87,7 @@ public class SubscriptionDisabler implements DisableSubscriptionStrategy {
       abandonedFractionThreshold = Double.parseDouble(init.getProperty("abandonedFraction", "1000.0"));
    }
 
-   private double getRate(final Meter meter) {
+   private double getRate(final Metered meter) {
       switch(rateWindow) {
          case ONE_MINUTE: return meter.getOneMinuteRate();
          case FIFTEEN_MINUTE: return meter.getFifteenMinuteRate();

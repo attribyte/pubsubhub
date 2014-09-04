@@ -20,6 +20,7 @@ import com.codahale.metrics.Timer;
 import org.attribyte.api.http.Header;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
+import org.attribyte.api.pubsub.CallbackMetrics;
 import org.attribyte.api.pubsub.HubEndpoint;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Result;
@@ -32,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * The default callback implementation.
  * <p>
- * If the callback fails, it is queued again with reduced priority.
+ *    If the callback fails, it is queued again with reduced priority.
  * </p>
  */
 public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
@@ -41,20 +42,20 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
                            final long subscriptionId,
                            final int priority,
                            final HubEndpoint hub,
-                           final Timer timer,
-                           final Meter failedCallbacks,
-                           final Meter abandonedCallbacks,
+                           final CallbackMetrics globalMetrics,
+                           final CallbackMetrics hostMetrics,
+                           final CallbackMetrics subscriptionMetrics,
                            final HttpClient httpClient) {
       super(request, subscriptionId, priority, hub);
-      this.timer = timer;
-      this.failedCallbacks = failedCallbacks;
-      this.abandonedCallbacks = abandonedCallbacks;
+      this.globalMetrics = globalMetrics;
+      this.hostMetrics = hostMetrics;
+      this.subscriptionMetrics = subscriptionMetrics;
       this.httpClient = httpClient;
    }
 
    @Override
    public void run() {
-      final Timer.Context ctx = timer.time();
+      final Timer.Context ctx = globalMetrics.callbacks.time();
       org.eclipse.jetty.client.api.Request callbackRequest = httpClient.POST(request.getURI())
               .timeout(5L, TimeUnit.SECONDS)  //TODO
               .followRedirects(false)
@@ -72,12 +73,12 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
       callbackRequest.send(new CompleteListener() {
          @Override
          public void onComplete(final Result result) {
-            ctx.stop();
+            recordTime(ctx.stop());
             if(!result.isSucceeded() || !Response.Code.isOK(result.getResponse().getStatus())) {
-               failedCallbacks.mark();
+               markFailed();
                boolean enqueued = hub.enqueueFailedCallback(AsyncCallback.this);
                if(!enqueued) {
-                  abandonedCallbacks.mark();
+                  markAbandoned();
                   hub.getLogger().error("Abandoned callback to " + request.getURI().toString());
                }
             }
@@ -85,8 +86,25 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
       });
    }
 
+   private void recordTime(final long nanos) {
+      if(hostMetrics != null) hostMetrics.callbacks.update(nanos, TimeUnit.NANOSECONDS);
+      if(subscriptionMetrics != null) subscriptionMetrics.callbacks.update(nanos, TimeUnit.NANOSECONDS);
+   }
+
+   private void markFailed() {
+      if(globalMetrics != null) globalMetrics.failedCallbacks.mark();
+      if(hostMetrics != null) hostMetrics.failedCallbacks.mark();
+      if(subscriptionMetrics != null) subscriptionMetrics.failedCallbacks.mark();
+   }
+
+   private void markAbandoned() {
+      if(globalMetrics != null) globalMetrics.abandonedCallbacks.mark();
+      if(hostMetrics != null) hostMetrics.abandonedCallbacks.mark();
+      if(subscriptionMetrics != null) subscriptionMetrics.abandonedCallbacks.mark();
+   }
+
    private final HttpClient httpClient;
-   private final Timer timer;
-   private final Meter failedCallbacks;
-   private final Meter abandonedCallbacks;
+   private final CallbackMetrics globalMetrics;
+   private final CallbackMetrics hostMetrics;
+   private final CallbackMetrics subscriptionMetrics;
 }

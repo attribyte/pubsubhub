@@ -46,16 +46,10 @@ public class AsyncCallbackFactory implements org.attribyte.api.pubsub.CallbackFa
 
    @Override
    public Callback create(final Request request, final long subscriptionId, final int priority, final HubEndpoint hub) {
-      return new AsyncCallback(request, subscriptionId, priority, hub, callbackTimer, failedCallbackMeter, abandonedCallbackMeter, httpClient);
-   }
-
-   @Override
-   public Map<String, Metric> getMetrics() {
-      return ImmutableMap.<String, Metric>of(
-              "callbacks", callbackTimer,
-              "failed-callbacks", failedCallbackMeter,
-              "abandoned-callbacks", abandonedCallbackMeter
-      );
+      return new AsyncCallback(request, subscriptionId, priority, hub,
+              hub.getGlobalCallbackMetrics(),
+              hub.getHostCallbackMetrics(request.getURI().getHost()),
+              hub.getSubscriptionCallbackMetrics(subscriptionId), httpClient);
    }
 
    @Override
@@ -103,19 +97,4 @@ public class AsyncCallbackFactory implements org.attribyte.api.pubsub.CallbackFa
          return false;
       }
    }
-
-   /**
-    * Times all callbacks.
-    */
-   final Timer callbackTimer = new Timer();
-
-   /**
-    * Tracks the rate of failed callbacks.
-    */
-   final Meter failedCallbackMeter = new Meter();
-
-   /**
-    * Tracks the rate of abandoned callbacks.
-    */
-   final Meter abandonedCallbackMeter = new Meter();
 }

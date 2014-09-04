@@ -274,6 +274,10 @@ public class Server {
       BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics, logger, publishURLFilters);
       rootContext.addServlet(new ServletHolder(broadcastServlet), "/notify/*");
 
+      CallbackMetricsServlet callbackMetricsServlet = new CallbackMetricsServlet(endpoint);
+      ServletHolder callbackMetricsServletHolder = new ServletHolder(callbackMetricsServlet);
+      rootContext.addServlet(callbackMetricsServletHolder, "/metrics/callback/*");
+
       MetricsServlet metricsServlet = new MetricsServlet(registry);
       ServletHolder metricsServletHolder = new ServletHolder(metricsServlet);
       rootContext.setInitParameter(MetricsServlet.RATE_UNIT, "SECONDS");

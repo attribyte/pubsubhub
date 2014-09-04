@@ -15,14 +15,8 @@
 
 package org.attribyte.api.pubsub.impl;
 
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.Timer;
-import com.google.common.collect.ImmutableMap;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.pubsub.HubEndpoint;
-
-import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -32,16 +26,10 @@ public class CallbackFactory implements org.attribyte.api.pubsub.CallbackFactory
 
    @Override
    public Callback create(final Request request, final long subscriptionId, final int priority, final HubEndpoint hub) {
-      return new Callback(request, subscriptionId, priority, hub, callbackTimer, failedCallbackMeter, abandonedCallbackMeter);
-   }
-
-   @Override
-   public Map<String, Metric> getMetrics() {
-      return ImmutableMap.<String, Metric>of(
-              "callbacks", callbackTimer,
-              "failed-callbacks", failedCallbackMeter,
-              "abandoned-callbacks", abandonedCallbackMeter
-      );
+      return new Callback(request, subscriptionId, priority, hub,
+              hub.getGlobalCallbackMetrics(),
+              hub.getHostCallbackMetrics(request.getURI().getHost()),
+              hub.getSubscriptionCallbackMetrics(subscriptionId));
    }
 
    @Override
@@ -52,19 +40,4 @@ public class CallbackFactory implements org.attribyte.api.pubsub.CallbackFactory
    public boolean shutdown(final int waitTimeSeconds) {
       return true;
    }
-
-   /**
-    * Times all callbacks.
-    */
-   final Timer callbackTimer = new Timer();
-
-   /**
-    * Tracks the rate of failed callbacks.
-    */
-   final Meter failedCallbackMeter = new Meter();
-
-   /**
-    * Tracks the rate of abandoned callbacks.
-    */
-   final Meter abandonedCallbackMeter = new Meter();
 }

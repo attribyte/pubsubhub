@@ -1,6 +1,7 @@
 package org.attribyte.api.pubsub;
 
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metered;
 import org.attribyte.api.InitializationException;
 
 import java.util.Properties;
@@ -18,7 +19,7 @@ public interface DisableSubscriptionStrategy {
 
       @Override
       public boolean disableSubscription(final Subscription subscription,
-                                         final Meter callbackMeter,
+                                         final Metered callbackMeter,
                                          final Meter failedCallbackMeter, final Meter abandonedCallbackMeter) {
          return false;
       }
@@ -37,7 +38,7 @@ public interface DisableSubscriptionStrategy {
     * @return Should the subscription be disabled?
     */
    public boolean disableSubscription(Subscription subscription,
-                                      Meter callbackMeter,
+                                      Metered callbackMeter,
                                       Meter failedCallbackMeter, Meter abandonedCallbackMeter);
 
    /**

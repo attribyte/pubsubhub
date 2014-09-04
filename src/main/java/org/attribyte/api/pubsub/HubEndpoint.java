@@ -19,7 +19,12 @@ import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.attribyte.api.DatastoreException;
@@ -37,6 +42,7 @@ import org.attribyte.util.URIEncoder;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -761,7 +767,7 @@ public class HubEndpoint implements MetricSet {
     * @param subscription The verified subscription.
     */
    public void subscriptionVerified(Subscription subscription) {
-      subscriptionCallbackMeters.remove(subscription.getId());
+      subscriptionCallbackMeters.invalidate(subscription.getId());
    }
 
    /**
@@ -799,12 +805,6 @@ public class HubEndpoint implements MetricSet {
     */
    public void enqueueCallback(final Callback callback) {
       callback.incrementAttempts();
-      SubscriptionCallbackMeters meters = subscriptionCallbackMeters.get(callback.subscriptionId);
-      if(meters == null) {
-         meters = new SubscriptionCallbackMeters(callback.subscriptionId);
-         subscriptionCallbackMeters.put(callback.subscriptionId, meters);
-      }
-      meters.callbackMeter.mark();
       callbackService.submit(callback);
    }
 
@@ -821,22 +821,8 @@ public class HubEndpoint implements MetricSet {
       long backoffMillis = failedCallbackRetryStrategy.backoffMillis(attempts);
       if(backoffMillis > 0L) {
          failedCallbackService.schedule(callback, backoffMillis, TimeUnit.MILLISECONDS);
-         SubscriptionCallbackMeters meters = subscriptionCallbackMeters.get(callback.subscriptionId);
-         if(meters == null) {
-            meters = new SubscriptionCallbackMeters(callback.subscriptionId);
-            subscriptionCallbackMeters.put(callback.subscriptionId, meters);
-         }
-         meters.callbackMeter.mark();
-         meters.failedCallbackMeter.mark();
          return true;
       } else {
-         SubscriptionCallbackMeters meters = subscriptionCallbackMeters.get(callback.subscriptionId);
-         if(meters == null) {
-            meters = new SubscriptionCallbackMeters(callback.subscriptionId);
-            subscriptionCallbackMeters.put(callback.subscriptionId, meters);
-         }
-         meters.callbackMeter.mark();
-         meters.abandonedCallbackMeter.mark();
          maybeDisableSubscription(callback);
          return false;
       }
@@ -846,9 +832,9 @@ public class HubEndpoint implements MetricSet {
       try {
          Subscription subscription = datastore.getSubscription(callback.subscriptionId);
          if(subscription != null) {
-            SubscriptionCallbackMeters meters = subscriptionCallbackMeters.get(callback.subscriptionId);
-            if(meters != null && disableSubscriptionStrategy.disableSubscription(subscription,
-                    meters.callbackMeter, meters.failedCallbackMeter, meters.abandonedCallbackMeter)) {
+            SubscriptionCallbackMetrics metrics = subscriptionCallbackMeters.getUnchecked(callback.subscriptionId);
+            if(metrics != null && disableSubscriptionStrategy.disableSubscription(subscription,
+                    metrics.callbacks, metrics.failedCallbacks, metrics.abandonedCallbacks)) {
                datastore.changeSubscriptionStatus(callback.subscriptionId, Subscription.Status.REMOVED, 0);
                autoDisabledSubscriptions.inc();
                logger.warn("Auto-disabled subscription '" + subscription.callbackURL + "' (" + callback.subscriptionId + ")");
@@ -863,7 +849,8 @@ public class HubEndpoint implements MetricSet {
    public Map<String, Metric> getMetrics() {
       ImmutableMap.Builder<String, Metric> builder = ImmutableMap.builder();
       builder.putAll(notifierFactory.getMetrics());
-      builder.putAll(callbackFactory.getMetrics());
+      builder.putAll(globalCallbackMetrics.getMetrics());
+      //Note: Subscription and host-specific metrics are not included by design!
       builder.putAll(verifierFactory.getMetrics());
       MetricSet datastoreMetrics = datastore.getMetrics();
       if(datastoreMetrics != null) {
@@ -902,19 +889,99 @@ public class HubEndpoint implements MetricSet {
    private Counter autoDisabledSubscriptions = new Counter();
 
    /**
-    * Gets meters for a subscription.
+    * Gets callback metrics for a subscription.
     * @param subscriptionId The subscription id.
-    * @return The meters or <code>null</code> if the subscription does not exist or no callbacks have been made.
+    * @return The meters. If the subscription does not exist, empty meters are returned.
     */
-   public SubscriptionCallbackMeters getCallbackMeters(final long subscriptionId) {
-      return subscriptionCallbackMeters.get(subscriptionId);
+   public SubscriptionCallbackMetrics getSubscriptionCallbackMetrics(final long subscriptionId) {
+      return subscriptionCallbackMeters.getUnchecked(subscriptionId);
    }
 
    /**
-    * Tracks callback stats vs subscription id.
+    * Gets combined callback metrics for all subscriptions.
+    * @return The callback metrics.
     */
-   private final Map<Long, SubscriptionCallbackMeters> subscriptionCallbackMeters = Maps.newConcurrentMap();
+   public CallbackMetrics getGlobalCallbackMetrics() {
+      return globalCallbackMetrics;
+   }
 
+   /**
+    * Gets callback metrics for a specific host.
+    * @param host The host.
+    * @return The metrics or empty metrics if the host is unknown, or has never been used.
+    */
+   public HostCallbackMetrics getHostCallbackMetrics(final String host) {
+      return hostCallbackMetrics.getUnchecked(host);
+   }
+
+   /**
+    * Gets callback metrics hosts sorted by: throughput, failure rate, or abandoned rate.
+    * @param sort The sort order.
+    * @param maxReturned The maximum number returned.
+    * @return The list of metrics.
+    */
+   public List<HostCallbackMetrics> getHostCallbackMetrics(final CallbackMetrics.Sort sort, final int maxReturned) {
+
+      if(maxReturned < 1) return Collections.emptyList();
+
+      List<HostCallbackMetrics> metrics = Lists.newArrayList(hostCallbackMetrics.asMap().values());
+      switch(sort) {
+         case THROUGHPUT_ASC:
+            Collections.sort(metrics, CallbackMetrics.throughputAscendingComparator);
+            break;
+         case THROUGHPUT_DESC:
+            Collections.sort(metrics, Collections.reverseOrder(CallbackMetrics.throughputAscendingComparator));
+            break;
+         case FAILURE_RATE_ASC:
+            Collections.sort(metrics, CallbackMetrics.failureRateAscendingComparator);
+            break;
+         case FAILURE_RATE_DESC:
+            Collections.sort(metrics, Collections.reverseOrder(CallbackMetrics.failureRateAscendingComparator));
+            break;
+         case ABANDONED_RATE_ASC:
+            Collections.sort(metrics, CallbackMetrics.abandonedRateAscendingComparator);
+         case ABANDONED_RATE_DESC:
+            Collections.sort(metrics, Collections.reverseOrder(CallbackMetrics.abandonedRateAscendingComparator));
+            break;
+      }
+
+      return maxReturned >= metrics.size() ? metrics : metrics.subList(0, maxReturned);
+   }
+
+   private int maxMetricsCacheSize = 65536; //TODO: Configure(?)
+
+   /**
+    * Callback metrics for all subscriptions.
+    */
+   final CallbackMetrics globalCallbackMetrics = new CallbackMetrics();
+
+   /**
+    * Callback metrics vs subscription id.
+    */
+   private final LoadingCache<Long, SubscriptionCallbackMetrics> subscriptionCallbackMeters =
+           CacheBuilder.newBuilder()
+                   .maximumSize(maxMetricsCacheSize)
+                   .concurrencyLevel(8)
+                   .build(new CacheLoader<Long, SubscriptionCallbackMetrics>() {
+                      @Override
+                      public SubscriptionCallbackMetrics load(final Long subscriptionId) throws Exception {
+                         return new SubscriptionCallbackMetrics(subscriptionId);
+                      }
+                   });
+
+   /**
+    * Callback metrics vs host.
+    */
+   private final LoadingCache<String, HostCallbackMetrics> hostCallbackMetrics =
+           CacheBuilder.newBuilder()
+                   .maximumSize(maxMetricsCacheSize)
+                   .concurrencyLevel(8)
+                   .build(new CacheLoader<String, HostCallbackMetrics>() {
+                      @Override
+                      public HostCallbackMetrics load(final String host) throws Exception {
+                         return new HostCallbackMetrics(host);
+                      }
+                   });
 
    private SubscriptionVerifierFactory verifierFactory;
    private ExecutorService verifierService;

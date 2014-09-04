@@ -19,7 +19,10 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
+import org.attribyte.api.pubsub.CallbackMetrics;
 import org.attribyte.api.pubsub.HubEndpoint;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * The default callback implementation.
@@ -33,42 +36,62 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
                       final long subscriptionId,
                       final int priority,
                       final HubEndpoint hub,
-                      final Timer timer,
-                      final Meter failedCallbacks,
-                      final Meter abandonedCallbacks) {
+                      final CallbackMetrics globalMetrics,
+                      final CallbackMetrics hostMetrics,
+                      final CallbackMetrics subscriptionMetrics) {
       super(request, subscriptionId, priority, hub);
-      this.timer = timer;
-      this.failedCallbacks = failedCallbacks;
-      this.abandonedCallbacks = abandonedCallbacks;
+      this.globalMetrics = globalMetrics;
+      this.hostMetrics = hostMetrics;
+      this.subscriptionMetrics = subscriptionMetrics;
    }
 
    @Override
    public void run() {
       try {
          final Response response;
-         final Timer.Context ctx = timer.time();
+         final Timer.Context ctx = globalMetrics != null ? globalMetrics.callbacks.time() : null;
          try {
             response = hub.getHttpClient().send(request);
          } finally {
-            ctx.stop();
+            if(ctx != null) recordTime(ctx.stop());
          }
          if(!Response.Code.isOK(response.getStatusCode())) {
-            failedCallbacks.mark();
+            markFailed();
             boolean enqueued = hub.enqueueFailedCallback(this);
             if(!enqueued) {
-               abandonedCallbacks.mark();
+               markAbandoned();
             }
          }
+      } catch(Error e) {
+         throw e;
       } catch(Throwable ioe) {
-         failedCallbacks.mark();
+         markFailed();
          boolean enqueued = hub.enqueueFailedCallback(this);
          if(!enqueued) {
-            abandonedCallbacks.mark();
+            markAbandoned();
          }
       }
    }
 
-   private final Timer timer;
-   private final Meter failedCallbacks;
-   private final Meter abandonedCallbacks;
+   private void recordTime(final long nanos) {
+      if(hostMetrics != null) hostMetrics.callbacks.update(nanos, TimeUnit.NANOSECONDS);
+      if(subscriptionMetrics != null) subscriptionMetrics.callbacks.update(nanos, TimeUnit.NANOSECONDS);
+   }
+
+   private void markFailed() {
+      if(globalMetrics != null) globalMetrics.failedCallbacks.mark();
+      if(hostMetrics != null) hostMetrics.failedCallbacks.mark();
+      if(subscriptionMetrics != null) subscriptionMetrics.failedCallbacks.mark();
+   }
+
+   private void markAbandoned() {
+      if(globalMetrics != null) globalMetrics.abandonedCallbacks.mark();
+      if(hostMetrics != null) hostMetrics.abandonedCallbacks.mark();
+      if(subscriptionMetrics != null) subscriptionMetrics.abandonedCallbacks.mark();
+   }
+
+   private final CallbackMetrics globalMetrics;
+   private final CallbackMetrics hostMetrics;
+   private final CallbackMetrics subscriptionMetrics;
+
 }
