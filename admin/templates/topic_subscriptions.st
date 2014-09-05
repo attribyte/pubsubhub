@@ -21,11 +21,16 @@ $endif$
         <!-- $subscription.id$ -->
         <td><a href="/admin/host/$subscription.callbackHost$">$subscription.callbackHost$</a></td>
         <td>$subscription.callbackPath$</td>
-        <td>$subscription.status$</td>
+        <td><a href="$subscription.callbackURL$" class="ss" id="ss_$subscription.id$" name="$subscription.status$">$subscription.status$</a>
+            &nbsp;
+            <a href="/admin/metrics/$subscription.id$"><i class="fi-graph-bar"></i></a>
+        </td>
         <td>$subscription.expireTime; format="date:long"$</td>
     </tr>
     }$
     </tbody>
 </table>
-
+<script>
+    bindSubscriptionEdit();
+</script>
 >>

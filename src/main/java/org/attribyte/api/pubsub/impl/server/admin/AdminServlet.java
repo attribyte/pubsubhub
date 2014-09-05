@@ -5,16 +5,21 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.attribyte.api.Logger;
+import org.attribyte.api.http.AuthScheme;
+import org.attribyte.api.http.impl.BasicAuthScheme;
 import org.attribyte.api.pubsub.CallbackMetrics;
 import org.attribyte.api.pubsub.HostCallbackMetrics;
 import org.attribyte.api.pubsub.HubDatastore;
 import org.attribyte.api.pubsub.HubEndpoint;
+import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 import org.attribyte.api.pubsub.Topic;
+import org.attribyte.api.pubsub.impl.client.BasicAuth;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayCallbackMetrics;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayMetricsDetail;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplaySubscribedHost;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayTopic;
+import org.attribyte.util.URIEncoder;
 import org.stringtemplate.v4.DateRenderer;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STErrorListener;
@@ -310,7 +315,7 @@ public class AdminServlet extends HttpServlet {
    }
 
    private void renderCallbackMetricsDetail(final HttpServletRequest request,
-                                            final String host,
+                                            final String hostOrId,
                                             final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
@@ -319,7 +324,27 @@ public class AdminServlet extends HttpServlet {
       try {
          final CallbackMetrics detailMetrics;
          final String title;
-         if(host == null || host.equalsIgnoreCase("[all]")) {
+
+         long subscriptionId = 0L;
+         if(hostOrId != null) {
+            try {
+               subscriptionId = Long.parseLong(hostOrId);
+            } catch(NumberFormatException ne) {
+               subscriptionId = 0L;
+            }
+         }
+
+         final String host = hostOrId;
+         if(subscriptionId > 0) {
+            Subscription subscription = datastore.getSubscription(subscriptionId);
+            if(subscription != null) {
+               title = subscription.getCallbackURL();
+               detailMetrics = endpoint.getSubscriptionCallbackMetrics(subscriptionId);
+            } else {
+               sendNotFound(response);
+               return;
+            }
+         } else if(host == null || host.equalsIgnoreCase("[all]")) {
             title = "All Hosts";
             detailMetrics = endpoint.getGlobalCallbackMetrics();
          } else {
@@ -429,6 +454,99 @@ public class AdminServlet extends HttpServlet {
          logger.error("Problem editing subscription", se);
          response.sendError(500);
       }
+   }
+
+   private final URIEncoder urlEncoder = new URIEncoder();
+
+   private void postSubscriptionAdd(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
+
+      try {
+
+         String topicURL = request.getParameter("hub.topic");
+
+         if(topicURL == null || topicURL.length() == 0) {
+            response.sendError(400, "The 'hub.topic' must be specified");
+            return;
+         }
+
+         try {
+            topicURL = urlEncoder.recode(topicURL);
+         } catch(Exception e) {
+            response.sendError(400, "The 'hub.topic' is invalid");
+            return;
+         }
+
+
+         String callbackURL = request.getParameter("hub.callback");
+
+         if(callbackURL == null || callbackURL.length() == 0) {
+            response.sendError(400, "The 'hub.callback' must be specified");
+            return;
+         }
+
+         try {
+            callbackURL = urlEncoder.recode(callbackURL);
+         } catch(Exception e) {
+            response.sendError(400, "The 'hub.callback' is invalid");
+            return;
+         }
+
+         String callbackHostURL = org.attribyte.api.http.Request.getHostURL(callbackURL);
+         String callbackAuthScheme = request.getParameter("hub.x-callback_auth_scheme");
+         String authId = null;
+         AuthScheme authScheme = null;
+
+         if(callbackAuthScheme != null) {
+
+            if(callbackAuthScheme.equalsIgnoreCase("basic")) {
+               authScheme = datastore.resolveAuthScheme("Basic");
+               String callbackUsername = request.getParameter("hub.x-callback_auth_username");
+               String callbackPassword = request.getParameter("hub.x-callback_auth_password");
+               if(callbackUsername != null && callbackPassword != null) {
+                  authId = BasicAuthScheme.buildAuthHeaderValue(callbackUsername, callbackPassword).substring("Basic ".length()).trim();
+               } else {
+                  response.sendError(400, "Auth username and password must be specified");
+               }
+
+            } else {
+               response.sendError(400, "Only 'Basic' auth is currently supported");
+               return;
+            }
+         }
+
+         Subscriber subscriber = datastore.getSubscriber(callbackHostURL, authScheme, authId, true); //Create, if required.
+
+      } catch(IOException ioe) {
+         throw ioe;
+      } catch(Exception se) {
+         logger.error("Problem editing subscription", se);
+         response.sendError(500);
+      }
+
+
+      //topicURL = urlDecoder.recode(request.getParameterValue("hub.topic"));
+      //callbackURL = urlDecoder.recode(request.getParameterValue("hub.callback"));
+      //callbackHostURL = Request.getHostURL(callbackURL);
+      //String callbackAuthScheme = request.getParameterValue("hub.x-callback_auth_scheme");
+      //String callbackAuth = request.getParameterValue("hub.x-callback_auth");
+      //Subscriber subscriber = datastore.getSubscriber(callbackHostURL, authScheme, authId, true); //Create...
+      /*
+            Subscription subscription = datastore.getSubscription(topicURL, callbackURL);
+            Subscription.Builder builder;
+            if(subscription == null) {
+               Topic topic = datastore.getTopic(topicURL, true);
+               builder = new Subscription.Builder(0L, callbackURL, topic, subscriber);
+            } else {
+               builder = new Subscription.Builder(subscription, subscriber);
+            }
+
+            builder.setStatus(status);
+            builder.setLeaseSeconds(Integer.parseInt(leaseSecondsStr));
+            builder.setSecret(hubSecret);
+            Subscription updatedSubscription = datastore.updateSubscription(builder.create(), true); //Extend lease...
+       */
+
+
    }
 
    private void sendNotFound(HttpServletResponse response) throws IOException {
