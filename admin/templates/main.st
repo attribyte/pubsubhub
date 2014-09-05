@@ -8,7 +8,10 @@ $head()$
     </div>
     <div class="large-9 columns">
         <ul class="inline-list right">
-            <li><span>$hostname$ @ $time; format="long"$</span></li>
+            <li>
+                <small>$hostname$ @ $time; format="long"$
+                    <small>
+            </li>
         </ul>
     </div>
 </div>
@@ -20,10 +23,14 @@ $head()$
     <div class="large-3 pull-9 columns">
         <ul class="side-nav">
             <li><a href="/admin/topics/active">Topics</a></li>
-            <li><a href="#" data-reveal-id="topic-add-modal">&nbsp; &nbsp;New Topic</a></li>
-            </li>
+            <li><a href="#" data-reveal-id="topic-add-modal">&nbsp;&nbsp;
+                <small><i class="fi-plus"></i></small>
+                New Topic</a></li>
             <li><a href="/admin/subscribers">Subscribers</a></li>
             <li><a href="/admin/subscriptions">Subscriptions</a></li>
+            <li><a href="#" data-reveal-id="add-subscription-modal">&nbsp;&nbsp;
+                <small><i class="fi-plus"></i></small>
+                New Subscription</a></li>
             <li><a href="/admin/metrics">Metrics</a></li>
         </ul>
     </div>
@@ -33,7 +40,9 @@ $footer()$
 <script src="$constants.jsBase$/foundation.min.js"></script>
 <script>
     jQuery(document).foundation();
-    bindTopicForm();
+    jQuery(window).load(function () {
+        bindTopicForm();
+    });
 </script>
 </body>
 >>

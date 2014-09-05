@@ -1,5 +1,7 @@
 host_subscriptions(host, subscriptions, activeOnly) ::= <<
-<h3>Subscriptions for $host$</h3>
+<h4>Subscriptions
+    <small>$host$</small>
+</h4>
 $if(activeOnly)$
 <h5 class="subheader"><b>Active</b> &middot; <a href="/admin/host/$host$">All</a></h5>
 $else$
@@ -29,6 +31,8 @@ $endif$
     </tbody>
 </table>
 <script>
-    bindSubscriptionEdit();
+    jQuery(window).load(function () {
+        bindSubscriptionEdit();
+    });
 </script>
 >>

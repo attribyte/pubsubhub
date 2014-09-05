@@ -1,5 +1,7 @@
 topic_subscriptions(topic, subscriptions, activeOnly) ::= <<
-<h3>Subscriptions for $topic.url$</h3>
+<h4>Subscriptions
+    <small>$topic.url$</small>
+</h4>
 $if(activeOnly)$
 <h5 class="subheader"><b>Active</b> &middot; <a href="/admin/topic/$topic.id$">All</a></h5>
 $else$
@@ -31,6 +33,8 @@ $endif$
     </tbody>
 </table>
 <script>
-    bindSubscriptionEdit();
+    jQuery(window).load(function () {
+        bindSubscriptionEdit();
+    });
 </script>
 >>

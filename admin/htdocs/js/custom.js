@@ -31,6 +31,12 @@ function bindTopicForm() {
     $('#edit-subscription-form').bind('submit', function () {
         event.preventDefault();
         editSubscription();
+        return false;
+    });
+
+    $('#add-subscription-form').bind('submit', function () {
+        event.preventDefault();
+        addSubscription();
     });
 }
 
@@ -85,7 +91,7 @@ function editSubscription() {
     var sid = $("#edit-subscription-form-sid").val();
     $.ajax({
         type: 'POST',
-        url: "/admin/subscription",
+        url: "/admin/subscription/" + sid,
         data: $('#edit-subscription-form').serialize(),
         success: function (html, textStatus) {
             if (textStatus == "success") {
@@ -94,6 +100,24 @@ function editSubscription() {
                 alert("Error: " + textStatus);
             }
             $('#edit-subscription-modal').foundation('reveal', 'close');
+        },
+        error: handleXHRError
+    });
+}
+
+function addSubscription() {
+    $.ajax({
+        type: 'POST',
+        url: "/admin/subscription",
+        data: $('#add-subscription-form').serialize(),
+        success: function (html, textStatus) {
+            var id = html.toString();
+            if (id == "ok") {
+                $('#add-subscription-modal').foundation('reveal', 'close');
+                location.href = "/admin/subscriptions";
+            } else {
+                $('#subscription-exists-modal').foundation('reveal', 'open');
+            }
         },
         error: handleXHRError
     });

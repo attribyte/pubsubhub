@@ -1,5 +1,5 @@
 all_subscriptions(subscriptions, activeOnly) ::= <<
-<h3>Subscriptions</h3>
+<h4>Subscriptions</h4>
 $if(activeOnly)$
 <h5 class="subheader"><b>Active</b> &middot; <a href="/admin/subscriptions">All</a></h5>
 $else$
@@ -32,6 +32,8 @@ $endif$
     </tbody>
 </table>
 <script>
-    bindSubscriptionEdit();
+    jQuery(window).load(function () {
+        bindSubscriptionEdit();
+    });
 </script>
 >>

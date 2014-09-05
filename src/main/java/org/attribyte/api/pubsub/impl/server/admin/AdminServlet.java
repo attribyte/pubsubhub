@@ -69,7 +69,7 @@ public class AdminServlet extends HttpServlet {
       String obj = path.size() > 0 ? path.get(0) : null;
       if(obj != null) {
          if(obj.equals("subscription")) {
-            postSubscriptionEdit(request, response);
+            postSubscriptionEdit(request, path.size() > 1 ? path.get(1) : null, response);
          } else if(obj.equals("topic")) {
             postTopicAdd(request, response);
          } else {
@@ -400,10 +400,12 @@ public class AdminServlet extends HttpServlet {
       return extendLeaseSeconds != null ? extendLeaseSeconds : extendLeaseValues.get("week");
    }
 
-   private void postSubscriptionEdit(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
-      String idStr = request.getParameter("id");
+
+   private void postSubscriptionEdit(final HttpServletRequest request,
+                                     final String idStr,
+                                     final HttpServletResponse response) throws IOException {
       if(idStr == null || idStr.trim().length() == 0) {
-         response.sendError(400);
+         postSubscriptionAdd(request, response);
          return;
       }
 
@@ -462,91 +464,86 @@ public class AdminServlet extends HttpServlet {
 
       try {
 
-         String topicURL = request.getParameter("hub.topic");
+         String topicURL = request.getParameter("topicURL");
 
          if(topicURL == null || topicURL.length() == 0) {
-            response.sendError(400, "The 'hub.topic' must be specified");
+            response.sendError(400, "The 'topicURL' must be specified");
             return;
          }
 
          try {
             topicURL = urlEncoder.recode(topicURL);
          } catch(Exception e) {
-            response.sendError(400, "The 'hub.topic' is invalid");
+            response.sendError(400, "The 'topicURL' is invalid");
             return;
          }
 
-
-         String callbackURL = request.getParameter("hub.callback");
+         String callbackURL = request.getParameter("callbackURL");
 
          if(callbackURL == null || callbackURL.length() == 0) {
-            response.sendError(400, "The 'hub.callback' must be specified");
+            response.sendError(400, "The 'callbackURL' must be specified");
             return;
          }
 
          try {
             callbackURL = urlEncoder.recode(callbackURL);
          } catch(Exception e) {
-            response.sendError(400, "The 'hub.callback' is invalid");
+            response.sendError(400, "The 'callbackURL' is invalid");
             return;
          }
 
+         Subscription existingSubscription = datastore.getSubscription(topicURL, callbackURL);
+         if(existingSubscription != null) { //Nope...editing..
+            response.setStatus(200);
+            response.getWriter().print(existingSubscription.getId());
+            return;
+         }
+
+         Subscription.Status status = Subscription.Status.REMOVED;
+         String statusStr = request.getParameter("status");
+         if(statusStr.equals("active")) {
+            status = Subscription.Status.ACTIVE;
+         } else if(statusStr.equals("expired")) {
+            status = Subscription.Status.EXPIRED;
+         }
+
          String callbackHostURL = org.attribyte.api.http.Request.getHostURL(callbackURL);
-         String callbackAuthScheme = request.getParameter("hub.x-callback_auth_scheme");
+         String callbackAuthScheme = request.getParameter("callbackAuthScheme");
          String authId = null;
          AuthScheme authScheme = null;
 
-         if(callbackAuthScheme != null) {
-
-            if(callbackAuthScheme.equalsIgnoreCase("basic")) {
+         if(callbackAuthScheme != null && callbackAuthScheme.equalsIgnoreCase("basic")) {
+            String callbackUsername = request.getParameter("callbackUsername");
+            String callbackPassword = request.getParameter("callbackPassword");
+            if(callbackUsername != null && callbackPassword != null &&
+                    callbackUsername.length() > 0 && callbackPassword.length() > 0) {
                authScheme = datastore.resolveAuthScheme("Basic");
-               String callbackUsername = request.getParameter("hub.x-callback_auth_username");
-               String callbackPassword = request.getParameter("hub.x-callback_auth_password");
-               if(callbackUsername != null && callbackPassword != null) {
-                  authId = BasicAuthScheme.buildAuthHeaderValue(callbackUsername, callbackPassword).substring("Basic ".length()).trim();
-               } else {
-                  response.sendError(400, "Auth username and password must be specified");
-               }
-
-            } else {
-               response.sendError(400, "Only 'Basic' auth is currently supported");
-               return;
+               authId = BasicAuthScheme.buildAuthHeaderValue(callbackUsername, callbackPassword).substring("Basic ".length()).trim();
             }
+         } else {
+            response.sendError(400, "Only 'Basic' auth is currently supported");
+            return;
          }
+
+         int extendLeaseSeconds = translateExtendLease(request.getParameter("extendLease"));
+         String hubSecret = request.getParameter("hubSecret");
 
          Subscriber subscriber = datastore.getSubscriber(callbackHostURL, authScheme, authId, true); //Create, if required.
 
+         Topic topic = datastore.getTopic(topicURL, true);
+         Subscription.Builder builder = new Subscription.Builder(0L, callbackURL, topic, subscriber);
+         builder.setStatus(status);
+         builder.setLeaseSeconds(extendLeaseSeconds);
+         builder.setSecret(hubSecret);
+         Subscription updatedSubscription = datastore.updateSubscription(builder.create(), status == Subscription.Status.ACTIVE);
+         response.setStatus(201);
+         response.getWriter().print("ok");
       } catch(IOException ioe) {
          throw ioe;
       } catch(Exception se) {
-         logger.error("Problem editing subscription", se);
+         logger.error("Problem creating subscription", se);
          response.sendError(500);
       }
-
-
-      //topicURL = urlDecoder.recode(request.getParameterValue("hub.topic"));
-      //callbackURL = urlDecoder.recode(request.getParameterValue("hub.callback"));
-      //callbackHostURL = Request.getHostURL(callbackURL);
-      //String callbackAuthScheme = request.getParameterValue("hub.x-callback_auth_scheme");
-      //String callbackAuth = request.getParameterValue("hub.x-callback_auth");
-      //Subscriber subscriber = datastore.getSubscriber(callbackHostURL, authScheme, authId, true); //Create...
-      /*
-            Subscription subscription = datastore.getSubscription(topicURL, callbackURL);
-            Subscription.Builder builder;
-            if(subscription == null) {
-               Topic topic = datastore.getTopic(topicURL, true);
-               builder = new Subscription.Builder(0L, callbackURL, topic, subscriber);
-            } else {
-               builder = new Subscription.Builder(subscription, subscriber);
-            }
-
-            builder.setStatus(status);
-            builder.setLeaseSeconds(Integer.parseInt(leaseSecondsStr));
-            builder.setSecret(hubSecret);
-            Subscription updatedSubscription = datastore.updateSubscription(builder.create(), true); //Extend lease...
-       */
-
-
    }
 
    private void sendNotFound(HttpServletResponse response) throws IOException {
