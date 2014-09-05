@@ -139,12 +139,15 @@ public class AdminServlet extends HttpServlet {
       ST subscriberTemplate = getTemplate("subscribers");
 
       try {
+         Paging paging = getPaging(request);
          List<DisplaySubscribedHost> subscribers = Lists.newArrayListWithExpectedSize(25);
-         List<String> endpoints = datastore.getSubscribedHosts(0, 50);
+         List<String> endpoints = datastore.getSubscribedHosts(paging.getStart(), pageRequestSize);
+         paging = nextPaging(paging, endpoints);
          for(String host : endpoints) {
             subscribers.add(new DisplaySubscribedHost(host, datastore.countActiveHostSubscriptions(host)));
          }
          subscriberTemplate.add("subscribers", subscribers);
+         subscriberTemplate.add("paging", paging);
          mainTemplate.add("content", subscriberTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
@@ -163,14 +166,19 @@ public class AdminServlet extends HttpServlet {
       ST subscriberTemplate = getTemplate("topics");
 
       try {
-         List<DisplayTopic> displayTopics = Lists.newArrayListWithExpectedSize(25);
 
-         List<Topic> topics = activeOnly ? datastore.getActiveTopics(0, 50) : datastore.getTopics(0, 50);
+         Paging paging = getPaging(request);
+         List<DisplayTopic> displayTopics = Lists.newArrayListWithExpectedSize(25);
+         List<Topic> topics = activeOnly ? datastore.getActiveTopics(paging.getStart(), pageRequestSize) :
+                 datastore.getTopics(paging.getStart(), pageRequestSize);
+         paging = nextPaging(paging, topics);
          for(Topic topic : topics) {
             displayTopics.add(new DisplayTopic(topic, datastore.countActiveSubscriptions(topic.getId())));
          }
+
          subscriberTemplate.add("topics", displayTopics);
          subscriberTemplate.add("activeOnly", activeOnly);
+         subscriberTemplate.add("paging", paging);
          mainTemplate.add("content", subscriberTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
@@ -250,7 +258,7 @@ public class AdminServlet extends HttpServlet {
       try {
          Paging paging = getPaging(request);
          List<Subscription> subscriptions = datastore.getHostSubscriptions(host, getSubscriptionStatus(request, activeOnly),
-                 paging.getStart(), paging.getStart() + pageRequestSize);
+                 paging.getStart(), pageRequestSize);
          paging = nextPaging(paging, subscriptions);
 
          subscriptionsTemplate.add("subscriptions", subscriptions);
@@ -280,7 +288,7 @@ public class AdminServlet extends HttpServlet {
 
          Paging paging = getPaging(request);
          List<Subscription> subscriptions = datastore.getSubscriptions(getSubscriptionStatus(request, activeOnly),
-                 paging.getStart(), paging.getStart() + pageRequestSize);
+                 paging.getStart(), pageRequestSize);
          paging = nextPaging(paging, subscriptions);
 
          subscriptionsTemplate.add("subscriptions", subscriptions);
@@ -635,6 +643,6 @@ public class AdminServlet extends HttpServlet {
    private final STGroup templateGroup;
    private final Splitter pathSplitter = Splitter.on('/').omitEmptyStrings().trimResults();
    private final boolean debug = true;
-   private final int maxPerPage = 5;
-   private final int pageRequestSize = 6;
+   private final int maxPerPage = 10;
+   private final int pageRequestSize = maxPerPage + 1;
 }

@@ -1,5 +1,6 @@
-subscribers(subscribers) ::= <<
+subscribers(subscribers, paging) ::= <<
 <h4>Subscribers</h4>
+$pagination()$
 <table>
     <thead>
     <tr>
