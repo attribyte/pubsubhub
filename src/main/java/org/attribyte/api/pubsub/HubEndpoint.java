@@ -828,7 +828,11 @@ public class HubEndpoint implements MetricSet {
       }
    }
 
-   private void maybeDisableSubscription(Callback callback) {
+   /**
+    * Possibly disable a failing subscription using a configured strategy.
+    * @param callback The callback.
+    */
+   private void maybeDisableSubscription(final Callback callback) {
       try {
          Subscription subscription = datastore.getSubscription(callback.subscriptionId);
          if(subscription != null) {
