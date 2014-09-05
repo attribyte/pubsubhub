@@ -132,7 +132,10 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
             builder.setLeaseSeconds(Integer.parseInt(leaseSecondsStr));
             builder.setSecret(hubSecret);
             Subscription updatedSubscription = datastore.updateSubscription(builder.create(), true); //Extend lease...
-            hub.subscriptionVerified(updatedSubscription);
+            if(status == Subscription.Status.ACTIVE &&
+                    (subscription == null || subscription.getStatus() != Subscription.Status.ACTIVE)) { //Skip if subscription was already active
+               hub.subscriptionVerified(updatedSubscription);
+            }
          } else if(!bodyMatchesChallenge) {
             failedMeter.mark();
          } else { //Async verification error
