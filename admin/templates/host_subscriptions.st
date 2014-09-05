@@ -1,4 +1,4 @@
-host_subscriptions(host, subscriptions, activeOnly) ::= <<
+host_subscriptions(host, subscriptions, activeOnly, paging) ::= <<
 <h4>Subscriptions
     <small>$host$</small>
 </h4>
@@ -7,6 +7,7 @@ $if(activeOnly)$
 $else$
 <h5 class="subheader"><a href="/admin/host/$host$/active">Active</a> &middot; <b>All</b></h5>
 $endif$
+$pagination()$
 <table>
     <thead>
     <tr>

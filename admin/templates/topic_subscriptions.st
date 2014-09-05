@@ -1,4 +1,4 @@
-topic_subscriptions(topic, subscriptions, activeOnly) ::= <<
+topic_subscriptions(topic, subscriptions, activeOnly, paging) ::= <<
 <h4>Subscriptions
     <small>$topic.url$</small>
 </h4>
@@ -7,7 +7,7 @@ $if(activeOnly)$
 $else$
 <h5 class="subheader"><a href="/admin/topic/$topic.id$/active">Active</a> &middot; <b>All</b></h5>
 $endif$
-
+$pagination()$
 <table>
     <thead>
     <tr>

@@ -14,11 +14,11 @@ import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 import org.attribyte.api.pubsub.Topic;
-import org.attribyte.api.pubsub.impl.client.BasicAuth;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayCallbackMetrics;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayMetricsDetail;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplaySubscribedHost;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayTopic;
+import org.attribyte.api.pubsub.impl.server.admin.model.Paging;
 import org.attribyte.util.URIEncoder;
 import org.stringtemplate.v4.DateRenderer;
 import org.stringtemplate.v4.ST;
@@ -219,10 +219,15 @@ public class AdminServlet extends HttpServlet {
             return;
          }
 
-         List<Subscription> subscriptions = datastore.getTopicSubscriptions(topic, getSubscriptionStatus(request, activeOnly), 0, 50);
+         Paging paging = getPaging(request);
+         List<Subscription> subscriptions = datastore.getTopicSubscriptions(topic, getSubscriptionStatus(request, activeOnly),
+                 paging.getStart(), pageRequestSize);
+         paging = nextPaging(paging, subscriptions);
+
          subscriptionsTemplate.add("subscriptions", subscriptions);
          subscriptionsTemplate.add("topic", new DisplayTopic(topic, 0));
          subscriptionsTemplate.add("activeOnly", activeOnly);
+         subscriptionsTemplate.add("paging", paging);
          mainTemplate.add("content", subscriptionsTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
@@ -243,11 +248,15 @@ public class AdminServlet extends HttpServlet {
       ST subscriptionsTemplate = getTemplate("host_subscriptions");
 
       try {
+         Paging paging = getPaging(request);
+         List<Subscription> subscriptions = datastore.getHostSubscriptions(host, getSubscriptionStatus(request, activeOnly),
+                 paging.getStart(), paging.getStart() + pageRequestSize);
+         paging = nextPaging(paging, subscriptions);
 
-         List<Subscription> subscriptions = datastore.getHostSubscriptions(host, getSubscriptionStatus(request, activeOnly), 0, 50);
          subscriptionsTemplate.add("subscriptions", subscriptions);
          subscriptionsTemplate.add("host", host);
          subscriptionsTemplate.add("activeOnly", activeOnly);
+         subscriptionsTemplate.add("paging", paging);
          mainTemplate.add("content", subscriptionsTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
@@ -268,9 +277,15 @@ public class AdminServlet extends HttpServlet {
       ST subscriptionsTemplate = getTemplate("all_subscriptions");
 
       try {
-         List<Subscription> subscriptions = datastore.getSubscriptions(getSubscriptionStatus(request, activeOnly), 0, 50);
+
+         Paging paging = getPaging(request);
+         List<Subscription> subscriptions = datastore.getSubscriptions(getSubscriptionStatus(request, activeOnly),
+                 paging.getStart(), paging.getStart() + pageRequestSize);
+         paging = nextPaging(paging, subscriptions);
+
          subscriptionsTemplate.add("subscriptions", subscriptions);
          subscriptionsTemplate.add("activeOnly", activeOnly);
+         subscriptionsTemplate.add("paging", paging);
          mainTemplate.add("content", subscriptionsTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
@@ -282,6 +297,30 @@ public class AdminServlet extends HttpServlet {
       } catch(Exception se) {
          se.printStackTrace();
          response.sendError(500, "Datastore error");
+      }
+   }
+
+   private Paging getPaging(final HttpServletRequest request) {
+      String pageStr = request.getParameter("p");
+      if(pageStr == null || pageStr.trim().length() == 0) {
+         pageStr = "1";
+      }
+      return new Paging(Integer.parseInt(pageStr), maxPerPage, false);
+   }
+
+   /**
+    * Expects the input list to have at least one additional object that is
+    * used to determine if there are more pages.
+    * @param currPage The current page.
+    * @param pageList The list of objects.
+    * @return The new paging.
+    */
+   private Paging nextPaging(final Paging currPage, final List<? extends Object> pageList) {
+      if(pageList.size() > maxPerPage) {
+         while(pageList.size() > maxPerPage) pageList.remove(pageList.size() - 1);
+         return new Paging(currPage.getCurr(), maxPerPage, true);
+      } else {
+         return new Paging(currPage.getCurr(), maxPerPage, false);
       }
    }
 
@@ -596,4 +635,6 @@ public class AdminServlet extends HttpServlet {
    private final STGroup templateGroup;
    private final Splitter pathSplitter = Splitter.on('/').omitEmptyStrings().trimResults();
    private final boolean debug = true;
+   private final int maxPerPage = 5;
+   private final int pageRequestSize = 6;
 }

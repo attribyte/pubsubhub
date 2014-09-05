@@ -1,11 +1,11 @@
-all_subscriptions(subscriptions, activeOnly) ::= <<
+all_subscriptions(subscriptions, activeOnly, paging) ::= <<
 <h4>Subscriptions</h4>
 $if(activeOnly)$
 <h5 class="subheader"><b>Active</b> &middot; <a href="/admin/subscriptions">All</a></h5>
 $else$
 <h5 class="subheader"><a href="/admin/subscriptions/active">Active</a> &middot; <b>All</b></h5>
 $endif$
-
+$pagination()$
 <table>
     <thead>
     <tr>
