@@ -72,6 +72,7 @@ modals() ::= <<
 
         <div class="row">
             <div class="large-12 columns">
+                <label><b>Endpoint Auth</b></label>
                 <div class="row collapse">
                     <div class="small-2 large-2 columns">
                         <span class="prefix">Username</span>
