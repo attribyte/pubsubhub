@@ -1,6 +1,7 @@
 package org.attribyte.api.pubsub.impl.server.admin;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -464,7 +465,30 @@ public class AdminServlet extends HttpServlet {
       try {
          long id = Long.parseLong(idStr);
          Subscription subscription = datastore.getSubscription(id);
+
          if(subscription != null) {
+
+            Subscriber currSubscriber = datastore.getSubscriber(subscription.getEndpointId());
+            if(currSubscriber == null) {
+               response.sendError(500, "Data integrity violation");
+               return;
+            }
+
+            String callbackUsername = Strings.nullToEmpty(request.getParameter("callbackUsername")).trim();
+            String callbackPassword = Strings.nullToEmpty(request.getParameter("callbackPassword")).trim();
+
+            Subscriber newSubscriber = null;
+
+            if(callbackUsername.length() > 0 && callbackPassword.length() > 0) {
+               AuthScheme authScheme = datastore.resolveAuthScheme("Basic");
+               String authId = getBasicAuthId(callbackUsername, callbackPassword);
+               newSubscriber = datastore.getSubscriber(currSubscriber.getURL(), authScheme, authId, true);
+               if(newSubscriber.getId() != currSubscriber.getId()) { //Change the endpoint...
+                  subscription = new Subscription.Builder(subscription, newSubscriber).create();
+                  datastore.updateSubscription(subscription, false);
+               }
+            }
+
             if(action == null || action.length() == 0) {
                response.getWriter().print(subscription.getStatus().toString());
                response.setStatus(200);
@@ -560,12 +584,11 @@ public class AdminServlet extends HttpServlet {
          AuthScheme authScheme = null;
 
          if(callbackAuthScheme != null && callbackAuthScheme.equalsIgnoreCase("basic")) {
-            String callbackUsername = request.getParameter("callbackUsername");
-            String callbackPassword = request.getParameter("callbackPassword");
-            if(callbackUsername != null && callbackPassword != null &&
-                    callbackUsername.length() > 0 && callbackPassword.length() > 0) {
+            String callbackUsername = Strings.nullToEmpty(request.getParameter("callbackUsername"));
+            String callbackPassword = Strings.nullToEmpty(request.getParameter("callbackPassword"));
+            if(callbackUsername.length() > 0 && callbackPassword.length() > 0) {
                authScheme = datastore.resolveAuthScheme("Basic");
-               authId = BasicAuthScheme.buildAuthHeaderValue(callbackUsername, callbackPassword).substring("Basic ".length()).trim();
+               authId = getBasicAuthId(callbackUsername, callbackPassword);
             }
          } else {
             response.sendError(400, "Only 'Basic' auth is currently supported");
@@ -595,6 +618,16 @@ public class AdminServlet extends HttpServlet {
 
    private void sendNotFound(HttpServletResponse response) throws IOException {
       response.sendError(404, "Not Found");
+   }
+
+   /**
+    * Gets the endpoint basic authId.
+    * @param username The username.
+    * @param password The password.
+    * @return The auth id.
+    */
+   private String getBasicAuthId(final String username, final String password) {
+      return BasicAuthScheme.buildAuthHeaderValue(username, password).substring("Basic ".length()).trim();
    }
 
    /**

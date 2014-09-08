@@ -145,6 +145,27 @@ modals() ::= <<
                 <input type="submit" class="button postfix" value="Edit"/>
             </div>
         </div>
+
+        <div class="row collapse">
+            <div class="large-12 columns">
+                <label><b>Endpoint Auth</b></label>
+                <div class="row collapse">
+                    <div class="small-2 large-2 columns">
+                        <span class="prefix">Username</span>
+                    </div>
+                    <div class="small-4 columns">
+                        <input name="callbackUsername" type="text" placeholder="Username">
+                    </div>
+                    <div class="small-2 large-2 columns">
+                        <span class="prefix">Password</span>
+                    </div>
+                    <div class="small-4 columns">
+                        <input name="callbackPassword" type="password" placeholder="Top Secret">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <input type="hidden" name="id" id="edit-subscription-form-sid"/>
     </form>
     <a class="close-reveal-modal">&#215;</a>
