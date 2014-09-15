@@ -37,15 +37,15 @@ public class Notifier extends org.attribyte.api.pubsub.Notifier {
 
    public Notifier(final Notification notification, final HubEndpoint hub,
                    final SubscriptionCache subscriptionCache,
-                   final Timer timer) {
+                   final Timer broadcastTimer) {
       super(notification, hub);
       this.subscriptionCache = subscriptionCache;
-      this.timer = timer;
+      this.broadcastTimer = broadcastTimer;
    }
 
    @Override
    public void run() {
-      final Timer.Context ctx = timer.time();
+      final Timer.Context ctx = broadcastTimer.time();
       try {
 
          if(subscriptionCache != null) {
@@ -144,7 +144,7 @@ public class Notifier extends org.attribyte.api.pubsub.Notifier {
       }
    }
 
-   private final Timer timer;
+   private final Timer broadcastTimer;
    private final SubscriptionCache subscriptionCache;
 
 }

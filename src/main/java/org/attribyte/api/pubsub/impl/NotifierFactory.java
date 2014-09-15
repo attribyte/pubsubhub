@@ -28,7 +28,7 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
 
    @Override
    public Notifier create(final Notification notification, final HubEndpoint hub) {
-      return new Notifier(notification, hub, subscriptionCache, notificationTimer);
+      return new Notifier(notification, hub, subscriptionCache, broadcastTimer);
    }
 
    @Override
@@ -36,15 +36,15 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
 
       if(subscriptionCache == null) {
          return ImmutableMap.<String, Metric>of(
-                 "notifications", notificationTimer
+                 "broadcasts", broadcastTimer
          );
       } else {
          return ImmutableMap.<String, Metric>of(
-                 "notifications", notificationTimer,
-                 "callback-subscription-requests", subscriptionCache.requests,
-                 "callback-subscription-cache-hits", subscriptionCache.hits,
-                 "callback-subscription-cache-hit-ratio", subscriptionCache.hitRatio,
-                 "callback-subscription-cache-size", subscriptionCache.cacheSizeGauge
+                 "broadcasts", broadcastTimer,
+                 "broadcast-subscription-requests", subscriptionCache.requests,
+                 "broadcast-subscription-cache-hits", subscriptionCache.hits,
+                 "broadcast-subscription-cache-hit-ratio", subscriptionCache.hitRatio,
+                 "broadcast-subscription-cache-size", subscriptionCache.cacheSizeGauge
          );
       }
    }
@@ -72,7 +72,7 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
     * Measures the notification rate and the time required to
     * select subscriptions and enqueue callbacks.
     */
-   final Timer notificationTimer = new Timer();
+   Timer broadcastTimer;
 
    private SubscriptionCache subscriptionCache = null;
 }
