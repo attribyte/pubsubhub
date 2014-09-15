@@ -330,7 +330,7 @@ public class HubEndpoint implements MetricSet {
          if(notifierFactory == null) {
             initUtil.throwRequiredException("notifierFactoryClass");
          } else {
-            notifierFactory.init(initUtil.getProperties());
+            notifierFactory.init(new InitUtil(prefix, props, false).getProperties()); //Don't lower-case!
          }
 
          String notifierExecutorServiceClass = initUtil.getProperty("notifierExecutorServiceClass");
