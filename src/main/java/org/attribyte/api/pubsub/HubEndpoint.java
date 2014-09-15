@@ -916,12 +916,43 @@ public class HubEndpoint implements MetricSet {
    }
 
    /**
+    * Gets the notification metrics for all topics.
+    * @return The notification metrics.
+    */
+   public NotificationMetrics getGlobalNotificationMetrics() {
+      return globalNotificationMetrics;
+   }
+
+   /**
     * Gets notification metrics for a topic.
     * @param topicId The topic id.
     * @return The metrics or empty metrics if the topic is unknown or has never been used.
     */
    public NotificationMetrics getNotificationMetrics(final long topicId) {
       return notificationMetrics.getUnchecked(topicId);
+   }
+
+   /**
+    * Gets notification metrics hosts sorted by throughput.
+    * @param sort The sort order.
+    * @param maxReturned The maximum number returned.
+    * @return The list of metrics.
+    */
+   public List<NotificationMetrics> getNotificationMetrics(final NotificationMetrics.Sort sort, final int maxReturned) {
+
+      if(maxReturned < 1) return Collections.emptyList();
+
+      List<NotificationMetrics> metrics = Lists.newArrayList(notificationMetrics.asMap().values());
+      switch(sort) {
+         case THROUGHPUT_ASC:
+            Collections.sort(metrics, NotificationMetrics.throughputAscendingComparator);
+            break;
+         case THROUGHPUT_DESC:
+            Collections.sort(metrics, Collections.reverseOrder(NotificationMetrics.throughputAscendingComparator));
+            break;
+      }
+
+      return maxReturned >= metrics.size() ? metrics : metrics.subList(0, maxReturned);
    }
 
    /**
@@ -979,6 +1010,11 @@ public class HubEndpoint implements MetricSet {
                       }
                    });
 
+
+   /**
+    * Notification metrics for all topics.
+    */
+   final NotificationMetrics globalNotificationMetrics = new NotificationMetrics(0L);
 
    /**
     * Notification metrics vs topic id.

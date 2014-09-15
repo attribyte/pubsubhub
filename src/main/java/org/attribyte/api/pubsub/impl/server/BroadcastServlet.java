@@ -116,9 +116,13 @@ public class BroadcastServlet extends ServletBase {
          try {
             Topic topic = datastore.getTopic(topicURL, autocreateTopics);
             if(topic != null) {
+               NotificationMetrics globalMetrics = endpoint.getGlobalNotificationMetrics();
                NotificationMetrics metrics = endpoint.getNotificationMetrics(topic.getId());
                metrics.notificationSize.update(broadcastContent.length);
-               metrics.notifications.update((endNanos - startNanos), TimeUnit.NANOSECONDS);
+               globalMetrics.notificationSize.update(broadcastContent.length);
+               long acceptTimeNanos = endNanos - startNanos;
+               metrics.notifications.update(acceptTimeNanos, TimeUnit.NANOSECONDS);
+               globalMetrics.notifications.update(acceptTimeNanos, TimeUnit.NANOSECONDS);
                Notification notification = new Notification(topic, null, broadcastContent); //No custom headers...
                endpoint.enqueueNotification(notification);
                endpointResponse = ACCEPTED_RESPONSE;

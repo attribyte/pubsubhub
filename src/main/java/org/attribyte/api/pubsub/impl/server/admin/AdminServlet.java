@@ -12,11 +12,14 @@ import org.attribyte.api.pubsub.CallbackMetrics;
 import org.attribyte.api.pubsub.HostCallbackMetrics;
 import org.attribyte.api.pubsub.HubDatastore;
 import org.attribyte.api.pubsub.HubEndpoint;
+import org.attribyte.api.pubsub.NotificationMetrics;
 import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayCallbackMetrics;
-import org.attribyte.api.pubsub.impl.server.admin.model.DisplayMetricsDetail;
+import org.attribyte.api.pubsub.impl.server.admin.model.DisplayCallbackMetricsDetail;
+import org.attribyte.api.pubsub.impl.server.admin.model.DisplayNotificationMetrics;
+import org.attribyte.api.pubsub.impl.server.admin.model.DisplayNotificationMetricsDetail;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplaySubscribedHost;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayTopic;
 import org.attribyte.api.pubsub.impl.server.admin.model.Paging;
@@ -113,6 +116,13 @@ public class AdminServlet extends HttpServlet {
             renderCallbackMetricsDetail(request, path.get(1), response);
          } else {
             renderCallbackMetrics(request, response);
+         }
+      } else if(obj.equals("nmetrics")) {
+         if(path.size() > 1) {
+            long topicId = Long.parseLong(path.get(1));
+            renderNotificationMetricsDetail(request, topicId, response);
+         } else {
+            renderNotificationMetrics(request, response);
          }
       } else {
          sendNotFound(response);
@@ -399,7 +409,73 @@ public class AdminServlet extends HttpServlet {
             title = host;
             detailMetrics = endpoint.getHostCallbackMetrics(host);
          }
-         metricsTemplate.add("metrics", new DisplayMetricsDetail(title, detailMetrics));
+         metricsTemplate.add("metrics", new DisplayCallbackMetricsDetail(title, detailMetrics));
+         mainTemplate.add("content", metricsTemplate.render());
+         response.setContentType("text/html");
+         response.getWriter().print(mainTemplate.render());
+         response.getWriter().flush();
+      } catch(IOException ioe) {
+         throw ioe;
+      } catch(Exception se) {
+         se.printStackTrace();
+         response.sendError(500, "Datastore error");
+      }
+   }
+
+   private void renderNotificationMetrics(final HttpServletRequest request,
+                                          final HttpServletResponse response) throws IOException {
+
+      ST mainTemplate = getTemplate("main");
+      ST metricsTemplate = getTemplate("notification_metrics");
+
+      try {
+         NotificationMetrics globalMetrics = endpoint.getGlobalNotificationMetrics();
+         List<NotificationMetrics> metrics = endpoint.getNotificationMetrics(NotificationMetrics.Sort.THROUGHPUT_DESC, 25);
+
+         List<DisplayNotificationMetrics> displayMetrics = Lists.newArrayListWithCapacity(metrics.size() + 1);
+         displayMetrics.add(new DisplayNotificationMetrics(null, globalMetrics));
+         for(NotificationMetrics topicMetrics : metrics) {
+            Topic topic = datastore.getTopic(topicMetrics.topicId);
+            displayMetrics.add(new DisplayNotificationMetrics(topic, topicMetrics));
+         }
+         metricsTemplate.add("metrics", displayMetrics);
+         mainTemplate.add("content", metricsTemplate.render());
+         response.setContentType("text/html");
+         response.getWriter().print(mainTemplate.render());
+         response.getWriter().flush();
+      } catch(IOException ioe) {
+         throw ioe;
+      } catch(Exception se) {
+         se.printStackTrace();
+         response.sendError(500, "Datastore error");
+      }
+   }
+
+   private void renderNotificationMetricsDetail(final HttpServletRequest request,
+                                                final long topicId,
+                                                final HttpServletResponse response) throws IOException {
+
+      ST mainTemplate = getTemplate("main");
+      ST metricsTemplate = getTemplate("notification_metrics_detail");
+
+      try {
+         final NotificationMetrics detailMetrics;
+         final String title;
+
+         if(topicId > 0) {
+            Topic topic = datastore.getTopic(topicId);
+            if(topic != null) {
+               title = topic.getURL();
+               detailMetrics = endpoint.getNotificationMetrics(topicId);
+            } else {
+               sendNotFound(response);
+               return;
+            }
+         } else {
+            title = "[all]";
+            detailMetrics = endpoint.getGlobalNotificationMetrics();
+         }
+         metricsTemplate.add("metrics", new DisplayNotificationMetricsDetail(title, detailMetrics));
          mainTemplate.add("content", metricsTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());

@@ -31,7 +31,8 @@ $head()$
             <li><a href="#" data-reveal-id="add-subscription-modal">&nbsp;&nbsp;
                 <small><i class="fi-plus"></i></small>
                 New Subscription</a></li>
-            <li><a href="/admin/metrics">Metrics</a></li>
+            <li><a href="/admin/metrics">Callback Metrics</a></li>
+            <li><a href="/admin/nmetrics">Notification Metrics</a></li>
         </ul>
     </div>
 </div>

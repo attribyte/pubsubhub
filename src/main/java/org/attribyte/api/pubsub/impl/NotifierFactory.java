@@ -72,7 +72,7 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
     * Measures the notification rate and the time required to
     * select subscriptions and enqueue callbacks.
     */
-   Timer broadcastTimer;
+   Timer broadcastTimer = new Timer();
 
    private SubscriptionCache subscriptionCache = null;
 }

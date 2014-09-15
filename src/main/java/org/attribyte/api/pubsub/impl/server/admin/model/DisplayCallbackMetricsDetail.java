@@ -4,9 +4,9 @@ import org.attribyte.api.pubsub.CallbackMetrics;
 
 import java.text.NumberFormat;
 
-public class DisplayMetricsDetail {
+public class DisplayCallbackMetricsDetail {
 
-   public DisplayMetricsDetail(String name, CallbackMetrics metrics) {
+   public DisplayCallbackMetricsDetail(String name, CallbackMetrics metrics) {
       this.name = name;
       this.callbacks = new DisplayTimer("All Callbacks", metrics.callbacks);
       this.abandonedCallbacks = new DisplayMetered("Abandoned Callbacks", metrics.abandonedCallbacks);
