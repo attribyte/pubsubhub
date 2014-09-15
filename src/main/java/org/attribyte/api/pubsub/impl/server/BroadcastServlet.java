@@ -25,8 +25,8 @@ import org.attribyte.api.pubsub.BasicAuthFilter;
 import org.attribyte.api.pubsub.HubDatastore;
 import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Notification;
+import org.attribyte.api.pubsub.NotificationMetrics;
 import org.attribyte.api.pubsub.Topic;
-import org.attribyte.api.pubsub.URLFilter;
 import org.attribyte.api.pubsub.impl.client.BasicAuth;
 
 import javax.servlet.ServletException;
@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -88,7 +89,12 @@ public class BroadcastServlet extends ServletBase {
    @Override
    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
+      long startNanos = System.nanoTime();
+
       byte[] broadcastContent = ByteStreams.toByteArray(request.getInputStream());
+
+      long endNanos = System.nanoTime();
+
       if(maxBodyBytes > 0 && broadcastContent.length > maxBodyBytes) {
          Bridge.sendServletResponse(NOTIFICATION_TOO_LARGE, response);
          return;
@@ -110,6 +116,9 @@ public class BroadcastServlet extends ServletBase {
          try {
             Topic topic = datastore.getTopic(topicURL, autocreateTopics);
             if(topic != null) {
+               NotificationMetrics metrics = endpoint.getNotificationMetrics(topic.getId());
+               metrics.notificationSize.update(broadcastContent.length);
+               metrics.notifications.update((endNanos - startNanos), TimeUnit.NANOSECONDS);
                Notification notification = new Notification(topic, null, broadcastContent); //No custom headers...
                endpoint.enqueueNotification(notification);
                endpointResponse = ACCEPTED_RESPONSE;

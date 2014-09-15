@@ -19,13 +19,11 @@ import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InitializationException;
@@ -42,7 +40,6 @@ import org.attribyte.util.URIEncoder;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -767,7 +764,7 @@ public class HubEndpoint implements MetricSet {
     * @param subscription The verified subscription.
     */
    public void subscriptionVerified(Subscription subscription) {
-      subscriptionCallbackMeters.invalidate(subscription.getId());
+      subscriptionCallbackMetrics.invalidate(subscription.getId());
    }
 
    /**
@@ -836,7 +833,7 @@ public class HubEndpoint implements MetricSet {
       try {
          Subscription subscription = datastore.getSubscription(callback.subscriptionId);
          if(subscription != null) {
-            SubscriptionCallbackMetrics metrics = subscriptionCallbackMeters.getUnchecked(callback.subscriptionId);
+            SubscriptionCallbackMetrics metrics = subscriptionCallbackMetrics.getUnchecked(callback.subscriptionId);
             if(metrics != null && disableSubscriptionStrategy.disableSubscription(subscription,
                     metrics.callbacks, metrics.failedCallbacks, metrics.abandonedCallbacks)) {
                datastore.changeSubscriptionStatus(callback.subscriptionId, Subscription.Status.REMOVED, 0);
@@ -898,7 +895,7 @@ public class HubEndpoint implements MetricSet {
     * @return The meters. If the subscription does not exist, empty meters are returned.
     */
    public SubscriptionCallbackMetrics getSubscriptionCallbackMetrics(final long subscriptionId) {
-      return subscriptionCallbackMeters.getUnchecked(subscriptionId);
+      return subscriptionCallbackMetrics.getUnchecked(subscriptionId);
    }
 
    /**
@@ -916,6 +913,15 @@ public class HubEndpoint implements MetricSet {
     */
    public HostCallbackMetrics getHostCallbackMetrics(final String host) {
       return hostCallbackMetrics.getUnchecked(host);
+   }
+
+   /**
+    * Gets notification metrics for a topic.
+    * @param topicId The topic id.
+    * @return The metrics or empty metrics if the topic is unknown or has never been used.
+    */
+   public NotificationMetrics getNotificationMetrics(final long topicId) {
+      return notificationMetrics.getUnchecked(topicId);
    }
 
    /**
@@ -962,7 +968,7 @@ public class HubEndpoint implements MetricSet {
    /**
     * Callback metrics vs subscription id.
     */
-   private final LoadingCache<Long, SubscriptionCallbackMetrics> subscriptionCallbackMeters =
+   private final LoadingCache<Long, SubscriptionCallbackMetrics> subscriptionCallbackMetrics =
            CacheBuilder.newBuilder()
                    .maximumSize(maxMetricsCacheSize)
                    .concurrencyLevel(8)
@@ -970,6 +976,21 @@ public class HubEndpoint implements MetricSet {
                       @Override
                       public SubscriptionCallbackMetrics load(final Long subscriptionId) throws Exception {
                          return new SubscriptionCallbackMetrics(subscriptionId);
+                      }
+                   });
+
+
+   /**
+    * Notification metrics vs topic id.
+    */
+   private final LoadingCache<Long, NotificationMetrics> notificationMetrics =
+           CacheBuilder.newBuilder()
+                   .maximumSize(maxMetricsCacheSize)
+                   .concurrencyLevel(8)
+                   .build(new CacheLoader<Long, NotificationMetrics>() {
+                      @Override
+                      public NotificationMetrics load(final Long topicId) throws Exception {
+                         return new NotificationMetrics(topicId);
                       }
                    });
 
