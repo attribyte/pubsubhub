@@ -1,5 +1,7 @@
 notification_metrics_detail(metrics) ::= <<
-<h4>Notification Metrics Detail - $metrics.name$</h4>
+<h4>Notification Metrics Detail
+    <small>$metrics.name$</small>
+</h4>
 <h6>Notifications</h6>
 <table>
     <tbody>

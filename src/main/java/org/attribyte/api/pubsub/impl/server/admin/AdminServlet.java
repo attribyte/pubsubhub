@@ -184,7 +184,8 @@ public class AdminServlet extends HttpServlet {
                  datastore.getTopics(paging.getStart(), pageRequestSize);
          paging = nextPaging(paging, topics);
          for(Topic topic : topics) {
-            displayTopics.add(new DisplayTopic(topic, datastore.countActiveSubscriptions(topic.getId())));
+            displayTopics.add(new DisplayTopic(topic, datastore.countActiveSubscriptions(topic.getId()),
+                    new DisplayNotificationMetrics(topic, endpoint.getNotificationMetrics(topic.getId()))));
          }
 
          subscriberTemplate.add("topics", displayTopics);
@@ -244,7 +245,7 @@ public class AdminServlet extends HttpServlet {
          paging = nextPaging(paging, subscriptions);
 
          subscriptionsTemplate.add("subscriptions", subscriptions);
-         subscriptionsTemplate.add("topic", new DisplayTopic(topic, 0));
+         subscriptionsTemplate.add("topic", new DisplayTopic(topic, 0, null));
          subscriptionsTemplate.add("activeOnly", activeOnly);
          subscriptionsTemplate.add("paging", paging);
          mainTemplate.add("content", subscriptionsTemplate.render());

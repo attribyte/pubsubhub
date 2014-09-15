@@ -6,11 +6,13 @@ import java.util.Date;
 
 public class DisplayTopic {
 
-   public DisplayTopic(final Topic topic, final int activeSubscriptionCount) {
+   public DisplayTopic(final Topic topic, final int activeSubscriptionCount,
+                       final DisplayNotificationMetrics metrics) {
       this.id = topic.getId();
       this.topicURL = topic.getURL();
       this.createTime = topic.getCreateTime();
       this.activeSubscriptionCount = activeSubscriptionCount;
+      this.metrics = metrics;
    }
 
    public long getId() {
@@ -33,9 +35,14 @@ public class DisplayTopic {
       return activeSubscriptionCount > 0;
    }
 
+   public DisplayNotificationMetrics getMetrics() {
+      return metrics;
+   }
+
    private final long id;
    private final String topicURL;
    private final Date createTime;
    private final int activeSubscriptionCount;
+   private final DisplayNotificationMetrics metrics;
 
 }

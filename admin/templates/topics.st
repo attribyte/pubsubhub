@@ -10,7 +10,8 @@ $pagination()$
     <thead>
     <tr>
         <th>Topic</th>
-        <th>Active Subscriptions</th>
+        <th>Notifications/s</th>
+        <th>Subscriptions</th>
         <th>Create Time</th>
     </tr>
     </thead>
@@ -23,6 +24,9 @@ $pagination()$
         $else$
         <td>$topic.url$</td>
         $endif$
+        <td>$topic.metrics.rate$
+            <a href="/admin/nmetrics/$topic.id$"><i class="fi-graph-bar"></i></a>
+        </td>
         <td>$topic.activeSubscriptionCount$</td>
         <td>$topic.createTime; format="date:long"$</td>
     </tr>

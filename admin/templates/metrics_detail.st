@@ -1,5 +1,7 @@
 metrics_detail(metrics) ::= <<
-<h4>Callback Metrics Detail - $metrics.name$</h4>
+<h4>Callback Metrics Detail
+    <small>$metrics.name$</small>
+</h4>
 <h6>Callbacks</h6>
 <table>
     <tbody>
