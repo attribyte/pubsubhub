@@ -13,7 +13,7 @@ fi
 
 # The installation directory containing configuration and dependencies may be set explicitly with PUBSUB_INSTALL_DIR.
 # Otherwise, an attempt is made to discover the location of this start script.
-PUBSUB_INSTALL_DIR=/var/attribyte/pubsub
+#PUBSUB_INSTALL_DIR=/var/attribyte/pubsub
 
 if [ -z "$PUBSUB_INSTALL_DIR" ]; then
   DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
