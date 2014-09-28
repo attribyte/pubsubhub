@@ -8,7 +8,6 @@ import com.codahale.metrics.health.HealthCheckRegistry;
 import com.codahale.metrics.health.jvm.ThreadDeadlockHealthCheck;
 import com.codahale.metrics.servlets.HealthCheckServlet;
 import com.codahale.metrics.servlets.MetricsServlet;
-import com.codahale.metrics.servlets.PingServlet;
 import com.codahale.metrics.servlets.ThreadDumpServlet;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
