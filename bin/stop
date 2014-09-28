@@ -1,0 +1,3 @@
+PIDFILE="pubsubhub.pid"
+echo –n “Stopping pubsubhub”
+kill `cat /var/run/$PIDFILE`
