@@ -17,10 +17,18 @@ import java.util.Enumeration;
 import java.util.Set;
 
 public class PingServlet extends HttpServlet {
+
+
+   public PingServlet(final String instanceName) {
+      this.instanceName = instanceName;
+   }
+
+
    private static final String CONTENT_TYPE = "text/plain";
    private static final String CACHE_CONTROL_HEADER = "Cache-Control";
    private static final String NO_CACHE_VALUE = "must-revalidate,no-cache,no-store";
    private static final Joiner nameJoiner = Joiner.on(',').skipNulls();
+   private final String instanceName;
 
    @Override
    protected void doGet(HttpServletRequest request,
@@ -38,13 +46,16 @@ public class PingServlet extends HttpServlet {
 
    /**
     * Gets all public names (IP, hostname).
-    * Always starts with "pong".
+    * Always starts with "pong" and contains the instance name, if specified.
     * @return The list of names.
     */
    private Set<String> getPublicNames() {
 
       Set<String> names = Sets.newHashSetWithExpectedSize(8);
       names.add("pong");
+      if(instanceName != null && instanceName.length() > 0) {
+         names.add(instanceName);
+      }
 
       try {
          Enumeration interfaces = NetworkInterface.getNetworkInterfaces();
