@@ -1,0 +1,36 @@
+# Check if a host is up by pinging it
+# $1 - The host to check
+# $2 - The substring to match
+# Exits with 0 on success, 1 if no response matched
+
+if [ -z "$1" ]; then
+    echo "Expecting <host> <match string> [maximum attempts]"
+fi
+
+if [ -z "$2" ]; then
+    echo "Expecting <host> <match string> [maximum attempts]"
+    exit 1
+fi
+
+if [ -z "$3" ]; then
+  ATTEMPTS_LEFT=20
+else
+  ATTEMPTS_LEFT=$3
+fi
+
+while [ $ATTEMPTS_LEFT -gt 0 ]; do
+  RESPONSE=`curl -s $1`
+  echo $RESPONSE
+  if [[ $RESPONSE == *$2* ]]; then
+     break
+  fi
+  ATTEMPTS_LEFT=$(($ATTEMPTS_LEFT - 1))
+  sleep 1
+done
+
+if [ $ATTEMPTS_LEFT -eq 0 ]; then
+  echo "Failed!"
+  exit 1
+else
+  exit 0
+fi
