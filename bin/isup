@@ -5,6 +5,7 @@
 
 if [ -z "$1" ]; then
     echo "Expecting <host> <match string> [maximum attempts]"
+    exit 1
 fi
 
 if [ -z "$2" ]; then
