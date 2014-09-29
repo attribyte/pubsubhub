@@ -21,6 +21,13 @@ if [ -z "$PUBSUB_INSTALL_DIR" ]; then
 fi
 
 PIDFILE="pubsubhub.pid"
+
+if [ -f "$PUBSUB_INSTALL_DIR/bin/$PIDFILE" ]
+then
+	echo Pubsub appears to be running! Aborting.
+	exit 1
+fi
+
 LIB_DIR="$PUBSUB_INSTALL_DIR/lib"
 EXTLIB_DIR="$PUBSUB_INSTALL_DIR/dist/extlib"
 DISTLIB="$PUBSUB_INSTALL_DIR/dist/lib/attribyte-pubsub.0.1.0.jar"

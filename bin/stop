@@ -1,3 +1,31 @@
+# The installation directory containing configuration and dependencies may be set explicitly with PUBSUB_INSTALL_DIR.
+# Otherwise, an attempt is made to discover the location of this start script.
+#PUBSUB_INSTALL_DIR=/var/attribyte/pubsub
+
+if [ -z "$PUBSUB_INSTALL_DIR" ]; then
+  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  PUBSUB_INSTALL_DIR="$(dirname "$DIR")"
+fi
+
 PIDFILE="pubsubhub.pid"
-echo –n “Stopping pubsubhub”
-kill `cat /var/run/$PIDFILE`
+PID=`cat $PUBSUB_INSTALL_DIR/bin/$PIDFILE`
+echo "Stopping pubsubhub $PID"
+
+ATTEMPTS_LEFT=30
+while [ $ATTEMPTS_LEFT -gt 0 ]; do
+    kill $PID 2>/dev/null
+    if [ $? -eq 1 ]; then
+        echo "Stopped pubsubhub $PID normally"
+        rm $PUBSUB_INSTALL_DIR/bin/$PIDFILE
+        break
+    fi
+    ATTEMPTS_LEFT=$(($ATTEMPTS_LEFT - 1))
+    sleep 1
+done
+
+#Kill
+if [ $ATTEMPTS_LEFT -eq 0 ]; then
+    echo "Killed pubsubhub $PID!"
+    kill -9 $PID
+    rm $PUBSUB_INSTALL_DIR/bin/$PIDFILE
+fi
