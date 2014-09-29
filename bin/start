@@ -50,8 +50,8 @@ LOCAL_CONFIG="$PUBSUB_INSTALL_DIR/config/local.properties"
 CONSOLE_LOG="$PUBSUB_INSTALL_DIR/bin/server.log"
 
 if [ -f "$LOCAL_CONFIG" ]; then
-  $JAVA_EXE org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
+  nohup $JAVA_EXE org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
 else
-  $JAVA_EXE org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties  1> $CONSOLE_LOG 2>&1 &
+  nohup $JAVA_EXE org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties  1> $CONSOLE_LOG 2>&1 &
 fi
 echo $! > $PUBSUB_INSTALL_DIR/bin/$PIDFILE
