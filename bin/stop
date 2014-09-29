@@ -8,6 +8,13 @@ if [ -z "$PUBSUB_INSTALL_DIR" ]; then
 fi
 
 PIDFILE="pubsubhub.pid"
+
+if [ ! -f "$PUBSUB_INSTALL_DIR/bin/$PIDFILE" ]
+then
+	echo Pubsub does not seem to be running!
+	exit 0
+fi
+
 PID=`cat $PUBSUB_INSTALL_DIR/bin/$PIDFILE`
 echo "Stopping pubsubhub $PID"
 
