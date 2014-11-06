@@ -18,16 +18,16 @@ are available:
 
 ##Framework Dependencies
 
-* [http-model](https://github.com/attribyte/http-model)
-* [commons-codec](http://commons.apache.org/proper/commons-codec/)
+* [Attribyte http-model](https://github.com/attribyte/http-model)
+* [Attribyte shared-base](https://github.com/attribyte/shared-base)
+* [Apache commons-codec](http://commons.apache.org/proper/commons-codec/)
 * [Google Guava](https://code.google.com/p/guava-libraries/)
-* [Metrics](http://metrics.codahale.com/)
-* [Log4J](http://logging.apache.org/log4j/2.x/)
-* TODO: The Attribyte common library is included with no source. In-progress.
+* [Dropwizard Metrics](http://metrics.codahale.com/)
+* [Apache Log4J](http://logging.apache.org/log4j/2.x/)
 
 ##Additional Dependencies for Default (MySQL) Implementation
 
-* [commons-httpclient](http://hc.apache.org/httpclient-3.x/)
+* [Apache commons-httpclient](http://hc.apache.org/httpclient-3.x/)
 * [Jetty](http://www.eclipse.org/jetty/documentation/current/)
 * [MySQL Connector (GPL)](http://dev.mysql.com/downloads/connector/j/)
 * [Typesafe Config](https://github.com/typesafehub/config)
