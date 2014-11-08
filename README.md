@@ -5,6 +5,10 @@ No particular database is required to use it. However, a fully-functional implem
 uses [MySQL](http://www.mysql.com/) for subscription storage
 is included in the distribution.
 
+##Documentation
+
+* [Javadoc](https://www.attribyte.org/projects/pubsubhub/javadoc/index.html)
+
 ##Building
 
 The build uses [Apache Ant](http://ant.apache.org/) and
