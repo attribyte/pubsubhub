@@ -31,6 +31,7 @@ are available:
 
 ##Additional Dependencies for Default (MySQL) Implementation
 
+* [Attribyte ACP](https://github.com/attribyte/acp)
 * [Apache commons-httpclient](http://hc.apache.org/httpclient-3.x/)
 * [Jetty](http://www.eclipse.org/jetty/documentation/current/)
 * [MySQL Connector (GPL)](http://dev.mysql.com/downloads/connector/j/)
