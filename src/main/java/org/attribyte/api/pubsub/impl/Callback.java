@@ -55,6 +55,10 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
          } finally {
             if(ctx != null) recordTime(ctx.stop());
          }
+
+
+         System.out.println("callback got status code " + response.getStatusCode());
+
          if(!Response.Code.isOK(response.getStatusCode())) {
             markFailed();
             boolean enqueued = hub.enqueueFailedCallback(this);
@@ -63,8 +67,11 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
             }
          }
       } catch(Error e) {
+         e.printStackTrace();
          throw e;
       } catch(Throwable ioe) {
+         System.err.println(ioe.getMessage());
+         ioe.printStackTrace();
          markFailed();
          boolean enqueued = hub.enqueueFailedCallback(this);
          if(!enqueued) {
