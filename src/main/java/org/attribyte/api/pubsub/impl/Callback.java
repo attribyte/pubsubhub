@@ -22,6 +22,7 @@ import org.attribyte.api.http.Response;
 import org.attribyte.api.pubsub.CallbackMetrics;
 import org.attribyte.api.pubsub.HubEndpoint;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,9 +57,6 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
             if(ctx != null) recordTime(ctx.stop());
          }
 
-
-         System.out.println("callback got status code " + response.getStatusCode());
-
          if(!Response.Code.isOK(response.getStatusCode())) {
             markFailed();
             boolean enqueued = hub.enqueueFailedCallback(this);
@@ -67,11 +65,12 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
             }
          }
       } catch(Error e) {
-         e.printStackTrace();
+         hub.getLogger().error("Fatal error in callback", e);
          throw e;
       } catch(Throwable ioe) {
-         System.err.println(ioe.getMessage());
-         ioe.printStackTrace();
+         if(!(ioe instanceof IOException)) { //Probably don't want to log every callback failure...
+            hub.getLogger().error("Unexpected error in callback", ioe);
+         }
          markFailed();
          boolean enqueued = hub.enqueueFailedCallback(this);
          if(!enqueued) {
