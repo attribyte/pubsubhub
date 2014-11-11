@@ -149,11 +149,11 @@ public class BroadcastServlet extends ServletBase {
     * Shutdown the servlet.
     */
    public void shutdown() {
-      logger.info("Shutting down broadcast servlet...");
       if(isShutdown.compareAndSet(false, true)) {
+         logger.info("Shutting down broadcast servlet...");
          endpoint.shutdown();
+         logger.info("Broadcast servlet shutdown.");
       }
-      logger.info("Broadcast servlet shutdown.");
    }
 
    /**
@@ -185,7 +185,6 @@ public class BroadcastServlet extends ServletBase {
     * A list of basic auth filters.
     */
    private final List<BasicAuthFilter> filters;
-
 
    /**
     * Should unknown topics be automatically created?
