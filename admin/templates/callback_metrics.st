@@ -6,7 +6,7 @@ callback_metrics(metrics) ::= <<
         <th>Host</th>
         <th>Count</th>
         <th>Callback/s</th>
-        <th>95% (ms)<br/>Callback /<br/>Total</th>
+        <th>Callback / Time in System<br/>95% (ms)</th>
         <th>Failed</th>
         <th>Failed/s</th>
         <th>Abandoned</th>
@@ -15,10 +15,10 @@ callback_metrics(metrics) ::= <<
     <tbody>
     $metrics:{metric |
     <tr>
-        <td><a href="/admin/metrics/$metric.host$">$metric.host$</a></td>
+        <td><a href="/admin/metrics / $metric.host$">$metric.host$</a></td>
         <td>$metric.count$</td>
         <td>$metric.rate$</td>
-        <td>$metric.timing$ / $metric.timeToCallback$</td>
+        <td>$metric.timing$/$metric.timeToCallback$</td>
         <td>$metric.failedCount$</td>
         <td>$metric.failedRate$</td>
         <td>$metric.abandonedCount$</td>
