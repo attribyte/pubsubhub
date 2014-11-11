@@ -395,7 +395,7 @@ public class HubEndpoint implements MetricSet {
                initUtil.throwPositiveIntRequiredException("maxConcurrentCallbacks");
             }
 
-            final BlockingQueue queue = new LinkedBlockingQueue();
+            final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
             callbackServiceQueueSize = new CachedGauge<Integer>(15, TimeUnit.SECONDS) {
                @Override
                protected Integer loadValue() {
@@ -788,12 +788,14 @@ public class HubEndpoint implements MetricSet {
 
    /**
     * Enqueue a callback with a specified subscriber id and priority.
+    * @param receiveTimestampNanos The nanosecond timestamp that marks the reception of notification.
     * @param request The request.
     * @param subscriberId The subscriber id.
     * @param priority The priority.
     */
-   public void enqueueCallback(Request request, long subscriberId, int priority) {
-      enqueueCallback(callbackFactory.create(request, subscriberId, priority, this));
+   public void enqueueCallback(final long receiveTimestampNanos, final Request request, final long subscriberId,
+                               final int priority) {
+      enqueueCallback(callbackFactory.create(receiveTimestampNanos, request, subscriberId, priority, this));
    }
 
    /**
@@ -981,6 +983,7 @@ public class HubEndpoint implements MetricSet {
             break;
          case ABANDONED_RATE_ASC:
             Collections.sort(metrics, CallbackMetrics.abandonedRateAscendingComparator);
+            break;
          case ABANDONED_RATE_DESC:
             Collections.sort(metrics, Collections.reverseOrder(CallbackMetrics.abandonedRateAscendingComparator));
             break;

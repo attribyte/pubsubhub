@@ -10,6 +10,14 @@ metrics_detail(metrics) ::= <<
     </tbody>
 </table>
 
+<h6>Time to Callback Complete</h6>
+<table>
+    <tbody>
+    $display_timer(metrics.timeToCallback)$
+    </tbody>
+</table>
+
+
 <h6>Failed Callbacks</h6>
 <table>
     <tbody>

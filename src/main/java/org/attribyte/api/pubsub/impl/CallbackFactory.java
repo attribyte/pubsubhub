@@ -17,6 +17,7 @@ package org.attribyte.api.pubsub.impl;
 
 import org.attribyte.api.http.Request;
 import org.attribyte.api.pubsub.HubEndpoint;
+
 import java.util.Properties;
 
 /**
@@ -25,8 +26,9 @@ import java.util.Properties;
 public class CallbackFactory implements org.attribyte.api.pubsub.CallbackFactory {
 
    @Override
-   public Callback create(final Request request, final long subscriptionId, final int priority, final HubEndpoint hub) {
-      return new Callback(request, subscriptionId, priority, hub,
+   public Callback create(final long receiveTimestampNanos,
+                          final Request request, final long subscriptionId, final int priority, final HubEndpoint hub) {
+      return new Callback(receiveTimestampNanos, request, subscriptionId, priority, hub,
               hub.getGlobalCallbackMetrics(),
               hub.getHostCallbackMetrics(request.getURI().getHost()),
               hub.getSubscriptionCallbackMetrics(subscriptionId));

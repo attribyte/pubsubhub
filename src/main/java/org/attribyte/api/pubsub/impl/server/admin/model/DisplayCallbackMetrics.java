@@ -17,6 +17,7 @@ public class DisplayCallbackMetrics {
       this.count = metrics.callbacks.getCount();
       this.rate = decimalFormat.format(metrics.callbacks.getOneMinuteRate());
       this.timing = decimalFormat.format(metrics.callbacks.getSnapshot().get95thPercentile() / 1000000.0);
+      this.timeToCallback = decimalFormat.format(metrics.timeToCallback.getSnapshot().get95thPercentile() / 1000000.0);
       this.failedCount = metrics.failedCallbacks.getCount();
       this.failedRate = decimalFormat.format(metrics.failedCallbacks.getOneMinuteRate());
       this.abandonedCount = metrics.abandonedCallbacks.getCount();
@@ -39,6 +40,10 @@ public class DisplayCallbackMetrics {
       return timing;
    }
 
+   public String getTimeToCallback() {
+      return timeToCallback;
+   }
+
    public long getFailedCount() {
       return failedCount;
    }
@@ -59,6 +64,7 @@ public class DisplayCallbackMetrics {
    private final long count;
    private final String rate;
    private final String timing;
+   private final String timeToCallback;
    private final long failedCount;
    private final String failedRate;
    private final long abandonedCount;

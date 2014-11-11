@@ -135,7 +135,7 @@ public class Notifier extends org.attribyte.api.pubsub.Notifier {
             }
          }
 
-         hub.enqueueCallback(postRequest, subscription.getId(), priority);
+         hub.enqueueCallback(receiveTimestampNanos, postRequest, subscription.getId(), priority);
          return true;
 
       } catch(InvalidURIException use) {
@@ -146,5 +146,6 @@ public class Notifier extends org.attribyte.api.pubsub.Notifier {
 
    private final Timer broadcastTimer;
    private final SubscriptionCache subscriptionCache;
+   private final long receiveTimestampNanos = System.nanoTime();
 
 }

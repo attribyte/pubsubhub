@@ -33,12 +33,13 @@ import java.util.concurrent.TimeUnit;
 /**
  * The default callback implementation.
  * <p>
- *    If the callback fails, it is queued again with reduced priority.
+ * If the callback fails, it is queued again with reduced priority.
  * </p>
  */
 public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
 
-   protected AsyncCallback(final Request request,
+   protected AsyncCallback(final long receiveTimestampNanos,
+                           final Request request,
                            final long subscriptionId,
                            final int priority,
                            final HubEndpoint hub,
@@ -47,6 +48,7 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
                            final CallbackMetrics subscriptionMetrics,
                            final HttpClient httpClient) {
       super(request, subscriptionId, priority, hub);
+      this.receiveTimestampNanos = receiveTimestampNanos;
       this.globalMetrics = globalMetrics;
       this.hostMetrics = hostMetrics;
       this.subscriptionMetrics = subscriptionMetrics;
@@ -81,9 +83,22 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
                   markAbandoned();
                   hub.getLogger().error("Abandoned callback to " + request.getURI().toString());
                }
+            } else {
+               recordTimeToCallback();
             }
          }
       });
+   }
+
+   private void recordTimeToCallback() {
+      final long timeToCallback = System.nanoTime() - receiveTimestampNanos;
+      globalMetrics.timeToCallback.update(timeToCallback, TimeUnit.NANOSECONDS);
+      if(hostMetrics != null) {
+         hostMetrics.timeToCallback.update(timeToCallback, TimeUnit.NANOSECONDS);
+      }
+      if(subscriptionMetrics != null) {
+         subscriptionMetrics.timeToCallback.update(timeToCallback, TimeUnit.NANOSECONDS);
+      }
    }
 
    private void recordTime(final long nanos) {
@@ -103,6 +118,7 @@ public class AsyncCallback extends org.attribyte.api.pubsub.Callback {
       if(subscriptionMetrics != null) subscriptionMetrics.abandonedCallbacks.mark();
    }
 
+   private final long receiveTimestampNanos;
    private final HttpClient httpClient;
    private final CallbackMetrics globalMetrics;
    private final CallbackMetrics hostMetrics;

@@ -33,7 +33,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class Callback extends org.attribyte.api.pubsub.Callback {
 
-   protected Callback(final Request request,
+   protected Callback(final long receiveTimestampNanos,
+                      final Request request,
                       final long subscriptionId,
                       final int priority,
                       final HubEndpoint hub,
@@ -41,6 +42,7 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
                       final CallbackMetrics hostMetrics,
                       final CallbackMetrics subscriptionMetrics) {
       super(request, subscriptionId, priority, hub);
+      this.receiveTimestampNanos = receiveTimestampNanos;
       this.globalMetrics = globalMetrics;
       this.hostMetrics = hostMetrics;
       this.subscriptionMetrics = subscriptionMetrics;
@@ -63,6 +65,8 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
             if(!enqueued) {
                markAbandoned();
             }
+         } else {
+            recordTimeToCallback();
          }
       } catch(Error e) {
          hub.getLogger().error("Fatal error in callback", e);
@@ -79,9 +83,25 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
       }
    }
 
+   private void recordTimeToCallback() {
+      final long timeToCallback = System.nanoTime() - receiveTimestampNanos;
+      globalMetrics.timeToCallback.update(timeToCallback, TimeUnit.NANOSECONDS);
+      if(hostMetrics != null) {
+         hostMetrics.timeToCallback.update(timeToCallback, TimeUnit.NANOSECONDS);
+      }
+      if(subscriptionMetrics != null) {
+         subscriptionMetrics.timeToCallback.update(timeToCallback, TimeUnit.NANOSECONDS);
+      }
+   }
+
    private void recordTime(final long nanos) {
-      if(hostMetrics != null) hostMetrics.callbacks.update(nanos, TimeUnit.NANOSECONDS);
-      if(subscriptionMetrics != null) subscriptionMetrics.callbacks.update(nanos, TimeUnit.NANOSECONDS);
+
+      if(hostMetrics != null) {
+         hostMetrics.callbacks.update(nanos, TimeUnit.NANOSECONDS);
+      }
+      if(subscriptionMetrics != null) {
+         subscriptionMetrics.callbacks.update(nanos, TimeUnit.NANOSECONDS);
+      }
    }
 
    private void markFailed() {
@@ -96,6 +116,7 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
       if(subscriptionMetrics != null) subscriptionMetrics.abandonedCallbacks.mark();
    }
 
+   private final long receiveTimestampNanos;
    private final CallbackMetrics globalMetrics;
    private final CallbackMetrics hostMetrics;
    private final CallbackMetrics subscriptionMetrics;

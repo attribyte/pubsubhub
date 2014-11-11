@@ -90,12 +90,17 @@ public class CallbackMetrics implements MetricSet {
 
    @Override
    public Map<String, Metric> getMetrics() {
-      ImmutableMap.Builder<String, Metric> builder = ImmutableMap.builder();
-      builder.put("callbacks", callbacks);
-      builder.put("failed-callbacks", failedCallbacks);
-      builder.put("abandoned-callbacks", abandonedCallbacks);
-      return builder.build();
+      return ImmutableMap.<String, Metric>builder()
+              .put("time-to-callback", timeToCallback)
+              .put("callbacks", callbacks)
+              .put("failed-callbacks", failedCallbacks)
+              .put("abandoned-callbacks", abandonedCallbacks).build();
    }
+
+   /**
+    * Tracks the time spent from notification to callback completion.
+    */
+   public final Timer timeToCallback = new Timer();
 
    /**
     * Times all callbacks.

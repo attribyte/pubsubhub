@@ -27,13 +27,15 @@ public interface CallbackFactory {
 
    /**
     * Creates a callback.
+    * @param receiveTimestampNanos The nanosecond timestamp that marks the reception of notification.
     * @param request The HTTP request to be sent to the client.
     * @param subscriptionId The id of the subscription.
     * @param priority The callback priority.
     * @param hub The hub sending the callback.
     * @return The new callback.
     */
-   public Callback create(final Request request, final long subscriptionId, final int priority, final HubEndpoint hub);
+   public Callback create(final long receiveTimestampNanos,
+                          final Request request, final long subscriptionId, final int priority, final HubEndpoint hub);
 
    /**
     * Allow initialization for the factory.

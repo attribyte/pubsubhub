@@ -40,13 +40,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Creates instances of the default <code>Callback</code> implementation.
+ * Creates instances of the async <code>Callback</code> implementation.
  */
 public class AsyncCallbackFactory implements org.attribyte.api.pubsub.CallbackFactory {
 
    @Override
-   public Callback create(final Request request, final long subscriptionId, final int priority, final HubEndpoint hub) {
-      return new AsyncCallback(request, subscriptionId, priority, hub,
+   public Callback create(final long receiveTimestampNanos,
+                          final Request request, final long subscriptionId, final int priority, final HubEndpoint hub) {
+      return new AsyncCallback(receiveTimestampNanos, request, subscriptionId, priority, hub,
               hub.getGlobalCallbackMetrics(),
               hub.getHostCallbackMetrics(request.getURI().getHost()),
               hub.getSubscriptionCallbackMetrics(subscriptionId), httpClient);
@@ -70,8 +71,7 @@ public class AsyncCallbackFactory implements org.attribyte.api.pubsub.CallbackFa
       final boolean useTCPNoDelay =
               props.getProperty("asyncCallbackFactory.httpClient.useTCPNoDelay", "false").equalsIgnoreCase("true");
 
-      SslContextFactory sslContextFactory = new SslContextFactory();
-      this.httpClient = new HttpClient(sslContextFactory);
+      this.httpClient = new HttpClient(new SslContextFactory());
       this.httpClient.setFollowRedirects(false);
       this.httpClient.setConnectTimeout(maxConnectionTimeSeconds * 1000L);
       this.httpClient.setCookieStore(new HttpCookieStore.Empty());

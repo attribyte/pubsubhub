@@ -9,6 +9,7 @@ public class DisplayCallbackMetricsDetail {
    public DisplayCallbackMetricsDetail(String name, CallbackMetrics metrics) {
       this.name = name;
       this.callbacks = new DisplayTimer("All Callbacks", metrics.callbacks);
+      this.timeToCallback = new DisplayTimer("Time to Callback", metrics.timeToCallback);
       this.abandonedCallbacks = new DisplayMetered("Abandoned Callbacks", metrics.abandonedCallbacks);
       this.failedCallbacks = new DisplayMetered("Failed Callbacks", metrics.failedCallbacks);
 
@@ -22,6 +23,10 @@ public class DisplayCallbackMetricsDetail {
       return callbacks;
    }
 
+   public DisplayTimer getTimeToCallback() {
+      return timeToCallback;
+   }
+
    public DisplayMetered getAbandonedCallbacks() {
       return abandonedCallbacks;
    }
@@ -32,6 +37,7 @@ public class DisplayCallbackMetricsDetail {
 
    private final String name;
    private final DisplayTimer callbacks;
+   private final DisplayTimer timeToCallback;
    private final DisplayMetered abandonedCallbacks;
    private final DisplayMetered failedCallbacks;
 
