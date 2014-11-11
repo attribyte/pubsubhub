@@ -251,11 +251,11 @@ public class HubEndpoint implements MetricSet {
     * <dd>The maximum number of failed callbacks concurrently retried.</dd>
     * <dt>failedCallbackRetryStrategyClass</dt>
     * <dd>The failed callback retry strategy. Must implement <code>RetryStrategy</code>. Default is exponential backoff.</dd>
-    * </dl>
     * <dt>failedCallbackRetryMaxAttempts</dt>
     * <dd>The maximum number of failed callback retry attempts. Default is <code>14</code>.</dd>
     * <dt>failedCallbackRetryDelayIntervalMillis</dt>
     * <dd>The callback retry delay interval. Default is <code>100</code> milliseconds.</dd>
+    * </dl>
     * <h2>Subscriptions</h2>
     * <dl>
     * <dt><b>verifierFactoryClass</b></dt>
