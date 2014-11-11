@@ -83,7 +83,7 @@ public class BroadcastServlet extends ServletBase {
       this.maxBodyBytes = maxBodyBytes;
       this.autocreateTopics = autocreateTopics;
       this.logger = logger;
-      this.filters = filters != null ? ImmutableList.<BasicAuthFilter>copyOf(filters) : ImmutableList.<BasicAuthFilter>of();
+      this.filters = filters != null ? ImmutableList.copyOf(filters) : ImmutableList.<BasicAuthFilter>of();
    }
 
    @Override
