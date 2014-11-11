@@ -3,9 +3,7 @@ package org.attribyte.api.pubsub.impl.server;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import org.attribyte.api.pubsub.CallbackMetrics;
 import org.attribyte.api.pubsub.HostCallbackMetrics;
 import org.attribyte.api.pubsub.HubEndpoint;
@@ -19,6 +17,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static org.attribyte.api.pubsub.impl.server.util.ServletUtil.splitPath;
+
+/**
+ * A servlet that exposes global, per-host, and per-subscription callback metrics as JSON.
+ */
 class CallbackMetricsServlet extends HttpServlet {
 
    CallbackMetricsServlet(final HubEndpoint endpoint) {
@@ -38,6 +41,7 @@ class CallbackMetricsServlet extends HttpServlet {
                    .put("abandoned:desc", CallbackMetrics.Sort.ABANDONED_RATE_DESC)
                    .build();
 
+   @Override
    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
       List<String> path = splitPath(request);
       String obj = path.size() > 0 ? path.get(0) : null;
@@ -98,24 +102,6 @@ class CallbackMetricsServlet extends HttpServlet {
    }
 
    private final HubEndpoint endpoint;
-
-   /**
-    * Splits the path into a list of components.
-    * @param request The request.
-    * @return The path.
-    */
-   private List<String> splitPath(final HttpServletRequest request) {
-      String pathInfo = request.getPathInfo();
-      if(pathInfo == null || pathInfo.length() == 0 || pathInfo.equals("/")) {
-         return Collections.emptyList();
-      } else {
-         return Lists.newArrayList(pathSplitter.split(pathInfo));
-      }
-
-   }
-
-   private final Splitter pathSplitter = Splitter.on('/').omitEmptyStrings().trimResults();
-
 
    private final ObjectMapper mapper = new ObjectMapper().registerModule(new MetricsModule(
            TimeUnit.SECONDS,

@@ -1,6 +1,5 @@
 package org.attribyte.api.pubsub.impl.server.admin;
 
-import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -43,6 +42,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static org.attribyte.api.pubsub.impl.server.util.ServletUtil.splitPath;
 
 public class AdminServlet extends HttpServlet {
 
@@ -126,20 +127,6 @@ public class AdminServlet extends HttpServlet {
          }
       } else {
          sendNotFound(response);
-      }
-   }
-
-   /**
-    * Splits the path into a list of components.
-    * @param request The request.
-    * @return The path.
-    */
-   private List<String> splitPath(final HttpServletRequest request) {
-      String pathInfo = request.getPathInfo();
-      if(pathInfo == null || pathInfo.length() == 0 || pathInfo.equals("/")) {
-         return Collections.emptyList();
-      } else {
-         return Lists.newArrayList(pathSplitter.split(pathInfo));
       }
    }
 
@@ -751,7 +738,6 @@ public class AdminServlet extends HttpServlet {
    private final Logger logger;
    private final AdminAuth auth;
    private final STGroup templateGroup;
-   private final Splitter pathSplitter = Splitter.on('/').omitEmptyStrings().trimResults();
    private final boolean debug = true;
    private final int maxPerPage = 10;
    private final int pageRequestSize = maxPerPage + 1;
