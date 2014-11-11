@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 
+@SuppressWarnings("serial")
 /**
  * A servlet handles hub notifications and verifies the subscriptions
  * associated with those notifications.

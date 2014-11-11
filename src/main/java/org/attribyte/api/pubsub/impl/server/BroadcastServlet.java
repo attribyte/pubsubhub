@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
+@SuppressWarnings("serial")
 /**
  * A servlet that immediately queues notifications for broadcast
  * to subscribers.

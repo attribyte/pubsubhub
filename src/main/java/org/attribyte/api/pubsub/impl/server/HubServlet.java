@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
+@SuppressWarnings("serial")
 /**
  * A servlet interface for <code>HubEndpoint</code>.
  */
