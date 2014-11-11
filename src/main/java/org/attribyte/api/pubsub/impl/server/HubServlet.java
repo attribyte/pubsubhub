@@ -57,6 +57,18 @@ public class HubServlet extends HttpServlet {
       this.logger = logger;
    }
 
+   /**
+    * The response sent when the 'hub.mode' parameter is missing.
+    */
+   private static Response MISSING_HUB_MODE =
+           new ResponseBuilder(Response.Code.BAD_REQUEST, "A 'hub.mode' must be specified").create();
+
+   /**
+    * The response sent when the 'hub.mode' parameter is not supported.
+    */
+   private static Response UNSUPPORTED_HUB_MODE =
+           new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.mode' is unsupported").create();
+
    @Override
    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
@@ -65,7 +77,7 @@ public class HubServlet extends HttpServlet {
 
       String hubMode = request.getParameter("hub.mode");
       if(hubMode == null) {
-         endpointResponse = new ResponseBuilder(Response.Code.BAD_REQUEST, "A 'hub.mode' must be specified").create();
+         endpointResponse = MISSING_HUB_MODE;
       } else {
          switch(HubMode.fromString(hubMode)) {
             case SUBSCRIBE:
@@ -73,7 +85,7 @@ public class HubServlet extends HttpServlet {
                endpointResponse = endpoint.subscriptionRequest(endpointRequest);
                break;
             default:
-               endpointResponse = new ResponseBuilder(Response.Code.BAD_REQUEST, "The 'hub.mode' is unsupported").create();
+               endpointResponse = UNSUPPORTED_HUB_MODE;
          }
       }
 
@@ -89,11 +101,11 @@ public class HubServlet extends HttpServlet {
     * Shutdown the servlet.
     */
    public void shutdown() {
-      logger.info("Shutting down broadcast servlet...");
       if(isShutdown.compareAndSet(false, true)) {
+         logger.info("Shutting down broadcast servlet...");
          endpoint.shutdown();
+         logger.info("Broadcast servlet shutdown.");
       }
-      logger.info("Broadcast servlet shutdown.");
    }
 
    /**
