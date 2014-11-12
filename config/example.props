@@ -84,7 +84,6 @@ endpoint.subscriptionCache.monitorFrequencyMinutes=15
 # Subscriber Callback #
 #######################
 
-endpoint.callbackFactoryClass=org.attribyte.api.pubsub.impl.CallbackFactory
 endpoint.maxConcurrentCallbacks=64
 
 #################

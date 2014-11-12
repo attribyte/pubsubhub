@@ -21,9 +21,8 @@ import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InitializationException;
 import org.attribyte.api.Logger;
 import org.attribyte.api.http.AuthScheme;
-import org.attribyte.api.http.Request;
+import org.attribyte.api.http.RequestBuilder;
 
-import javax.xml.crypto.Data;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -292,11 +291,11 @@ public interface HubDatastore {
    /**
     * Adds endpoint-specific auth.
     * @param endpoint The endpoint.
-    * @param request The request.
-    * @return The request with auth added.
+    * @param request The request builder.
+    * @return The request builder with auth added.
     * @throws DatastoreException on datastore error.
     */
-   public Request addAuth(Endpoint endpoint, Request request) throws DatastoreException;
+   public RequestBuilder addAuth(Endpoint endpoint, RequestBuilder request) throws DatastoreException;
 
    /**
     * Shutdown the datatastore.

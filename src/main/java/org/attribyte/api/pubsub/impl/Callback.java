@@ -15,7 +15,6 @@
 
 package org.attribyte.api.pubsub.impl;
 
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
@@ -26,47 +25,51 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The default callback implementation.
- * <p>
- * If the callback fails, it is queued again with reduced priority.
- * </p>
+ * The abstract callback implementation.
  */
-public class Callback extends org.attribyte.api.pubsub.Callback {
+abstract class Callback extends org.attribyte.api.pubsub.Callback {
 
    protected Callback(final long receiveTimestampNanos,
-                      final Request request,
-                      final long subscriptionId,
-                      final int priority,
-                      final HubEndpoint hub,
-                      final CallbackMetrics globalMetrics,
-                      final CallbackMetrics hostMetrics,
-                      final CallbackMetrics subscriptionMetrics) {
-      super(request, subscriptionId, priority, hub);
+                      final HubEndpoint hub) {
+      super(hub);
       this.receiveTimestampNanos = receiveTimestampNanos;
-      this.globalMetrics = globalMetrics;
-      this.hostMetrics = hostMetrics;
-      this.subscriptionMetrics = subscriptionMetrics;
    }
+
+   /**
+    * Gets the request.
+    * @return The request.
+    */
+   abstract Request getRequest();
 
    @Override
    public void run() {
+
+      final Request request = getRequest();
+      if(request == null) { //Invalid URI, etc.
+         return;
+      }
+
+      final CallbackMetrics hostMetrics = hub.getHostCallbackMetrics(request.getURI().getHost());
+      final CallbackMetrics subscriptionMetrics = hub.getSubscriptionCallbackMetrics(getSubscriptionId());
+
       try {
          final Response response;
          final Timer.Context ctx = globalMetrics != null ? globalMetrics.callbacks.time() : null;
+
          try {
-            response = hub.getHttpClient().send(request);
+            response = hub.getHttpClient().send(getRequest());
          } finally {
-            if(ctx != null) recordTime(ctx.stop());
+            if(ctx != null) recordTime(ctx.stop(), hostMetrics, subscriptionMetrics);
          }
 
          if(!Response.Code.isOK(response.getStatusCode())) {
-            markFailed();
+            markFailed(globalMetrics, hostMetrics, subscriptionMetrics);
             boolean enqueued = hub.enqueueFailedCallback(this);
             if(!enqueued) {
-               markAbandoned();
+               markAbandoned(globalMetrics, hostMetrics, subscriptionMetrics);
             }
          } else {
-            recordTimeToCallback();
+            recordTimeToCallback(globalMetrics, hostMetrics, subscriptionMetrics);
          }
       } catch(Error e) {
          hub.getLogger().error("Fatal error in callback", e);
@@ -75,15 +78,18 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
          if(!(ioe instanceof IOException)) { //Probably don't want to log every callback failure...
             hub.getLogger().error("Unexpected error in callback", ioe);
          }
-         markFailed();
+         markFailed(globalMetrics, hostMetrics, subscriptionMetrics);
          boolean enqueued = hub.enqueueFailedCallback(this);
          if(!enqueued) {
-            markAbandoned();
+            markAbandoned(globalMetrics, hostMetrics, subscriptionMetrics);
          }
       }
    }
 
-   private void recordTimeToCallback() {
+   private void recordTimeToCallback(final CallbackMetrics globalMetrics,
+                                     final CallbackMetrics hostMetrics,
+                                     final CallbackMetrics subscriptionMetrics) {
+
       final long timeToCallback = System.nanoTime() - receiveTimestampNanos;
       globalMetrics.timeToCallback.update(timeToCallback, TimeUnit.NANOSECONDS);
       if(hostMetrics != null) {
@@ -94,7 +100,9 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
       }
    }
 
-   private void recordTime(final long nanos) {
+   private void recordTime(final long nanos,
+                           final CallbackMetrics hostMetrics,
+                           final CallbackMetrics subscriptionMetrics) {
 
       if(hostMetrics != null) {
          hostMetrics.callbacks.update(nanos, TimeUnit.NANOSECONDS);
@@ -104,21 +112,25 @@ public class Callback extends org.attribyte.api.pubsub.Callback {
       }
    }
 
-   private void markFailed() {
+   private void markFailed(final CallbackMetrics globalMetrics,
+                           final CallbackMetrics hostMetrics,
+                           final CallbackMetrics subscriptionMetrics) {
+
       if(globalMetrics != null) globalMetrics.failedCallbacks.mark();
       if(hostMetrics != null) hostMetrics.failedCallbacks.mark();
       if(subscriptionMetrics != null) subscriptionMetrics.failedCallbacks.mark();
    }
 
-   private void markAbandoned() {
+   private void markAbandoned(final CallbackMetrics globalMetrics,
+                              final CallbackMetrics hostMetrics,
+                              final CallbackMetrics subscriptionMetrics) {
+
       if(globalMetrics != null) globalMetrics.abandonedCallbacks.mark();
       if(hostMetrics != null) hostMetrics.abandonedCallbacks.mark();
       if(subscriptionMetrics != null) subscriptionMetrics.abandonedCallbacks.mark();
    }
 
    private final long receiveTimestampNanos;
-   private final CallbackMetrics globalMetrics;
-   private final CallbackMetrics hostMetrics;
-   private final CallbackMetrics subscriptionMetrics;
+   private final CallbackMetrics globalMetrics = hub.getGlobalCallbackMetrics();
 
 }

@@ -236,9 +236,6 @@ public class HubEndpoint implements MetricSet {
     *
     * <h3>Subscriber Callback</h3>
     * <dl>
-    * <dt>callbackFactoryClass</dt>
-    * <dd>Implementation of <code>CallbackFactory</code>. Creates instances of (<code>Runnable</code>) <code>Callback</code>
-    * used to callback to all subscribers.</dd>
     * <dt><b>maxConcurrentCallbacks</b></dt>
     * <dd>The maximum number of concurrent callbacks.</dd>
     * <dt>callbackThreadKeepAliveMinutes</dt>
@@ -374,13 +371,6 @@ public class HubEndpoint implements MetricSet {
                        notifierThreadKeepAliveMinutes, TimeUnit.MINUTES, queue,
                        new ThreadFactoryBuilder().setNameFormat("notifier-executor-%d").build());
             }
-         }
-
-         callbackFactory = (CallbackFactory)initUtil.initClass("callbackFactoryClass", CallbackFactory.class);
-         if(callbackFactory == null) {
-            initUtil.throwRequiredException("callbackFactoryClass");
-         } else {
-            callbackFactory.init(initUtil.getProperties());
          }
 
          String callbackExecutorServiceClass = initUtil.getProperty("callbackExecutorServiceClass");
@@ -615,16 +605,6 @@ public class HubEndpoint implements MetricSet {
                logger.info("Failed callback service shutdown *abnormally* in " + elapsedMillis + " ms.");
             }
 
-            logger.info("Shutting down callback factory...");
-            startMillis = System.currentTimeMillis();
-            terminatedNormally = callbackFactory.shutdown(maxShutdownAwaitSeconds);
-            elapsedMillis = System.currentTimeMillis() - startMillis;
-            if(terminatedNormally) {
-               logger.info("Callback factory shutdown normally in " + elapsedMillis + " ms.");
-            } else {
-               logger.info("Callback factory shutdown *abnormally* in " + elapsedMillis + " ms.");
-            }
-
             logger.info("Shutting down notifier factory...");
             startMillis = System.currentTimeMillis();
             terminatedNormally = notifierFactory.shutdown(maxShutdownAwaitSeconds);
@@ -787,18 +767,6 @@ public class HubEndpoint implements MetricSet {
    }
 
    /**
-    * Enqueue a callback with a specified subscriber id and priority.
-    * @param receiveTimestampNanos The nanosecond timestamp that marks the reception of notification.
-    * @param request The request.
-    * @param subscriberId The subscriber id.
-    * @param priority The priority.
-    */
-   public void enqueueCallback(final long receiveTimestampNanos, final Request request, final long subscriberId,
-                               final int priority) {
-      enqueueCallback(callbackFactory.create(receiveTimestampNanos, request, subscriberId, priority, this));
-   }
-
-   /**
     * Enqueue a subscriber callback.
     * @param callback The callback.
     */
@@ -833,14 +801,14 @@ public class HubEndpoint implements MetricSet {
     */
    private void maybeDisableSubscription(final Callback callback) {
       try {
-         Subscription subscription = datastore.getSubscription(callback.subscriptionId);
+         Subscription subscription = datastore.getSubscription(callback.getSubscriptionId());
          if(subscription != null) {
-            SubscriptionCallbackMetrics metrics = subscriptionCallbackMetrics.getUnchecked(callback.subscriptionId);
+            SubscriptionCallbackMetrics metrics = subscriptionCallbackMetrics.getUnchecked(callback.getSubscriptionId());
             if(metrics != null && disableSubscriptionStrategy.disableSubscription(subscription,
                     metrics.callbacks, metrics.failedCallbacks, metrics.abandonedCallbacks)) {
-               datastore.changeSubscriptionStatus(callback.subscriptionId, Subscription.Status.REMOVED, 0);
+               datastore.changeSubscriptionStatus(callback.getSubscriptionId(), Subscription.Status.REMOVED, 0);
                autoDisabledSubscriptions.inc();
-               logger.warn("Auto-disabled subscription '" + subscription.callbackURL + "' (" + callback.subscriptionId + ")");
+               logger.warn("Auto-disabled subscription '" + subscription.callbackURL + "' (" + callback.getSubscriptionId() + ")");
             }
          }
       } catch(DatastoreException de) {
@@ -878,7 +846,6 @@ public class HubEndpoint implements MetricSet {
    private ExecutorService notifierService;
    private CachedGauge<Integer> notifierServiceQueueSize;
 
-   private CallbackFactory callbackFactory;
    private ExecutorService callbackService;
    private CachedGauge<Integer> callbackServiceQueueSize;
 

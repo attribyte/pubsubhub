@@ -15,13 +15,11 @@
 
 package org.attribyte.api.pubsub;
 
-import org.attribyte.api.http.Request;
-
 /**
  * A <code>Runnable</code> implementation used to send subscription
  * callbacks. The <code>Comparable</code> implementation
- * compares priority to allow use of a priority queue for scheduling.
- * <em><code>Callback</code> instances are not thread-safe.</em>
+ * compares priority to allow the possibility of a priority queue for scheduling.
+ * Callback instances are <em>not</em> thread-safe.
  */
 public abstract class Callback implements Runnable, Comparable<Callback> {
 
@@ -30,25 +28,28 @@ public abstract class Callback implements Runnable, Comparable<Callback> {
 
    @Override
    public int compareTo(Callback other) {
-      return priority == other.priority ? 0 : priority < other.priority ? -1 : 1;
+      return getPriority() == other.getPriority() ? 0 : getPriority() < other.getPriority() ? -1 : 1;
    }
 
    /**
     * Creates a callback.
-    * @param request The request to be sent to the subscriber.
-    * @param subscriptionId The subscription id.
-    * @param priority The priority.
     * @param hub The hub endpoint sending the callback.
     */
-   protected Callback(final Request request,
-                      final long subscriptionId,
-                      final int priority,
-                      final HubEndpoint hub) {
-      this.request = request;
-      this.subscriptionId = subscriptionId;
-      this.priority = priority;
+   protected Callback(final HubEndpoint hub) {
       this.hub = hub;
    }
+
+   /**
+    * Gets the subscription id associated with this callback.
+    * @return The subscription id.
+    */
+   public abstract long getSubscriptionId();
+
+   /**
+    * Gets the subscription priority.
+    * @return The priority.
+    */
+   public abstract int getPriority();
 
    /**
     * Increments the number of attempts for this callback.
@@ -85,10 +86,7 @@ public abstract class Callback implements Runnable, Comparable<Callback> {
       return lastFailedTimestamp;
    }
 
-   protected final Request request;
-   protected final long subscriptionId;
    protected final HubEndpoint hub;
-   protected final int priority;
 
    protected int attempts;
    protected long createTimestamp = System.currentTimeMillis();

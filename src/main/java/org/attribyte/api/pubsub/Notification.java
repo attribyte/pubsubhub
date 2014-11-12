@@ -37,7 +37,7 @@ public class Notification {
    public Notification(final Topic topic, final Collection<Header> headers, final ByteString content) {
       this.topic = topic;
       if(headers != null) {
-         this.headers = ImmutableList.<Header>copyOf(headers);
+         this.headers = ImmutableList.copyOf(headers);
       } else {
          this.headers = Collections.emptyList();
       }
@@ -53,7 +53,7 @@ public class Notification {
    public Notification(final Topic topic, final Collection<Header> headers, final byte[] content) {
       this.topic = topic;
       if(headers != null) {
-         this.headers = ImmutableList.<Header>copyOf(headers);
+         this.headers = ImmutableList.copyOf(headers);
       } else {
          this.headers = Collections.emptyList();
       }

@@ -30,6 +30,38 @@ import java.util.Date;
 public final class Topic {
 
    /**
+    * The distribution topology.
+    */
+   public static enum Topology {
+      /**
+       * Broadcast to all subscribers (the default).
+       */
+      BROADCAST(0),
+
+      /**
+       * Broadcast to a single subscriber.
+       */
+      SINGLE_SUBSCRIBER(1);
+
+      Topology(final int id) {
+         this.id = id;
+      }
+
+      /**
+       * Gets the topology id.
+       * @return The id.
+       */
+      public final int getId() {
+         return id;
+      }
+
+      /**
+       * The topology id.
+       */
+      public final int id;
+   }
+
+   /**
     * Creates immutable instances of <code>Topic</code>.
     */
    public static final class Builder {
@@ -69,36 +101,41 @@ public final class Topic {
        * @return The topic.
        */
       public Topic create() {
-         return new Topic(topicURL, id, createTime);
+         return new Topic(topicURL, id, createTime, topology);
       }
 
       private long id;
       private String topicURL;
       private Date createTime = null;
+      private Topology topology = Topology.BROADCAST;
    }
 
    /**
-    * Creates a topic.
+    * Creates a topic with 'broadcast' distribution topology.
     * @param topicURL The URL.
     * @param id The topic id.
+    * @param createTime The create time, if known. May be <code>null</code>.
     */
-   public Topic(final String topicURL, final long id) {
-      this(topicURL, id, null);
+   public Topic(final String topicURL, final long id, final Date createTime) {
+      this(topicURL, id, createTime, Topology.BROADCAST);
    }
+
 
    /**
     * Creates a topic.
     * @param topicURL The URL.
     * @param id The topic id.
     * @param createTime The create time, if known. May be <code>null</code>.
+    * @param topology The distribution topology.
     */
-   public Topic(final String topicURL, final long id, final Date createTime) {
+   public Topic(final String topicURL, final long id, final Date createTime, final Topology topology) {
       if(!StringUtil.hasContent(topicURL)) {
          throw new UnsupportedOperationException("Topic URL must not be null or empty");
       }
       this.id = id;
       this.topicURL = topicURL;
       this.createTime = createTime;
+      this.topology = topology;
    }
 
    /**
@@ -125,6 +162,14 @@ public final class Topic {
       return createTime;
    }
 
+   /**
+    * Gets the distribution topology.
+    * @return The topology.
+    */
+   public Topology getTopology() {
+      return topology;
+   }
+
    @Override
    public int hashCode() {
       return topicURL.hashCode();
@@ -136,7 +181,7 @@ public final class Topic {
     * @param other The object for comparison.
     * @return Are the topic URLs equal?
     */
-   public boolean equals(Object other) {
+   public boolean equals(final Object other) {
       if(other instanceof Topic) {
          Topic otherTopic = (Topic)other;
          return otherTopic.topicURL.equals(topicURL);
@@ -148,4 +193,5 @@ public final class Topic {
    protected final long id;
    protected final String topicURL;
    protected final Date createTime;
+   protected final Topology topology;
 }

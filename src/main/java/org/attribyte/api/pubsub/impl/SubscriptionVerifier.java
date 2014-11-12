@@ -93,12 +93,12 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
 
       try {
 
-         Request verifyRequest = new GetRequestBuilder(buf.toString()).create(); //No headers - client will add user agent
+         GetRequestBuilder verifyRequestBuilder = new GetRequestBuilder(buf.toString()); //No headers - client will add user agent
          if(subscriber != null && subscriber.getAuthScheme() != null) {
-            verifyRequest = hub.getDatastore().addAuth(subscriber, verifyRequest);
+            hub.getDatastore().addAuth(subscriber, verifyRequestBuilder);
          }
 
-         Response verifyResponse = hub.getHttpClient().send(verifyRequest);
+         Response verifyResponse = hub.getHttpClient().send(verifyRequestBuilder.create());
          int responseCode = verifyResponse.getStatusCode();
 
          String charset = verifyResponse.getCharset(hub.getDefaultEncoding());

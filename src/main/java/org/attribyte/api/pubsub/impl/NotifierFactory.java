@@ -28,7 +28,12 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
 
    @Override
    public Notifier create(final Notification notification, final HubEndpoint hub) {
-      return new Notifier(notification, hub, subscriptionCache, broadcastTimer);
+      switch(notification.getTopic().getTopology()) {
+         case SINGLE_SUBSCRIBER:
+            return new RandomSubscriptionNotifier(notification, hub, subscriptionCache, broadcastTimer);
+         default:
+            return new BroadcastNotifier(notification, hub, subscriptionCache, broadcastTimer);
+      }
    }
 
    @Override
@@ -39,7 +44,7 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
                  "broadcasts", broadcastTimer
          );
       } else {
-         return ImmutableMap.<String, Metric>of(
+         return ImmutableMap.of(
                  "broadcasts", broadcastTimer,
                  "broadcast-subscription-requests", subscriptionCache.requests,
                  "broadcast-subscription-cache-hits", subscriptionCache.hits,

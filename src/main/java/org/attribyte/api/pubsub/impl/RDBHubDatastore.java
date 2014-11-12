@@ -20,8 +20,7 @@ import com.google.common.collect.Lists;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
 import org.attribyte.api.http.AuthScheme;
-import org.attribyte.api.http.Header;
-import org.attribyte.api.http.Request;
+import org.attribyte.api.http.RequestBuilder;
 import org.attribyte.api.http.impl.BasicAuthScheme;
 import org.attribyte.api.pubsub.*;
 import org.attribyte.util.SQLUtil;
@@ -526,7 +525,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
          }
 
          stmt.executeUpdate();
-         SQLUtil.closeQuietly(conn, stmt, rs); //Avoid using two connections concurrently...
+         SQLUtil.closeQuietly(conn, stmt); //Avoid using two connections concurrently...
          conn = null;
          stmt = null;
          rs = null;
@@ -775,12 +774,10 @@ public abstract class RDBHubDatastore implements HubDatastore {
    }
 
    @Override
-   public Request addAuth(Endpoint endpoint, Request request) throws DatastoreException {
+   public RequestBuilder addAuth(final Endpoint endpoint, final RequestBuilder request) throws DatastoreException {
       if(endpoint.getAuthScheme() != null && endpoint.getAuthId() != null) {
          if(endpoint.getAuthScheme() instanceof BasicAuthScheme) {
-            return request.addHeaders(
-                    Collections.singletonList(new Header(BasicAuthScheme.AUTH_HEADER, "Basic " + endpoint.getAuthId())) //TODO: encryption
-            );
+            return request.addHeader(BasicAuthScheme.AUTH_HEADER, "Basic " + endpoint.getAuthId());
          } else {
             return request;
          }

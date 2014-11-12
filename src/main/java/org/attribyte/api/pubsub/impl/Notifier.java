@@ -16,136 +16,45 @@
 package org.attribyte.api.pubsub.impl;
 
 import com.codahale.metrics.Timer;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import org.attribyte.api.DatastoreException;
-import org.attribyte.api.InvalidURIException;
-import org.attribyte.api.http.AuthScheme;
-import org.attribyte.api.http.PostRequestBuilder;
-import org.attribyte.api.http.Request;
+import com.google.protobuf.ByteString;
+import org.attribyte.api.http.RequestBuilder;
 import org.attribyte.api.pubsub.*;
 import org.attribyte.util.StringUtil;
 
 import java.security.SignatureException;
-import java.util.List;
-
 
 /**
  * The standard notifier implementation.
  */
-public class Notifier extends org.attribyte.api.pubsub.Notifier {
+public abstract class Notifier extends org.attribyte.api.pubsub.Notifier {
 
-   public Notifier(final Notification notification, final HubEndpoint hub,
-                   final SubscriptionCache subscriptionCache,
-                   final Timer broadcastTimer) {
+   protected Notifier(final Notification notification,
+                      final HubEndpoint hub,
+                      final SubscriptionCache subscriptionCache,
+                      final Timer broadcastTimer) {
       super(notification, hub);
       this.subscriptionCache = subscriptionCache;
       this.broadcastTimer = broadcastTimer;
    }
 
-   @Override
-   public void run() {
-      final Timer.Context ctx = broadcastTimer.time();
-      try {
-
-         if(subscriptionCache != null) {
-            List<Subscription> cachedSubscriptions = subscriptionCache.getSubscriptions(notification.getTopic());
-            if(cachedSubscriptions != null) {
-               sendNotifications(cachedSubscriptions);
-               return;
-            }
-         }
-
-         if(!hub.getDatastore().hasActiveSubscriptions(notification.getTopic().getId())) {
-            if(subscriptionCache != null) {
-               subscriptionCache.cacheSubscriptions(notification.getTopic(), ImmutableList.<Subscription>of());
-            }
-            return;
-         }
-
-         final List<Subscription> subscriptions = Lists.newArrayListWithExpectedSize(1024);
-         final ImmutableList.Builder<Subscription> cachedSubscriptions =
-                 subscriptionCache != null ? ImmutableList.<Subscription>builder() : null;
-
-         long nextSelectId = 0L;
-         do {
-            nextSelectId = hub.getDatastore().getActiveSubscriptions(notification.getTopic(), subscriptions, nextSelectId, 1024);
-            sendNotifications(subscriptions);
-            if(subscriptionCache != null) {
-               cachedSubscriptions.addAll(subscriptions);
-            }
-            subscriptions.clear();
-         } while(nextSelectId != HubDatastore.LAST_ID);
-
-         if(subscriptionCache != null) {
-            subscriptionCache.cacheSubscriptions(notification.getTopic(), cachedSubscriptions.build());
-         }
-
-      } catch(DatastoreException de) {
-         hub.getLogger().error("Problem selecting subscriptions for notification", de);
-      } finally {
-         ctx.stop();
-      }
-   }
-
-   private void sendNotifications(List<Subscription> subscriptions) {
-      for(Subscription subscription : subscriptions) {
-         sendNotification(notification, subscription);
-      }
-   }
-
    /**
-    * Sends a notification to the subscriber's callback URL with
-    * priority associated with the particular subscriber.
-    * @param notification The notification.
+    * Adds the optional signature.
+    * @param builder The request builder.
+    * @param notificationContent The notification content.
     * @param subscription The subscription.
-    * @return Was the notification enqueued?
     */
-   protected boolean sendNotification(final Notification notification, final Subscription subscription) {
-
-      try {
-
-         PostRequestBuilder builder = new PostRequestBuilder(subscription.getCallbackURL(), notification.getContent());
-
-         if(StringUtil.hasContent(subscription.getSecret()) && notification.getContent() != null) {
-            try {
-               String hmacSignature = HMACUtil.hexHMAC(notification.getContent().toByteArray(), subscription.getSecret());
-               builder.addHeader("X-Hub-Signature", "sha1=" + hmacSignature);
-            } catch(SignatureException se) {
-               builder.addHeader("X-Hub-Signature", "sha1=");
-            }
+   protected static void addSignature(final RequestBuilder builder, final ByteString notificationContent, final Subscription subscription) {
+      if(StringUtil.hasContent(subscription.getSecret()) && notificationContent != null) {
+         try {
+            String hmacSignature = HMACUtil.hexHMAC(notificationContent.toByteArray(), subscription.getSecret());
+            builder.addHeader("X-Hub-Signature", "sha1=" + hmacSignature);
+         } catch(SignatureException se) {
+            builder.addHeader("X-Hub-Signature", "sha1=");
          }
-
-         Request postRequest = builder.create();
-
-         long subscriberId = subscription.getEndpointId();
-         int priority = 0;
-         if(subscriberId > 0) {
-            try {
-               Subscriber subscriber = hub.getDatastore().getSubscriber(subscriberId);
-               if(subscriber != null) {
-                  priority = subscriber.getPriority();
-                  AuthScheme scheme = subscriber.getAuthScheme();
-                  if(scheme != null) {
-                     postRequest = hub.getDatastore().addAuth(subscriber, postRequest);
-                  }
-               }
-            } catch(DatastoreException de) {
-               hub.getLogger().error("Problem getting subscriber", de);
-            }
-         }
-
-         hub.enqueueCallback(receiveTimestampNanos, postRequest, subscription.getId(), priority);
-         return true;
-
-      } catch(InvalidURIException use) {
-         hub.getLogger().error("Invalid notification URL detected: ", use);
-         return false;
       }
    }
 
-   private final Timer broadcastTimer;
-   private final SubscriptionCache subscriptionCache;
-   private final long receiveTimestampNanos = System.nanoTime();
-
+   protected final Timer broadcastTimer;
+   protected final SubscriptionCache subscriptionCache;
+   protected final long receiveTimestampNanos = System.nanoTime();
 }
