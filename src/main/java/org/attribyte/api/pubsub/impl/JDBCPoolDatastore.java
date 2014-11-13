@@ -15,6 +15,7 @@
 
 package org.attribyte.api.pubsub.impl;
 
+import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.health.HealthCheck;
 import com.google.common.collect.ImmutableMap;
@@ -78,7 +79,12 @@ public class JDBCPoolDatastore extends RDBHubDatastore {
     * @return The metric set.
     */
    public MetricSet getMetrics() {
-      return pool.getMetrics();
+      return new MetricSet() {
+         @Override
+         public Map<String, Metric> getMetrics() {
+            return ImmutableMap.<String, Metric>of("connection-pool", pool.getMetrics());
+         }
+      };
    }
 
    @Override
