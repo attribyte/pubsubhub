@@ -115,6 +115,9 @@ endpoint.httpclient.userAgent=Attribyte/PubSub
 #endpoint.httpclient.proxyHost=
 #endpoint.httpclient.proxyPort=
 
+#Topic cache...
+endpoint.topicCache.maxAgeSeconds=300
+
 #Supported topics...
 endpoint.topics=/test,/example,/post
 

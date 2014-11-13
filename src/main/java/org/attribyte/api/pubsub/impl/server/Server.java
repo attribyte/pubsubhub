@@ -10,6 +10,8 @@ import com.codahale.metrics.servlets.HealthCheckServlet;
 import com.codahale.metrics.servlets.MetricsServlet;
 import com.codahale.metrics.servlets.ThreadDumpServlet;
 import com.google.common.base.Splitter;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.log4j.PropertyConfigurator;
@@ -267,10 +269,22 @@ public class Server {
          publishURLFilters.add(filter);
       }
 
+      final long topicCacheMaxAgeSeconds = Long.parseLong(props.getProperty("endpoint.topicCache.maxAgeSeconds", "0"));
+      final Cache<String, Topic> topicCache;
+      if(topicCacheMaxAgeSeconds > 0) {
+         topicCache = CacheBuilder.newBuilder()
+                 .concurrencyLevel(16)
+                 .expireAfterWrite(topicCacheMaxAgeSeconds, TimeUnit.SECONDS)
+                 .maximumSize(4096)
+                 .build();
+      } else {
+         topicCache = null;
+      }
+
       int maxBodySizeBytes = filterInit.getIntProperty("maxBodySizeBytes", BroadcastServlet.DEFAULT_MAX_BODY_BYTES);
       boolean autocreateTopics = filterInit.getProperty("autocreateTopics", "false").equalsIgnoreCase("true");
 
-      BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics, logger, publishURLFilters);
+      BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics, logger, publishURLFilters, topicCache);
       rootContext.addServlet(new ServletHolder(broadcastServlet), "/notify/*");
 
       CallbackMetricsServlet callbackMetricsServlet = new CallbackMetricsServlet(endpoint);

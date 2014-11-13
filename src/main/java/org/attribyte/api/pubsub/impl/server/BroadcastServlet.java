@@ -15,6 +15,7 @@
 
 package org.attribyte.api.pubsub.impl.server;
 
+import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import org.attribyte.api.DatastoreException;
@@ -61,10 +62,11 @@ public class BroadcastServlet extends ServletBase {
     * @param endpoint The hub endpoint.
     * @param logger A logger.
     * @param filters A list of filters to be applied.
+    * @param topicCache A topic cache.
     */
    public BroadcastServlet(final HubEndpoint endpoint, final Logger logger,
-                           final List<BasicAuthFilter> filters) {
-      this(endpoint, DEFAULT_MAX_BODY_BYTES, DEFAULT_AUTOCREATE_TOPICS, logger, filters);
+                           final List<BasicAuthFilter> filters, final Cache<String, Topic> topicCache) {
+      this(endpoint, DEFAULT_MAX_BODY_BYTES, DEFAULT_AUTOCREATE_TOPICS, logger, filters, topicCache);
    }
 
    /**
@@ -72,18 +74,21 @@ public class BroadcastServlet extends ServletBase {
     * @param endpoint The hub endpoint.
     * @param maxBodyBytes The maximum size of accepted for a notification body.
     * @param logger The logger.
-    * @param filters A ist of filters to be applied.
+    * @param filters A list of filters to be applied.
+    * @param topicCache A topic cache.
     */
    public BroadcastServlet(final HubEndpoint endpoint, final int maxBodyBytes,
                            final boolean autocreateTopics,
                            final Logger logger,
-                           final List<BasicAuthFilter> filters) {
+                           final List<BasicAuthFilter> filters,
+                           final Cache<String, Topic> topicCache) {
       this.endpoint = endpoint;
       this.datastore = endpoint.getDatastore();
       this.maxBodyBytes = maxBodyBytes;
       this.autocreateTopics = autocreateTopics;
       this.logger = logger;
       this.filters = filters != null ? ImmutableList.copyOf(filters) : ImmutableList.<BasicAuthFilter>of();
+      this.topicCache = topicCache;
    }
 
    @Override
@@ -114,7 +119,15 @@ public class BroadcastServlet extends ServletBase {
          }
 
          try {
-            Topic topic = datastore.getTopic(topicURL, autocreateTopics);
+
+            Topic topic = topicCache != null ? topicCache.getIfPresent(topicURL) : null;
+            if(topic == null) {
+               topic = datastore.getTopic(topicURL, autocreateTopics);
+               if(topicCache != null && topic != null) {
+                  topicCache.put(topicURL, topic);
+               }
+            }
+
             if(topic != null) {
                NotificationMetrics globalMetrics = endpoint.getGlobalNotificationMetrics();
                NotificationMetrics metrics = endpoint.getNotificationMetrics(topic.getId());
@@ -190,5 +203,10 @@ public class BroadcastServlet extends ServletBase {
     * Should unknown topics be automatically created?
     */
    private final boolean autocreateTopics;
+
+   /**
+    * The topic cache.
+    */
+   private final Cache<String, Topic> topicCache;
 
 }
