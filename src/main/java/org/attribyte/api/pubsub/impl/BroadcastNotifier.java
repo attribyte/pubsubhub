@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InvalidURIException;
 import org.attribyte.api.http.AuthScheme;
+import org.attribyte.api.http.Header;
 import org.attribyte.api.http.PostRequestBuilder;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.pubsub.HubDatastore;
@@ -29,6 +30,7 @@ import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 
+import java.util.Collections;
 import java.util.List;
 
 
@@ -75,8 +77,9 @@ public class BroadcastNotifier extends Notifier {
 
    BroadcastNotifier(final Notification notification, final HubEndpoint hub,
                      final SubscriptionCache subscriptionCache,
+                     final SubscriberCache subscriberCache,
                      final Timer broadcastTimer) {
-      super(notification, hub, subscriptionCache, broadcastTimer);
+      super(notification, hub, subscriptionCache, subscriberCache, broadcastTimer);
    }
 
    @Override
@@ -135,34 +138,48 @@ public class BroadcastNotifier extends Notifier {
     * priority associated with the particular subscriber.
     * @param notification The notification.
     * @param subscription The subscription.
-    * @return Was the notification enqueued?
+    * @return Was the notification queued?
     */
    protected boolean sendNotification(final Notification notification, final Subscription subscription) {
 
       try {
-
          PostRequestBuilder builder = new PostRequestBuilder(subscription.getCallbackURL(), notification.getContent());
          addSignature(builder, notification.getContent(), subscription);
 
-         long subscriberId = subscription.getEndpointId();
-         int priority = 0;
-         if(subscriberId > 0) {
-            try {
-               Subscriber subscriber = hub.getDatastore().getSubscriber(subscriberId);
-               if(subscriber != null) {
-                  priority = subscriber.getPriority();
-                  AuthScheme scheme = subscriber.getAuthScheme();
-                  if(scheme != null) {
-                     hub.getDatastore().addAuth(subscriber, builder);
-                  }
-               }
-            } catch(DatastoreException de) {
-               hub.getLogger().error("Problem getting subscriber", de);
-            }
-         }
+         final long subscriberId = subscription.getEndpointId();
+         Subscriber subscriber;
+         Header authHeader = null;
 
-         hub.enqueueCallback(new BroadcastCallback(receiveTimestampNanos, builder.create(), subscription.getId(), priority, hub));
-         return true;
+         if(subscriberId > 0) {
+            SubscriberCache.CachedSubscriber cachedSubscriber = subscriberCache.getSubscriber(subscriberId);
+            if(cachedSubscriber != null) {
+               subscriber = cachedSubscriber.subscriber;
+               authHeader = cachedSubscriber.authHeader;
+            } else {
+               try {
+                  subscriber = hub.getDatastore().getSubscriber(subscriberId);
+                  if(subscriber != null) {
+                     authHeader = hub.getDatastore().getAuthHeader(subscriber);
+                     subscriberCache.cacheSubscriber(subscriber, authHeader);
+                  }
+               } catch(DatastoreException de) {
+                  hub.getLogger().error("Problem getting subscriber", de);
+                  subscriber = null;
+               }
+            }
+
+            if(subscriber != null) {
+               if(authHeader != null) {
+                  builder.addHeaders(Collections.singleton(authHeader));
+               }
+               hub.enqueueCallback(new BroadcastCallback(receiveTimestampNanos, builder.create(), subscription.getId(), subscriber.getPriority(), hub));
+               return true;
+            } else {
+               return false;
+            }
+         } else {
+            return false;
+         }
 
       } catch(InvalidURIException use) {
          hub.getLogger().error("Invalid notification URL detected: ", use);

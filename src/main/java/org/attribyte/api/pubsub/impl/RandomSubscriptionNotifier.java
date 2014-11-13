@@ -22,6 +22,7 @@ import com.google.protobuf.ByteString;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InvalidURIException;
 import org.attribyte.api.http.AuthScheme;
+import org.attribyte.api.http.Header;
 import org.attribyte.api.http.PostRequestBuilder;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.pubsub.HubDatastore;
@@ -30,6 +31,7 @@ import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -47,10 +49,12 @@ public class RandomSubscriptionNotifier extends Notifier {
 
       protected RandomSubscriptionCallback(final long receiveTimestampNanos,
                                            final List<Subscription> subscriptions,
+                                           final SubscriberCache subscriberCache,
                                            final ByteString notificationContent,
                                            final HubEndpoint hub) {
          super(receiveTimestampNanos, hub);
          this.subscriptions = subscriptions;
+         this.subscriberCache = subscriberCache;
          this.notificationContent = notificationContent;
       }
 
@@ -66,23 +70,41 @@ public class RandomSubscriptionNotifier extends Notifier {
             addSignature(builder, notificationContent, subscription);
 
             long subscriberId = subscription.getEndpointId();
+            Subscriber subscriber;
+            Header authHeader = null;
+
             if(subscriberId > 0) {
-               try {
-                  Subscriber subscriber = hub.getDatastore().getSubscriber(subscriberId);
-                  if(subscriber != null) {
-                     this.priority = subscriber.getPriority();
-                     AuthScheme scheme = subscriber.getAuthScheme();
-                     if(scheme != null) {
-                        hub.getDatastore().addAuth(subscriber, builder);
+               SubscriberCache.CachedSubscriber cachedSubscriber = subscriberCache.getSubscriber(subscriberId);
+               if(cachedSubscriber != null) {
+                  subscriber = cachedSubscriber.subscriber;
+                  authHeader = cachedSubscriber.authHeader;
+               } else {
+                  try {
+                     subscriber = hub.getDatastore().getSubscriber(subscriberId);
+                     if(subscriber != null) {
+                        authHeader = hub.getDatastore().getAuthHeader(subscriber);
+                        subscriberCache.cacheSubscriber(subscriber, authHeader);
                      }
+                  } catch(DatastoreException de) {
+                     hub.getLogger().error("Problem getting subscriber", de);
+                     subscriber = null;
                   }
-               } catch(DatastoreException de) {
-                  hub.getLogger().error("Problem getting subscriber", de);
                }
+
+               if(subscriber != null) {
+                  this.priority = subscriber.getPriority();
+                  if(authHeader != null) {
+                     builder.addHeaders(Collections.singleton(authHeader));
+                  }
+                  return builder.create();
+               } else {
+                  hub.getLogger().error("No subscriber found for subscription id=" + subscription.getId());
+                  return null;
+               }
+            } else {
+               hub.getLogger().error("No subscriber found for subscription id=" + subscription.getId());
+               return null;
             }
-
-            return builder.create();
-
          } catch(InvalidURIException use) {
             hub.getLogger().error("Invalid notification URL detected: ", use);
             return null;
@@ -100,6 +122,7 @@ public class RandomSubscriptionNotifier extends Notifier {
       }
 
       private final List<Subscription> subscriptions;
+      private final SubscriberCache subscriberCache;
       private final ByteString notificationContent;
 
       private long subscriptionId;
@@ -113,8 +136,9 @@ public class RandomSubscriptionNotifier extends Notifier {
 
    RandomSubscriptionNotifier(final Notification notification, final HubEndpoint hub,
                               final SubscriptionCache subscriptionCache,
+                              final SubscriberCache subscriberCache,
                               final Timer broadcastTimer) {
-      super(notification, hub, subscriptionCache, broadcastTimer);
+      super(notification, hub, subscriptionCache, subscriberCache, broadcastTimer);
    }
 
    @Override
@@ -170,6 +194,6 @@ public class RandomSubscriptionNotifier extends Notifier {
     */
    protected void sendNotification(final Notification notification, final List<Subscription> subscriptions) {
       hub.enqueueCallback(new RandomSubscriptionCallback(receiveTimestampNanos, subscriptions,
-              notification.getContent(), hub));
+              subscriberCache, notification.getContent(), hub));
    }
 }

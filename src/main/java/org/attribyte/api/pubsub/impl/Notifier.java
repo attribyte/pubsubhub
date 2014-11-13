@@ -31,9 +31,11 @@ public abstract class Notifier extends org.attribyte.api.pubsub.Notifier {
    protected Notifier(final Notification notification,
                       final HubEndpoint hub,
                       final SubscriptionCache subscriptionCache,
+                      final SubscriberCache subscriberCache,
                       final Timer broadcastTimer) {
       super(notification, hub);
       this.subscriptionCache = subscriptionCache;
+      this.subscriberCache = subscriberCache;
       this.broadcastTimer = broadcastTimer;
    }
 
@@ -56,5 +58,6 @@ public abstract class Notifier extends org.attribyte.api.pubsub.Notifier {
 
    protected final Timer broadcastTimer;
    protected final SubscriptionCache subscriptionCache;
+   protected final SubscriberCache subscriberCache;
    protected final long receiveTimestampNanos = System.nanoTime();
 }

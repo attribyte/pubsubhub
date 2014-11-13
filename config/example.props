@@ -79,6 +79,8 @@ endpoint.notifierThreadKeepAliveMinutes=2
 #If not present, or value is < 1, no cache is configured.
 endpoint.subscriptionCache.maxAgeSeconds=60
 endpoint.subscriptionCache.monitorFrequencyMinutes=15
+endpoint.subscriberCache.maxAgeSeconds=60
+endpoint.subscriberCache.monitorFrequencyMinutes=15
 
 #######################
 # Subscriber Callback #

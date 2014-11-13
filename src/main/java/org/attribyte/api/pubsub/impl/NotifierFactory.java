@@ -30,39 +30,52 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
    public Notifier create(final Notification notification, final HubEndpoint hub) {
       switch(notification.getTopic().getTopology()) {
          case SINGLE_SUBSCRIBER:
-            return new RandomSubscriptionNotifier(notification, hub, subscriptionCache, broadcastTimer);
+            return new RandomSubscriptionNotifier(notification, hub, subscriptionCache, subscriberCache, broadcastTimer);
          default:
-            return new BroadcastNotifier(notification, hub, subscriptionCache, broadcastTimer);
+            return new BroadcastNotifier(notification, hub, subscriptionCache, subscriberCache, broadcastTimer);
       }
    }
 
    @Override
    public Map<String, Metric> getMetrics() {
 
-      if(subscriptionCache == null) {
-         return ImmutableMap.<String, Metric>of(
-                 "broadcasts", broadcastTimer
-         );
-      } else {
-         return ImmutableMap.of(
-                 "broadcasts", broadcastTimer,
-                 "broadcast-subscription-requests", subscriptionCache.requests,
-                 "broadcast-subscription-cache-hits", subscriptionCache.hits,
-                 "broadcast-subscription-cache-hit-ratio", subscriptionCache.hitRatio,
-                 "broadcast-subscription-cache-size", subscriptionCache.cacheSizeGauge
-         );
+      ImmutableMap.Builder<String, Metric> metrics = ImmutableMap.builder();
+      metrics.put("broadcasts", broadcastTimer);
+      if(subscriptionCache != null) {
+         metrics.put("broadcast-subscription-requests", subscriptionCache.requests)
+                 .put("broadcast-subscription-cache-hits", subscriptionCache.hits)
+                 .put("broadcast-subscription-cache-hit-ratio", subscriptionCache.hitRatio)
+                 .put("broadcast-subscription-cache-size", subscriptionCache.cacheSizeGauge);
       }
+
+      if(subscriberCache != null) {
+         metrics.put("broadcast-subscriber-requests", subscriberCache.requests)
+                 .put("broadcast-subscriber-cache-hits", subscriberCache.hits)
+                 .put("broadcast-subscriber-cache-hit-ratio", subscriberCache.hitRatio)
+                 .put("broadcast-subscriber-cache-size", subscriberCache.cacheSizeGauge);
+      }
+
+      return metrics.build();
    }
 
    @Override
    public void init(final Properties props) {
-      long maxAgeMillis = Long.parseLong(props.getProperty("subscriptionCache.maxAgeSeconds", "0")) * 1000L;
-      int monitorFrequencyMinutes = Integer.parseInt(props.getProperty("subscriptionCache.monitorFrequencyMinutes", "15"));
-      if(maxAgeMillis > 0) {
-         subscriptionCache = new SubscriptionCache(maxAgeMillis, monitorFrequencyMinutes);
+      final long subscriptionMaxAgeMillis = Long.parseLong(props.getProperty("subscriptionCache.maxAgeSeconds", "0")) * 1000L;
+      final int subscriptionMonitorFrequencyMinutes = Integer.parseInt(props.getProperty("subscriptionCache.monitorFrequencyMinutes", "15"));
+      if(subscriptionMaxAgeMillis > 0) {
+         subscriptionCache = new SubscriptionCache(subscriptionMaxAgeMillis, subscriptionMonitorFrequencyMinutes);
       } else {
          subscriptionCache = null;
       }
+
+      final long subscriberMaxAgeMillis = Long.parseLong(props.getProperty("subscriberCache.maxAgeSeconds", "0")) * 1000L;
+      final int subscriberMonitorFrequencyMinutes = Integer.parseInt(props.getProperty("subscriberCache.monitorFrequencyMinutes", "15"));
+      if(subscriberMaxAgeMillis > 0) {
+         subscriberCache = new SubscriberCache(subscriberMaxAgeMillis, subscriberMonitorFrequencyMinutes);
+      } else {
+         subscriberCache = null;
+      }
+
    }
 
    @Override
@@ -79,5 +92,13 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
     */
    Timer broadcastTimer = new Timer();
 
+   /**
+    * The optional subscription cache.
+    */
    private SubscriptionCache subscriptionCache = null;
+
+   /**
+    * The optional subscriber cache.
+    */
+   private SubscriberCache subscriberCache = null;
 }
