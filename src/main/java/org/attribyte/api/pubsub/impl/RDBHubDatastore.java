@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
 import org.attribyte.api.http.AuthScheme;
+import org.attribyte.api.http.Header;
 import org.attribyte.api.http.RequestBuilder;
 import org.attribyte.api.http.impl.BasicAuthScheme;
 import org.attribyte.api.pubsub.*;
@@ -768,6 +769,19 @@ public abstract class RDBHubDatastore implements HubDatastore {
 
       if(scheme.equalsIgnoreCase("basic")) {
          return new BasicAuthScheme();
+      } else {
+         return null;
+      }
+   }
+
+   @Override
+   public Header getAuthHeader(final Endpoint endpoint) throws DatastoreException {
+      if(endpoint.getAuthScheme() != null && endpoint.getAuthId() != null) {
+         if(endpoint.getAuthScheme() instanceof BasicAuthScheme) {
+            return new Header(BasicAuthScheme.AUTH_HEADER, "Basic " + endpoint.getAuthId());
+         } else {
+            return null;
+         }
       } else {
          return null;
       }

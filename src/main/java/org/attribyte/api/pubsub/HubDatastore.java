@@ -21,6 +21,7 @@ import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InitializationException;
 import org.attribyte.api.Logger;
 import org.attribyte.api.http.AuthScheme;
+import org.attribyte.api.http.Header;
 import org.attribyte.api.http.RequestBuilder;
 
 import java.util.Collection;
@@ -296,6 +297,14 @@ public interface HubDatastore {
     * @throws DatastoreException on datastore error.
     */
    public RequestBuilder addAuth(Endpoint endpoint, RequestBuilder request) throws DatastoreException;
+
+   /**
+    * Gets a HTTP header that contains authentication for an endpoint.
+    * @param endpoint The endpoint.
+    * @return The header or <code>null</code> if none.
+    * @throws DatastoreException on datastore error.
+    */
+   public Header getAuthHeader(final Endpoint endpoint) throws DatastoreException;
 
    /**
     * Shutdown the datatastore.
