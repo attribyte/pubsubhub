@@ -16,9 +16,12 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.log4j.PropertyConfigurator;
+import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
 import org.attribyte.api.pubsub.BasicAuthFilter;
+import org.attribyte.api.pubsub.HubDatastore;
 import org.attribyte.api.pubsub.HubEndpoint;
+import org.attribyte.api.pubsub.Subscription;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.server.admin.AdminAuth;
 import org.attribyte.api.pubsub.impl.server.admin.AdminConsole;
@@ -38,12 +41,13 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 public class Server {
@@ -64,8 +68,47 @@ public class Server {
       Properties logProps = new Properties();
       CLI.loadProperties(args, props, logProps);
 
+      /**
+       * A queue to which new topics are added as reported by the datastore event handler.
+       */
+      final BlockingQueue<Topic> newTopicQueue = new LinkedBlockingDeque<Topic>();
+
+      /**
+       * A datastore event handler that offers new topics to a queue.
+       */
+      final HubDatastore.EventHandler topicEventHandler = new HubDatastore.EventHandler() {
+
+         @Override
+         public void newTopic(final Topic topic) throws DatastoreException {
+            newTopicQueue.offer(topic);
+         }
+
+         @Override
+         public void newSubscription(final Subscription subscription) throws DatastoreException {
+            //Ignore
+         }
+
+         @Override
+         public void exception(final Throwable t) {
+            //Ignore
+         }
+
+         @Override
+         public void setNext(final HubDatastore.EventHandler next) {
+            //Ignore
+         }
+      };
+
       final Logger logger = initLogger(props, logProps);
-      final HubEndpoint endpoint = new HubEndpoint("endpoint.", props, logger, null);
+      final HubEndpoint endpoint = new HubEndpoint("endpoint.", props, logger, topicEventHandler);
+
+      final String topicAddedTopicURL = Strings.emptyToNull(props.getProperty("endpoint.topicAddedTopic", ""));
+      final Topic topicAddedTopic = topicAddedTopicURL != null ? endpoint.getDatastore().getTopic(topicAddedTopicURL, true) : null;
+      final Thread topicAddedNotifier = topicAddedTopic != null ? new Thread(new TopicAddedNotifier(newTopicQueue, endpoint, topicAddedTopic)) : null;
+      if(topicAddedNotifier != null) {
+         topicAddedNotifier.setName("topic-added-notifier");
+         topicAddedNotifier.start();
+      }
 
       if(props.getProperty("endpoint.topics") != null) { //Add supported topics...
          for(String topicURL : Splitter.on(",").omitEmptyStrings().trimResults().split(props.getProperty("endpoint.topics"))) {
@@ -126,6 +169,10 @@ public class Server {
          public void lifeCycleStopping(LifeCycle event) {
             if(reporter != null) {
                reporter.stop();
+            }
+            if(topicAddedNotifier != null) {
+               System.out.println("Shutting down new topic notifier...");
+               topicAddedNotifier.interrupt();
             }
             System.out.println("Shutting down endpoint...");
             endpoint.shutdown();
@@ -285,7 +332,7 @@ public class Server {
          topicCache = null;
       }
 
-      final String replicationTopicURL = Strings.emptyToNull(props.getProperty("endpoint.replicationTopicURL", ""));
+      final String replicationTopicURL = Strings.emptyToNull(props.getProperty("endpoint.replicationTopic", ""));
       //Get or create replication topic, if configured.
       final Topic replicationTopic = replicationTopicURL != null ? endpoint.getDatastore().getTopic(replicationTopicURL, true) : null;
 
