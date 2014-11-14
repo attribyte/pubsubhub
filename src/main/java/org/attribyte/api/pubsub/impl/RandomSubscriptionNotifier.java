@@ -31,6 +31,7 @@ import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -51,11 +52,13 @@ public class RandomSubscriptionNotifier extends Notifier {
                                            final List<Subscription> subscriptions,
                                            final SubscriberCache subscriberCache,
                                            final ByteString notificationContent,
+                                           final Collection<Header> notificationHeaders,
                                            final HubEndpoint hub) {
          super(receiveTimestampNanos, hub);
          this.subscriptions = subscriptions;
          this.subscriberCache = subscriberCache;
          this.notificationContent = notificationContent;
+         this.notificationHeaders = notificationHeaders;
       }
 
       @Override
@@ -68,6 +71,9 @@ public class RandomSubscriptionNotifier extends Notifier {
 
             PostRequestBuilder builder = new PostRequestBuilder(subscription.getCallbackURL(), notificationContent);
             addSignature(builder, notificationContent, subscription);
+            if(notificationHeaders != null) {
+               builder.addHeaders(notificationHeaders);
+            }
 
             long subscriberId = subscription.getEndpointId();
             Subscriber subscriber;
@@ -124,6 +130,7 @@ public class RandomSubscriptionNotifier extends Notifier {
       private final List<Subscription> subscriptions;
       private final SubscriberCache subscriberCache;
       private final ByteString notificationContent;
+      private final Collection<Header> notificationHeaders;
 
       private long subscriptionId;
       private int priority = 0;
@@ -194,6 +201,6 @@ public class RandomSubscriptionNotifier extends Notifier {
     */
    protected void sendNotification(final Notification notification, final List<Subscription> subscriptions) {
       hub.enqueueCallback(new RandomSubscriptionCallback(receiveTimestampNanos, subscriptions,
-              subscriberCache, notification.getContent(), hub));
+              subscriberCache, notification.getContent(), notification.getHeaders(), hub));
    }
 }

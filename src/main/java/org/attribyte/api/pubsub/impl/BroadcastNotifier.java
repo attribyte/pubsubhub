@@ -30,6 +30,7 @@ import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -145,6 +146,9 @@ public class BroadcastNotifier extends Notifier {
       try {
          PostRequestBuilder builder = new PostRequestBuilder(subscription.getCallbackURL(), notification.getContent());
          addSignature(builder, notification.getContent(), subscription);
+         if(notification.getHeaders() != null) {
+            builder.addHeaders(notification.getHeaders());
+         }
 
          final long subscriberId = subscription.getEndpointId();
          Subscriber subscriber;
