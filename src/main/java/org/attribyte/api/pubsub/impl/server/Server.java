@@ -10,6 +10,7 @@ import com.codahale.metrics.servlets.HealthCheckServlet;
 import com.codahale.metrics.servlets.MetricsServlet;
 import com.codahale.metrics.servlets.ThreadDumpServlet;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -284,10 +285,15 @@ public class Server {
          topicCache = null;
       }
 
+      final String replicationTopicURL = Strings.emptyToNull(props.getProperty("endpoint.replicationTopicURL", ""));
+      //Get or create replication topic, if configured.
+      final Topic replicationTopic = replicationTopicURL != null ? endpoint.getDatastore().getTopic(replicationTopicURL, true) : null;
+
       int maxBodySizeBytes = filterInit.getIntProperty("maxBodySizeBytes", BroadcastServlet.DEFAULT_MAX_BODY_BYTES);
       boolean autocreateTopics = filterInit.getProperty("autocreateTopics", "false").equalsIgnoreCase("true");
 
-      final BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics, logger, publishURLFilters, topicCache);
+      final BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics,
+              logger, publishURLFilters, topicCache, replicationTopic);
       rootContext.addServlet(new ServletHolder(broadcastServlet), "/notify/*");
 
       CallbackMetricsServlet callbackMetricsServlet = new CallbackMetricsServlet(endpoint);

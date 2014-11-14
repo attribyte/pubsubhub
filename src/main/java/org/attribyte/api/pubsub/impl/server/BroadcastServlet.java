@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
+import org.attribyte.api.http.Header;
 import org.attribyte.api.http.Response;
 import org.attribyte.api.http.impl.servlet.Bridge;
 import org.attribyte.api.pubsub.BasicAuthFilter;
@@ -34,6 +35,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,8 +67,10 @@ public class BroadcastServlet extends ServletBase {
     * @param topicCache A topic cache.
     */
    public BroadcastServlet(final HubEndpoint endpoint, final Logger logger,
-                           final List<BasicAuthFilter> filters, final Cache<String, Topic> topicCache) {
-      this(endpoint, DEFAULT_MAX_BODY_BYTES, DEFAULT_AUTOCREATE_TOPICS, logger, filters, topicCache);
+                           final List<BasicAuthFilter> filters,
+                           final Cache<String, Topic> topicCache,
+                           final Topic replicationTopic) {
+      this(endpoint, DEFAULT_MAX_BODY_BYTES, DEFAULT_AUTOCREATE_TOPICS, logger, filters, topicCache, replicationTopic);
    }
 
    /**
@@ -81,7 +85,8 @@ public class BroadcastServlet extends ServletBase {
                            final boolean autocreateTopics,
                            final Logger logger,
                            final List<BasicAuthFilter> filters,
-                           final Cache<String, Topic> topicCache) {
+                           final Cache<String, Topic> topicCache,
+                           final Topic replicationTopic) {
       this.endpoint = endpoint;
       this.datastore = endpoint.getDatastore();
       this.maxBodyBytes = maxBodyBytes;
@@ -89,6 +94,7 @@ public class BroadcastServlet extends ServletBase {
       this.logger = logger;
       this.filters = filters != null ? ImmutableList.copyOf(filters) : ImmutableList.<BasicAuthFilter>of();
       this.topicCache = topicCache;
+      this.replicationTopic = replicationTopic;
    }
 
    @Override
@@ -138,6 +144,13 @@ public class BroadcastServlet extends ServletBase {
                globalMetrics.notifications.update(acceptTimeNanos, TimeUnit.NANOSECONDS);
                Notification notification = new Notification(topic, null, broadcastContent); //No custom headers...
                endpoint.enqueueNotification(notification);
+               if(replicationTopic != null) {
+                  endpoint.enqueueNotification(new Notification(
+                          replicationTopic,
+                          Collections.singleton(new Header(REPLICATION_TOPIC_HEADER, topic.getURL())),
+                          broadcastContent
+                  ));
+               }
                endpointResponse = ACCEPTED_RESPONSE;
             } else {
                endpointResponse = UNKNOWN_TOPIC_RESPONSE;
@@ -175,6 +188,12 @@ public class BroadcastServlet extends ServletBase {
    public void invalidateCaches() {
       endpoint.invalidateCaches();
    }
+
+   /**
+    * The header sent to identify the topic when replicating all notifications
+    * to the special replication topic ('X-Attribyte-Topic').
+    */
+   public static final String REPLICATION_TOPIC_HEADER = "X-Attribyte-Topic";
 
    /**
     * The hub endpoint.
@@ -215,5 +234,10 @@ public class BroadcastServlet extends ServletBase {
     * The topic cache.
     */
    private final Cache<String, Topic> topicCache;
+
+   /**
+    * A special topic to which all notifications are sent.
+    */
+   private final Topic replicationTopic;
 
 }
