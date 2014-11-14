@@ -134,6 +134,17 @@ publish.basicauth.00.password=test23
 publish.autocreateTopics=true
 
 #################
+# System Topics #
+#################
+
+#A topic to which the URL of newly added topics are reported.
+#endpoint.topicAddedTopic=/system.topicAdded
+
+#A topic to which every notification is reported. The incoming topic URL
+#is reported as the value of the header 'X-Attribyte-Topic'.
+#endpoint.replicationTopic=/system.replication
+
+#################
 # Admin Console #
 #################
 
