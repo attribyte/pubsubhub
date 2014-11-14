@@ -121,6 +121,13 @@ public class SubscriberCache {
    }
 
    /**
+    * Clears the cache.
+    */
+   void clear() {
+      cache.clear();
+   }
+
+   /**
     * Shutdown the eviction service.
     */
    void shutdown() {

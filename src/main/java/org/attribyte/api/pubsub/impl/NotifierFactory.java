@@ -86,6 +86,17 @@ public class NotifierFactory implements org.attribyte.api.pubsub.NotifierFactory
       return true;
    }
 
+   @Override
+   public void invalidateCaches() {
+      if(subscriberCache != null) {
+         subscriberCache.clear();
+      }
+
+      if(subscriptionCache != null) {
+         subscriptionCache.clear();
+      }
+   }
+
    /**
     * Measures the notification rate and the time required to
     * select subscriptions and enqueue callbacks.

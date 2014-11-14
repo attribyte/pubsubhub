@@ -45,4 +45,9 @@ public interface NotifierFactory extends MetricSet {
     */
    public boolean shutdown(final int waitTimeSeconds);
 
+   /**
+    * Cause any internal caches to be invalidated.
+    */
+   public void invalidateCaches();
+
 }
