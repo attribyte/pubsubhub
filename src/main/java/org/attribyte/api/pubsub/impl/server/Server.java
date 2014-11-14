@@ -21,6 +21,7 @@ import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.server.admin.AdminAuth;
 import org.attribyte.api.pubsub.impl.server.admin.AdminConsole;
+import org.attribyte.api.pubsub.impl.server.util.Invalidatable;
 import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -36,6 +37,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -284,7 +287,7 @@ public class Server {
       int maxBodySizeBytes = filterInit.getIntProperty("maxBodySizeBytes", BroadcastServlet.DEFAULT_MAX_BODY_BYTES);
       boolean autocreateTopics = filterInit.getProperty("autocreateTopics", "false").equalsIgnoreCase("true");
 
-      BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics, logger, publishURLFilters, topicCache);
+      final BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics, logger, publishURLFilters, topicCache);
       rootContext.addServlet(new ServletHolder(broadcastServlet), "/notify/*");
 
       CallbackMetricsServlet callbackMetricsServlet = new CallbackMetricsServlet(endpoint);
@@ -314,7 +317,18 @@ public class Server {
 
       if(adminConsole != null && allowedAssetPaths.size() > 0) {
          String adminPath = props.getProperty("admin.path", "/admin/");
-         adminConsole.initServlets(rootContext, adminPath, allowedAssetPaths);
+         List<Invalidatable> invalidatables = Collections.<Invalidatable>singletonList(
+                 new Invalidatable() {
+                    @Override
+                    public void invalidate() {
+                       broadcastServlet.invalidateCaches();
+                       if(topicCache != null) {
+                          topicCache.invalidateAll();
+                       }
+                    }
+                 }
+         );
+         adminConsole.initServlets(rootContext, adminPath, allowedAssetPaths, invalidatables);
       }
 
       server.setDumpBeforeStop(false);

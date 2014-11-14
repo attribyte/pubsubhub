@@ -87,6 +87,24 @@ function addTopic() {
     });
 }
 
+function bindInvalidateCaches() {
+    $('#invalidate-caches').click(function (event) {
+        event.preventDefault();
+        invalidateCaches();
+    });
+}
+
+function invalidateCaches() {
+    $.ajax({
+        type: 'DELETE',
+        url: "/admin/cache",
+        success: function (html, textStatus) {
+            $('#cache-invalidate-modal').foundation('reveal', 'open');
+        },
+        error: handleXHRError
+    });
+}
+
 function editSubscription() {
     var sid = $("#edit-subscription-form-sid").val();
     $.ajax({

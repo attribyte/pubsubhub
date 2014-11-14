@@ -170,6 +170,13 @@ public class BroadcastServlet extends ServletBase {
    }
 
    /**
+    * Invalidates all entries in internal caches.
+    */
+   public void invalidateCaches() {
+      endpoint.invalidateCaches();
+   }
+
+   /**
     * The hub endpoint.
     */
    private final HubEndpoint endpoint;

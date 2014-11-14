@@ -837,6 +837,13 @@ public class HubEndpoint implements MetricSet {
       return builder.build();
    }
 
+   /**
+    * Invalidates any internally cached items.
+    */
+   public void invalidateCaches() {
+      notifierFactory.invalidateCaches();
+   }
+
    private final AtomicBoolean isInit = new AtomicBoolean(false);
    private final AtomicBoolean isShutdown = new AtomicBoolean(false);
 

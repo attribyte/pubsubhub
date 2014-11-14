@@ -184,4 +184,15 @@ modals() ::= <<
     <a class="close-reveal-modal">&#215;</a>
 </div>
 
+<div id="cache-invalidate-modal" class="reveal-modal tiny" data-reveal>
+    <div class="row">
+        <div class="large-12 columns">
+            <div data-alert class="alert-box success radius">
+                Caches invalidated!
+            </div>
+        </div>
+    </div>
+    <a class="close-reveal-modal">&#215;</a>
+</div>
+
 >>

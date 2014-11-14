@@ -17,6 +17,7 @@
 package org.attribyte.api.pubsub.impl.server.admin;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -38,6 +39,7 @@ import org.attribyte.api.pubsub.impl.server.admin.model.DisplayNotificationMetri
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplaySubscribedHost;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayTopic;
 import org.attribyte.api.pubsub.impl.server.admin.model.Paging;
+import org.attribyte.api.pubsub.impl.server.util.Invalidatable;
 import org.attribyte.util.URIEncoder;
 import org.stringtemplate.v4.DateRenderer;
 import org.stringtemplate.v4.ST;
@@ -53,6 +55,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -68,10 +71,12 @@ import static org.attribyte.api.pubsub.impl.server.util.ServletUtil.splitPath;
 public class AdminServlet extends HttpServlet {
 
    public AdminServlet(final HubEndpoint endpoint,
+                       final Collection<Invalidatable> invalidateItems,
                        final AdminAuth auth,
                        final String templateDirectory,
                        final Logger logger) {
       this.endpoint = endpoint;
+      this.invalidateItems = ImmutableList.copyOf(invalidateItems);
       this.datastore = endpoint.getDatastore();
       this.auth = auth;
       this.templateGroup = new STGroupDir(templateDirectory, '$', '$');
@@ -88,7 +93,28 @@ public class AdminServlet extends HttpServlet {
       this.logger = logger;
    }
 
-   public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+   @Override
+   protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
+      if(!auth.authIsValid(request, response)) return;
+      List<String> path = splitPath(request);
+      String obj = path.size() > 0 ? path.get(0) : null;
+      if(obj != null) {
+         if(obj.equals("cache")) {
+            endpoint.invalidateCaches();
+            for(Invalidatable item : invalidateItems) {
+               item.invalidate();
+            }
+            response.setStatus(HttpServletResponse.SC_OK);
+         } else {
+            sendNotFound(response);
+         }
+      } else {
+         sendNotFound(response);
+      }
+   }
+
+   @Override
+   protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
       if(!auth.authIsValid(request, response)) return;
       List<String> path = splitPath(request);
       String obj = path.size() > 0 ? path.get(0) : null;
@@ -105,7 +131,8 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
-   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+   @Override
+   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
       if(!auth.authIsValid(request, response)) return;
       List<String> path = splitPath(request);
       String obj = path.size() > 0 ? path.get(0) : null;
@@ -754,6 +781,7 @@ public class AdminServlet extends HttpServlet {
    }
 
    private final HubDatastore datastore;
+   private final ImmutableList<Invalidatable> invalidateItems;
    private final HubEndpoint endpoint;
    private final Logger logger;
    private final AdminAuth auth;

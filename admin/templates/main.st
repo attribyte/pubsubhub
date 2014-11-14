@@ -33,6 +33,7 @@ $head()$
                 New Subscription</a></li>
             <li><a href="/admin/metrics">Callback Metrics</a></li>
             <li><a href="/admin/nmetrics">Notification Metrics</a></li>
+            <li><a id="invalidate-caches" href="#">Invalidate Caches</a></li>
         </ul>
     </div>
 </div>
@@ -43,6 +44,7 @@ $footer()$
     jQuery(document).foundation();
     jQuery(window).load(function () {
         bindTopicForm();
+        bindInvalidateCaches();
     });
 </script>
 </body>
