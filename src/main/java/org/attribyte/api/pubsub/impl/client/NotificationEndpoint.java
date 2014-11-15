@@ -82,7 +82,7 @@ public class NotificationEndpoint implements MetricSet {
       PingServlet pingServlet = new PingServlet();
       rootContext.addServlet(new ServletHolder(pingServlet), "/ping/*");
 
-      final NotificationEndpointServlet notificationServlet = new NotificationEndpointServlet(topics, callback);
+      final NotificationEndpointServlet notificationServlet = new NotificationEndpointServlet(topics, callback, endpointAuth.isPresent());
       this.metrics = notificationServlet.getMetrics();
       rootContext.addServlet(new ServletHolder(notificationServlet), "/*");
 
