@@ -19,11 +19,11 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.codahale.metrics.Timer;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.io.ByteStreams;
-import org.attribyte.api.http.Header;
+import org.attribyte.api.http.Request;
+import org.attribyte.api.http.impl.servlet.Bridge;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
 
@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 
@@ -46,30 +47,49 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
 
    /**
     * Creates the servlet.
-    * @param topics The topics from which we'd like to receive notifications.
+    * <p>
+    *    By default, "unsubscribe" is not allowed.
+    * </p>
+    * @param topics The topics from which notifications are allowed.
     * @param callback The callback that accepts notifications when they arrive.
     */
    public NotificationEndpointServlet(
            final Collection<Topic> topics,
            final NotificationEndpoint.Callback callback) {
+      this(topics, callback, false);
+   }
+
+   /**
+    * Creates the servlet.
+    * @param topics The topics from which notifications are allowed.
+    * @param callback The callback that accepts notifications when they arrive.
+    * @param allowUnsubscribe Are unsubscribe requests allowed?
+    */
+   public NotificationEndpointServlet(
+           final Collection<Topic> topics,
+           final NotificationEndpoint.Callback callback,
+           final boolean allowUnsubscribe) {
       this.callback = callback;
       ImmutableMap.Builder<String, Topic> builder = ImmutableMap.builder();
       for(Topic topic : topics) {
          builder.put(topic.getURL(), topic);
       }
       this.topics = builder.build();
+      this.allowedVerifyModes = allowUnsubscribe ? ImmutableSet.of("subscribe", "unsubscribe") : ImmutableSet.of("subscribe");
    }
 
    @Override
    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
       Timer.Context ctx = notificationTimer.time();
       try {
-         byte[] body = ByteStreams.toByteArray(request.getInputStream());
+
+         Request notificationRequest = Bridge.fromServletRequest(request, 1024 * 1024);
+         byte[] body = notificationRequest.body.toByteArray();
          String topicURL = request.getPathInfo();
          response.setStatus(HttpServletResponse.SC_ACCEPTED); //Accept anything to avoid hub retry on topics we aren't interested in...
          Topic topic = topics.get(topicURL);
          if(topic != null) {
-            Notification notification = new Notification(topic, EMPTY_HEADERS, body);
+            Notification notification = new Notification(topic, notificationRequest.getHeaders(), body);
             callback.notification(notification);
          }
       } catch(Throwable t) {
@@ -85,9 +105,7 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
       String topic = request.getParameter("hub.topic");
       String challenge = request.getParameter("hub.challenge");
 
-      //Accept topic subscribe verifications only...
-
-      if(mode != null && mode.equalsIgnoreCase("subscribe") && topic != null) {
+      if(mode != null && allowedVerifyModes.contains(mode.toLowerCase()) && topic != null) {
          if(topics.containsKey(topic)) {
             response.setStatus(HttpServletResponse.SC_ACCEPTED);
             response.getOutputStream().print(challenge);
@@ -123,10 +141,10 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
 
    private final Map<String, Topic> topics;
    private final NotificationEndpoint.Callback callback;
-   private final Collection<Header> EMPTY_HEADERS = ImmutableList.of();
    private final ConcurrentMap<String, Topic> verifiedTopics = Maps.newConcurrentMap();
    private final Timer notificationTimer = new Timer();
    private final Counter subscriptionVerifications = new Counter();
    private final Counter failedSubscriptionVerifications = new Counter();
+   private final Set<String> allowedVerifyModes;
 }
 
