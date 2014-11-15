@@ -182,7 +182,7 @@ public class SubscriptionClient {
 
          final Fields fields = new Fields();
          fields.add("hub.callback", callbackURL);
-         fields.add("hub.mode", "subscribe");
+         fields.add("hub.mode", "unsubscribe");
          fields.add("hub.topic", topicURL);
 
          //Non-standard...
