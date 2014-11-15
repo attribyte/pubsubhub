@@ -5,6 +5,8 @@ import org.attribyte.api.http.Response;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -89,7 +91,7 @@ public class SubscriptionClient {
    /**
     * Synchronously posts a subscription request.
     * @param topicURL The subscription URL of the topic.
-    * @param hubURL The hub to which we are subscribing.
+    * @param hubURL The hub.
     * @param callbackURL The callback for the hub.
     * @param leaseSeconds The subscription lease seconds.
     * @param hubAuth optional HTTP 'Basic' auth for the hub.
@@ -106,7 +108,7 @@ public class SubscriptionClient {
    /**
     * Synchronously posts a subscription request with non-standard callback-auth.
     * @param topicURL The subscription URL of the topic.
-    * @param hubURL The hub to which we are subscribing.
+    * @param hubURL The hub.
     * @param callbackURL The callback for the hub.
     * @param leaseSeconds The subscription lease seconds.
     * @param callbackAuth optional HTTP 'Basic' auth for the callback (non-standard).
@@ -121,21 +123,80 @@ public class SubscriptionClient {
                                          final Optional<BasicAuth> hubAuth) {
       try {
 
+         final Fields fields = new Fields();
+         fields.add("hub.callback", callbackURL);
+         fields.add("hub.mode", "subscribe");
+         fields.add("hub.topic", topicURL);
+         fields.add("hub.lease_seconds", Integer.toString(leaseSeconds));
+
+         //Non-standard...
+         if(callbackAuth.isPresent()) {
+            fields.add("hub.x-callback_auth_scheme", "Basic");
+            fields.add("hub.x-callback_auth", callbackAuth.get().headerValue.substring("Basic ".length()));
+         }
+
          final Request request = httpClient.POST(hubURL)
-                 .param("hub.callback", callbackURL)
-                 .param("hub.mode", "subscribe")
-                 .param("hub.topic", topicURL)
-                 .param("hub.lease_seconds", Integer.toString(leaseSeconds))
+                 .content(new FormContentProvider(fields))
                  .timeout(10L, TimeUnit.SECONDS);
 
          if(hubAuth.isPresent()) {
             request.header(BasicAuth.AUTH_HEADER_NAME, hubAuth.get().headerValue);
          }
 
+         ContentResponse response = request.send();
+         int status = response.getStatus();
+         if(status == Response.Code.ACCEPTED) {
+            return ACCEPTED_RESULT;
+         } else {
+            String content = response.getContentAsString();
+            return new Result(status, content, null);
+         }
+      } catch(InterruptedException ie) {
+         Thread.currentThread().interrupt();
+         return new Result(0, "Interrupted while sending", ie);
+      } catch(TimeoutException te) {
+         return new Result(0, "Timeout while sending", te);
+      } catch(ExecutionException ee) {
+         if(ee.getCause() != null) {
+            return new Result(0, "Problem sending", ee.getCause());
+         } else {
+            return new Result(0, "Problem sending", ee);
+         }
+      }
+   }
+
+   /**
+    * Synchronously posts an unsubscribe request.
+    * @param topicURL The subscription URL of the topic.
+    * @param hubURL The hub.
+    * @param callbackURL The callback for the hub.
+    * @param hubAuth optional HTTP 'Basic' auth for the hub.
+    * @return The result.
+    */
+   public Result postUnsubscribeRequest(final String topicURL,
+                                        final String hubURL,
+                                        final String callbackURL,
+                                        final Optional<BasicAuth> callbackAuth,
+                                        final Optional<BasicAuth> hubAuth) {
+      try {
+
+         final Fields fields = new Fields();
+         fields.add("hub.callback", callbackURL);
+         fields.add("hub.mode", "subscribe");
+         fields.add("hub.topic", topicURL);
+
          //Non-standard...
          if(callbackAuth.isPresent()) {
-            request.param("hub.x-callback_auth_scheme", "Basic");
-            request.param("hub.x-callback_auth", callbackAuth.get().headerValue.substring("Basic ".length()));
+            fields.add("hub.x-callback_auth_scheme", "Basic");
+            fields.add("hub.x-callback_auth", callbackAuth.get().headerValue.substring("Basic ".length()));
+         }
+
+         final Request request = httpClient.POST(hubURL)
+                 .content(new FormContentProvider(fields))
+                 .timeout(10L, TimeUnit.SECONDS);
+
+         if(hubAuth.isPresent()) {
+            request.header(BasicAuth.AUTH_HEADER_NAME, hubAuth.get().headerValue);
          }
 
          ContentResponse response = request.send();
