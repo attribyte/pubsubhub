@@ -9,8 +9,7 @@ $head()$
     <div class="large-9 columns">
         <ul class="inline-list right">
             <li>
-                <small>$hostname$ @ $time; format="long"$
-                    <small>
+                <small>$hostname$ @ $time; format="long"$</small>
             </li>
         </ul>
     </div>
