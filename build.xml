@@ -3,9 +3,6 @@
     <description>Build the Attribyte, LLC pubsub project</description>
 
     <path id="classpath">
-        <fileset dir="lib/">
-            <include name="**/*.jar"/>
-        </fileset>
         <fileset refid="ivy.fileset"/>
         <pathelement location="build/"/>
     </path>
