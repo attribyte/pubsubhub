@@ -1,9 +1,28 @@
-JAVA_EXE="/usr/local/jdk8/bin/java"
-INSTALL_DIR="/var/attribyte/pubsub"
-LIB_DIR="$INSTALL_DIR/lib"
-EXTLIB_DIR="$INSTALL_DIR/dist/extlib"
-DISTLIB="$INSTALL_DIR/dist/lib/attribyte-pubsub.0.1.0.jar"
-CLASSPATH=$DISTLIB
+# The location of the java interpreter may be set explicitly with JAVA_EXE.
+# Otherwise, JAVA_HOME is used.
+# Finally, if JAVA_HOME is undefined, simply use 'java'.
+#JAVA_EXE="/usr/local/jdk8/bin/java"
+
+if [ -z "$JAVA_EXE" ]; then
+  if [ -z "$JAVA_HOME" ]; then
+    JAVA_EXE="java"
+  else
+    JAVA_EXE="$JAVA_HOME/bin/java"
+  fi
+fi
+
+# The installation directory containing configuration and dependencies may be set explicitly with PUBSUB_INSTALL_DIR.
+# Otherwise, an attempt is made to discover the location of this script.
+#PUBSUB_INSTALL_DIR=/var/attribyte/pubsub
+
+if [ -z "$PUBSUB_INSTALL_DIR" ]; then
+  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  PUBSUB_INSTALL_DIR="$(dirname "$DIR")"
+fi
+
+LIB_DIR="$PUBSUB_INSTALL_DIR/dist/lib"
+EXTLIB_DIR="$PUBSUB_INSTALL_DIR/dist/extlib"
+CLASSPATH=""
 
 for jar in `ls $EXTLIB_DIR/*.jar`;
 do
@@ -23,4 +42,4 @@ if [ "test$1" = "test" ]; then
     exit 1
 fi
 
-$JAVA_EXE org.attribyte.api.pubsub.impl.server.CLI -prefix=endpoint.acp.connection.pubsub. -enableTopic=$1 $INSTALL_DIR/config/config.properties
+$JAVA_EXE org.attribyte.api.pubsub.impl.server.CLI -prefix=endpoint.acp.connection.pubsub. -enableTopic=$1 $PUBSUB_INSTALL_DIR/config/config.properties

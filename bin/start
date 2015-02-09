@@ -12,7 +12,7 @@ if [ -z "$JAVA_EXE" ]; then
 fi
 
 # The installation directory containing configuration and dependencies may be set explicitly with PUBSUB_INSTALL_DIR.
-# Otherwise, an attempt is made to discover the location of this start script.
+# Otherwise, an attempt is made to discover the location of this script.
 #PUBSUB_INSTALL_DIR=/var/attribyte/pubsub
 
 if [ -z "$PUBSUB_INSTALL_DIR" ]; then
@@ -24,34 +24,32 @@ PIDFILE="pubsubhub.pid"
 
 if [ -f "$PUBSUB_INSTALL_DIR/bin/$PIDFILE" ]
 then
-	echo Pubsub appears to be running! Aborting.
-	exit 1
+  echo Pubsub appears to be running! Aborting.
+  exit 1
 fi
 
-LIB_DIR="$PUBSUB_INSTALL_DIR/lib"
+LIB_DIR="$PUBSUB_INSTALL_DIR/dist/lib"
 EXTLIB_DIR="$PUBSUB_INSTALL_DIR/dist/extlib"
-DISTLIB="$PUBSUB_INSTALL_DIR/dist/lib/attribyte-pubsub.0.1.0.jar"
-CLASSPATH=$DISTLIB
+CLASSPATH=""
 
 for jar in `ls $EXTLIB_DIR/*.jar`;
 do
-        CLASSPATH=$CLASSPATH:$jar
+  CLASSPATH=$CLASSPATH:$jar
 done
-
 
 for jar in `ls $LIB_DIR/*.jar`;
 do
-        CLASSPATH=$CLASSPATH:$jar
+  CLASSPATH=$CLASSPATH:$jar
 done
 
 export CLASSPATH
 
 LOCAL_CONFIG="$PUBSUB_INSTALL_DIR/config/local.properties"
-CONSOLE_LOG="$PUBSUB_INSTALL_DIR/bin/server.log"
+CONSOLE_LOG="$PUBSUB_INSTALL_DIR/logs/server.log"
 
 if [ -f "$LOCAL_CONFIG" ]; then
-  nohup $JAVA_EXE org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
+  nohup $JAVA_EXE -Dpubsub.install.dir="$PUBSUB_INSTALL_DIR" org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
 else
-  nohup $JAVA_EXE org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties  1> $CONSOLE_LOG 2>&1 &
+  nohup $JAVA_EXE -Dpubsub.install.dir="$PUBSUB_INSTALL_DIR" org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties  1> $CONSOLE_LOG 2>&1 &
 fi
 echo $! > $PUBSUB_INSTALL_DIR/bin/$PIDFILE

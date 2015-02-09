@@ -15,10 +15,25 @@ The build uses [Apache Ant](http://ant.apache.org/) and
 [Apache Ivy](https://ant.apache.org/ivy/) to resolve dependencies. The following ant tasks
 are available:
 
-* compile - Compiles the source
-* dist - Resolves dependencies, compiles the source, and creates a jar in dist/lib. This is the default task.
-* full-dist - Resolves dependencies, compiles the source, creates a jar in dist/lib, and copies dependencies to dist/extlib
-* clean - Removes all build files and jars.
+* `init-ivy` - Download and install ivy, if necessary
+* `compile` - Compiles the source
+* `dist` - Resolves dependencies, compiles the source, and creates a jar in `dist/lib`. This is the default task.
+* `full-dist` - Resolves dependencies, compiles the source, creates a jar in `dist/lib`, and copies dependencies to `dist/extlib`
+* `clean` - Removes all build files and jars.
+* `javadoc` - Generates javadoc.
+* `cleandoc` - Removes generated javadoc.
+
+##MySQL Quick Start
+
+* If ivy is not installed with your ant distribution: `ant init-ivy`
+* Build: `ant full-dist`
+* Create a `pubsub` database.
+* Create the database tables: `mysql -u [your user] -p -h [your host] pubsub < config/mysql_pubsub_hub.sql`
+* Create a config: `cp config/example.config.properties config/config.properties`
+* Edit `config/config.properties` to change `pubsub.user`, `pubsub.password` and `pubsub.connectionString` for your database.
+* Start the server: `bin/start`
+* Go to `http://localhost:8086/metrics` to verify that the server is running.
+* Stop the server: `bin/stop`
 
 ##Framework Dependencies
 
