@@ -217,10 +217,13 @@ public class Server {
 
       if(props.getProperty("admin.enabled", "false").equalsIgnoreCase("true")) {
 
+         File assetDirFile = getSystemFile("admin.assetDirectory", props);
 
+         if(assetDirFile == null) {
+            System.err.println("The 'admin.assetDirectory' must be configured");
+            System.exit(1);
+         }
 
-         String assetDir = props.getProperty("admin.assetDirectory", "");
-         File assetDirFile = new File(assetDir);
          if(!assetDirFile.exists()) {
             System.err.println("The 'admin.assetDirectory'" + assetDirFile.getAbsolutePath() + "' must exist");
             System.exit(1);
@@ -245,8 +248,13 @@ public class Server {
             System.exit(1);
          }
 
-         String templateDir = props.getProperty("admin.templateDirectory", "");
-         File templateDirFile = new File(templateDir);
+         File templateDirFile = getSystemFile("admin.templateDirectory", props);
+
+         if(templateDirFile == null) {
+            System.err.println("The 'admin.templateDirectory' must be specified");
+            System.exit(1);
+         }
+
          if(!templateDirFile.exists()) {
             System.err.println("The 'admin.templateDirectory'" + assetDirFile.getAbsolutePath() + "' must exist");
             System.exit(1);
@@ -262,8 +270,8 @@ public class Server {
             System.exit(1);
          }
 
-         adminConsole = new AdminConsole(rootContext, assetDir, endpoint,
-                 new AdminAuth(adminRealm, adminUsername, adminPassword), templateDir, logger);
+         adminConsole = new AdminConsole(rootContext, assetDirFile.getAbsolutePath(), endpoint,
+                 new AdminAuth(adminRealm, adminUsername, adminPassword), templateDirFile.getAbsolutePath(), logger);
 
          allowedAssetPaths = Lists.newArrayList(
                  Splitter.on(',').omitEmptyStrings().trimResults().split(props.getProperty("admin.assetPaths", ""))
