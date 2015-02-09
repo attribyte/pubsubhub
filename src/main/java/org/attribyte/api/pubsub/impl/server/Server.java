@@ -216,6 +216,9 @@ public class Server {
       final List<String> allowedAssetPaths;
 
       if(props.getProperty("admin.enabled", "false").equalsIgnoreCase("true")) {
+
+
+
          String assetDir = props.getProperty("admin.assetDirectory", "");
          File assetDirFile = new File(assetDir);
          if(!assetDirFile.exists()) {
@@ -281,27 +284,21 @@ public class Server {
       serverHandlers.addHandler(instrumentedHandler);
       */
 
-      String requestLogPath = props.getProperty("http.log.path", "").trim();
-      if(StringUtil.hasContent(requestLogPath)) {
+      File requestLogPathFile = getSystemFile("http.log.path", props);
+      if(requestLogPathFile != null) {
 
-         if(!requestLogPath.endsWith("/")) {
-            requestLogPath = requestLogPath + "/";
-         }
-
-         File testFile = new File(requestLogPath);
-
-         if(!testFile.exists()) {
-            System.err.println("The 'http.log.path', '" + testFile.getAbsolutePath() + "' must exist");
+         if(!requestLogPathFile.exists()) {
+            System.err.println("The 'http.log.path', '" + requestLogPathFile.getAbsolutePath() + "' must exist");
             System.exit(1);
          }
 
-         if(!testFile.isDirectory()) {
-            System.err.println("The 'http.log.path', '" + testFile.getAbsolutePath() + "' must be a directory");
+         if(!requestLogPathFile.isDirectory()) {
+            System.err.println("The 'http.log.path', '" + requestLogPathFile.getAbsolutePath() + "' must be a directory");
             System.exit(1);
          }
 
-         if(!testFile.canWrite()) {
-            System.err.println("The 'http.log.path', '" + testFile.getAbsolutePath() + "' is not writable");
+         if(!requestLogPathFile.canWrite()) {
+            System.err.println("The 'http.log.path', '" + requestLogPathFile.getAbsolutePath() + "' is not writable");
             System.exit(1);
          }
 
@@ -309,6 +306,10 @@ public class Server {
          boolean requestLogExtendedFormat = props.getProperty("http.log.extendedFormat", "true").equalsIgnoreCase("true");
          String requestLogTimeZone = props.getProperty("http.log.timeZone", TimeZone.getDefault().getID());
          String requestLogPrefix = props.getProperty("http.log.prefix", "requests");
+         String requestLogPath = requestLogPathFile.getAbsolutePath();
+         if(!requestLogPath.endsWith("/")) {
+            requestLogPath = requestLogPath + "/";
+         }
 
          NCSARequestLog requestLog = new NCSARequestLog(requestLogPath + requestLogPrefix + "-yyyy_mm_dd.log");
          requestLog.setRetainDays(requestLogRetainDays);
@@ -441,4 +442,25 @@ public class Server {
       }
    }
 
+   /**
+    * Loads a file defined by a property and expected to be in the system install directory.
+    * <p>
+    * The system install directory will be added as a prefix if the property value
+    * does not start with '/'.
+    * </p>
+    * @param propName The property name.
+    * @param props The properties.
+    * @return The file, or <code>null</code> if the property was unspecified.
+    */
+   private static File getSystemFile(final String propName, final Properties props) {
+      String filename = props.getProperty(propName, "").trim();
+      if(filename.length() > 0) {
+         if(!filename.startsWith("/")) {
+            filename = CLI.systemInstallDir() + filename;
+         }
+         return new File(filename);
+      } else {
+         return null;
+      }
+   }
 }
