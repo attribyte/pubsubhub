@@ -30,6 +30,11 @@ import java.util.Properties;
 public class CLI {
 
    /**
+    * The system property that points to the installation directory.
+    */
+   public static final String PUBSUB_INSTALL_DIR_SYSPROP = "pubsub.install.dir";
+
+   /**
     * Various command line utilities.
     * <p>
     * Usage: java org.attribyte.api.pubsub.impl.server.CLI -prefix= [-enableTopic=]
@@ -84,7 +89,7 @@ public class CLI {
             fis = new FileInputStream(f);
             currProps.load(fis);
             if(f.getName().startsWith("log.")) {
-               logProps.putAll(currProps);
+               logProps.putAll(resolveLogFiles(currProps));
             } else {
                props.putAll(currProps);
             }
@@ -92,7 +97,9 @@ public class CLI {
             //TODO
          } finally {
             try {
-               fis.close();
+               if(fis != null) {
+                  fis.close();
+               }
             } catch(Exception e) {
                //TODO
             }
@@ -100,5 +107,41 @@ public class CLI {
       }
    }
 
+   /**
+    * Examines log configuration keys for those that represent files to add
+    * system install path if not absolute.
+    * @param logProps The properties.
+    * @return The properties with modified values.
+    */
+   static Properties resolveLogFiles(final Properties logProps) {
 
+      Properties filteredProps = new Properties();
+
+      for(String key : logProps.stringPropertyNames()) {
+         if(key.endsWith(".File")) {
+            String filename = logProps.getProperty(key);
+            if(filename.startsWith("/")) {
+               filteredProps.put(key, filename);
+            } else {
+               filteredProps.put(key, systemInstallDir() + filename);
+            }
+         } else {
+            filteredProps.put(key, logProps.getProperty(key));
+         }
+      }
+
+      return filteredProps;
+   }
+
+   /**
+    * Gets the system install directory (always ends with '/').
+    * @return The directory.
+    */
+   static String systemInstallDir() {
+      String systemInstallDir = System.getProperty(PUBSUB_INSTALL_DIR_SYSPROP, "").trim();
+      if(systemInstallDir.length() > 0 && !systemInstallDir.endsWith("/")) {
+         systemInstallDir = systemInstallDir + "/";
+      }
+      return systemInstallDir;
+   }
 }
