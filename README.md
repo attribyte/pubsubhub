@@ -29,8 +29,9 @@ are available:
 * Build: `ant full-dist`
 * Create a `pubsub` database.
 * Create the database tables: `mysql -u [your user] -p -h [your host] pubsub < config/mysql_pubsub_hub.sql`
-* Create a config: `cp config/example.config.properties config/config.properties`
-* Edit `config/config.properties` to change `pubsub.user`, `pubsub.password` and `pubsub.connectionString` for your database.
+* Create a install-specific config: `cp config/example.mysql.properties config/local.properties`
+* Edit `config/local.properties` to change `pubsub.user`, `pubsub.password` and `pubsub.connectionString` for your database.
+  You may also want to change any usernames/passwords from their defaults at this time.
 * Start the server: `bin/start`
 * Go to `http://localhost:8086/metrics` to verify that the server is running.
 * Stop the server: `bin/stop`

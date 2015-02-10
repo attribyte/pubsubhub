@@ -3,8 +3,10 @@
 # Finally, if JAVA_HOME is undefined, simply use 'java'.
 #JAVA_EXE="/usr/local/jdk8/bin/java"
 
-if [ -z "$JAVA_EXE" ]; then
-  if [ -z "$JAVA_HOME" ]; then
+if [ -z "$JAVA_EXE" ]
+then
+  if [ -z "$JAVA_HOME" ]
+  then
     JAVA_EXE="java"
   else
     JAVA_EXE="$JAVA_HOME/bin/java"
@@ -15,7 +17,8 @@ fi
 # Otherwise, an attempt is made to discover the location of this script.
 #PUBSUB_INSTALL_DIR=/var/attribyte/pubsub
 
-if [ -z "$PUBSUB_INSTALL_DIR" ]; then
+if [ -z "$PUBSUB_INSTALL_DIR" ]
+then
   DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
   PUBSUB_INSTALL_DIR="$(dirname "$DIR")"
 fi
@@ -44,12 +47,28 @@ done
 
 export CLASSPATH
 
-LOCAL_CONFIG="$PUBSUB_INSTALL_DIR/config/local.properties"
 CONSOLE_LOG="$PUBSUB_INSTALL_DIR/logs/server.log"
 
-if [ -f "$LOCAL_CONFIG" ]; then
-  nohup $JAVA_EXE -Dpubsub.install.dir="$PUBSUB_INSTALL_DIR" org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
-else
-  nohup $JAVA_EXE -Dpubsub.install.dir="$PUBSUB_INSTALL_DIR" org.attribyte.api.pubsub.impl.server.Server $PUBSUB_INSTALL_DIR/config/config.properties $PUBSUB_INSTALL_DIR/config/log.properties  1> $CONSOLE_LOG 2>&1 &
+SYSTEM_CONFIG="$PUBSUB_INSTALL_DIR/config/config.properties"
+if [ ! -f "$SYSTEM_CONFIG" ]
+then
+  echo "A 'config.properties' must exist"
+  exit 1
 fi
+
+LOG_CONFIG="$PUBSUB_INSTALL_DIR/config/log.properties"
+if [ ! -f "$LOG_CONFIG" ]
+then
+  echo "A 'log.properties' must exist"
+  exit 1
+fi
+
+LOCAL_CONFIG="$PUBSUB_INSTALL_DIR/config/local.properties"
+if [ ! -f "$LOCAL_CONFIG" ]
+then
+  echo "A 'local.properties' must exist"
+  exit 1
+fi
+
+nohup $JAVA_EXE -Dpubsub.install.dir="$PUBSUB_INSTALL_DIR" org.attribyte.api.pubsub.impl.server.Server $SYSTEM_CONFIG $LOG_CONFIG $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
 echo $! > $PUBSUB_INSTALL_DIR/bin/$PIDFILE

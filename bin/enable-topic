@@ -38,8 +38,22 @@ done
 export CLASSPATH
 
 if [ "test$1" = "test" ]; then
-    echo "The topic URL Must be specified"
+    echo "The topic URL must be specified"
     exit 1
 fi
 
-$JAVA_EXE org.attribyte.api.pubsub.impl.server.CLI -prefix=endpoint.acp.connection.pubsub. -enableTopic=$1 $PUBSUB_INSTALL_DIR/config/config.properties
+SYSTEM_CONFIG="$PUBSUB_INSTALL_DIR/config/config.properties"
+if [ ! -f "$SYSTEM_CONFIG" ]
+then
+  echo "A 'config.properties' must exist"
+  exit 1
+fi
+
+LOCAL_CONFIG="$PUBSUB_INSTALL_DIR/config/local.properties"
+if [ ! -f "$LOCAL_CONFIG" ]
+then
+  echo "A 'local.properties' must exist"
+  exit 1
+fi
+
+$JAVA_EXE org.attribyte.api.pubsub.impl.server.CLI -prefix=endpoint.acp.connection.pubsub. -enableTopic=$1 $SYSTEM_CONFIG $LOCAL_CONFIG
