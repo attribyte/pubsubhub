@@ -17,6 +17,7 @@ package org.attribyte.api.pubsub;
 
 import com.google.common.collect.Lists;
 import org.attribyte.api.http.Request;
+import org.attribyte.api.http.Response;
 import org.attribyte.api.http.impl.BasicAuthScheme;
 import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
@@ -32,6 +33,8 @@ import java.util.regex.Pattern;
  * A filter that rejects URLs that contain a fragment (#).
  */
 public class BasicAuthFilter implements URLFilter {
+
+   private static final Result REJECT_RESULT = Result.reject(Response.Code.UNAUTHORIZED, "Authorization required");
 
    /**
     * An instance of basic auth scheme with empty 'realm'.
@@ -70,24 +73,29 @@ public class BasicAuthFilter implements URLFilter {
    }
 
    @Override
-   public boolean reject(final String url, final Request request) {
+   public Result apply(final String url, final Request request) {
       if(patterns != null) {
          for(PatternAuth patternAuth : patterns) {
             if(patternAuth.pattern.matcher(url).matches()) {
                try {
                   //Reject when there's a response...it is the unauthorized response.
-                  return BASIC_AUTH_SCHEME.authenticate(request, patternAuth.username, patternAuth.password) != null;
+                  if(BASIC_AUTH_SCHEME.authenticate(request, patternAuth.username, patternAuth.password) != null) {
+                     return REJECT_RESULT;
+                  } else {
+                     return ACCEPT_RESULT;
+                  }
                } catch(GeneralSecurityException se) {
-                  return true; //Really...this should never happen...
+                  return REJECT_RESULT;
                }
             }
          }
-         return false;
+         return ACCEPT_RESULT;
       } else {
-         return false;
+         return ACCEPT_RESULT;
       }
    }
 
+   @Override
    public void init(final Properties props) {
       Map<String, Properties> filterPropertyMap = new InitUtil("basicauth.", props, false).split();
       List<String> keys = Lists.newArrayList(filterPropertyMap.keySet());
@@ -106,10 +114,11 @@ public class BasicAuthFilter implements URLFilter {
       }
    }
 
+   @Override
+   public boolean shutdown(final int waitTimeSeconds) { return true; }
+
    /**
     * The list of patterns.
     */
    private List<PatternAuth> patterns;
-
-   public boolean shutdown(final int waitTimeSeconds) { return true; }
 }

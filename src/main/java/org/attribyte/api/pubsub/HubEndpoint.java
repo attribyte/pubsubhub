@@ -669,8 +669,9 @@ public class HubEndpoint implements MetricSet {
          }
 
          for(URLFilter filter : topicURLFilters) {
-            if(filter.reject(topicURL, request)) {
-               return new ResponseBuilder(Response.Code.NOT_FOUND, "The 'hub.topic' is not supported by this server").create();
+            URLFilter.Result res = filter.apply(topicURL, request);
+            if(res.rejected) {
+               return new ResponseBuilder(Response.Code.NOT_FOUND, "The 'hub.topic' is not supported (" + res.rejectReason + ")").create();
             }
          }
       }
@@ -685,8 +686,9 @@ public class HubEndpoint implements MetricSet {
 
       if(callbackURLFilters != null) {
          for(URLFilter filter : callbackURLFilters) {
-            if(filter.reject(callbackURL, request)) {
-               return new ResponseBuilder(Response.Code.NOT_FOUND, "The 'hub.callback' is not supported by this server").create();
+            URLFilter.Result res = filter.apply(callbackURL, request);
+            if(res.rejected) {
+               return new ResponseBuilder(res.rejectCode, "The 'hub.callback' is not supported (" + res.rejectReason + ")").create();
             }
          }
       }

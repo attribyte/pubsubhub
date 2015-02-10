@@ -16,6 +16,7 @@
 package org.attribyte.api.pubsub;
 
 import org.attribyte.api.http.Request;
+import org.attribyte.api.http.Response;
 
 import java.util.Properties;
 
@@ -24,12 +25,16 @@ import java.util.Properties;
  */
 public class FragmentRejectFilter implements URLFilter {
 
+   private static final Result REJECT_RESULT = Result.reject(Response.Code.BAD_REQUEST, "Must not contain a fragment");
+
    @Override
-   public boolean reject(String url, Request request) {
-      return url.indexOf('#') > 0;
+   public Result apply(String url, Request request) {
+      return url.indexOf('#') > 0 ? REJECT_RESULT : ACCEPT_RESULT;
    }
 
+   @Override
    public void init(final Properties props) {}
 
+   @Override
    public boolean shutdown(final int waitTimeSeconds) { return true; }
 }
