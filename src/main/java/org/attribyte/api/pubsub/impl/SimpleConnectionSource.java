@@ -16,23 +16,19 @@
 package org.attribyte.api.pubsub.impl;
 
 import com.codahale.metrics.MetricSet;
-import com.codahale.metrics.health.HealthCheck;
 import org.attribyte.api.InitializationException;
 import org.attribyte.api.Logger;
-import org.attribyte.api.pubsub.HubDatastore;
 import org.attribyte.util.InitUtil;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Properties;
 
 /**
  * A datastore that creates a new connection on every invocation. Not suitable for production environments.
  */
-public class SimpleJDBCDatastore extends RDBHubDatastore {
+public class SimpleConnectionSource implements ConnectionSource {
 
    String host;
    String db;
@@ -43,10 +39,7 @@ public class SimpleJDBCDatastore extends RDBHubDatastore {
    String connectionString;
 
    @Override
-   public void init(final String prefix, final Properties props, final HubDatastore.EventHandler eventHandler, final Logger logger) throws InitializationException {
-
-      this.eventHandler = eventHandler;
-      this.logger = logger;
+   public void init(final String prefix, final Properties props, final Logger logger) throws InitializationException {
 
       InitUtil initProps = new InitUtil(prefix, props);
 
@@ -91,11 +84,6 @@ public class SimpleJDBCDatastore extends RDBHubDatastore {
    @Override
    public void shutdown() {
       //Nothing to do
-   }
-
-   @Override
-   public Map<String, HealthCheck> getHealthChecks() {
-      return Collections.emptyMap();
    }
 
    @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010, 2014 Attribyte, LLC
+ * Copyright 2010, 2014, 2015 Attribyte, LLC
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); 
  * you may not use this file except in compliance with the License. 
@@ -15,9 +15,14 @@
 
 package org.attribyte.api.pubsub.impl;
 
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricSet;
+import com.codahale.metrics.health.HealthCheck;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.attribyte.api.DatastoreException;
+import org.attribyte.api.InitializationException;
 import org.attribyte.api.Logger;
 import org.attribyte.api.http.AuthScheme;
 import org.attribyte.api.http.Header;
@@ -31,6 +36,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Defines methods required for storing and retrieving hub-specific data.
@@ -38,21 +46,89 @@ import java.util.List;
 public abstract class RDBHubDatastore implements HubDatastore {
 
    /**
-    * Gets a database connection.
-    * @return The connection.
-    * @throws SQLException if connection is unavailable.
+    * Initialize the connection source.
+    * @param prefix The property prefix.
+    * @param props The properties.
+    * @param logger A logger.
     */
-   public abstract Connection getConnection() throws SQLException;
+   protected abstract ConnectionSource initConnectionSource(String prefix, Properties props, Logger logger) throws InitializationException;
+
+   @Override
+   public void init(String prefix, Properties props, HubDatastore.EventHandler eventHandler, Logger logger) throws InitializationException {
+      if(isInit.compareAndSet(false, true)) {
+         this.eventHandler = eventHandler;
+         this.logger = logger;
+         this.connectionTestSQL = props.getProperty(prefix + "db.testSQL", "SELECT 1");
+         this.connectionSource = initConnectionSource(prefix, props, logger);
+      }
+   }
+
+   public final Connection getConnection() throws SQLException {
+      return connectionSource.getConnection();
+   }
+
+   @Override
+   public final void shutdown() {
+      connectionSource.shutdown();
+   }
+
+   /**
+    * Gets all metrics associated with the datastore.
+    * @return The metric set.
+    */
+   public MetricSet getMetrics() {
+
+      final ImmutableMap.Builder<String, Metric> metricsMap = ImmutableMap.builder();
+      MetricSet connectionSourceMetrics = connectionSource.getMetrics();
+      if(connectionSourceMetrics != null) {
+         metricsMap.put("connection-pool", connectionSourceMetrics);
+      }
+      return new MetricSet() {
+         @Override
+         public Map<String, Metric> getMetrics() {
+            return metricsMap.build();
+         }
+      };
+   }
+
+
+   @Override
+   public Map<String, HealthCheck> getHealthChecks() {
+      return ImmutableMap.<String, HealthCheck>of(
+              "datastore-connection",
+              new HealthCheck() {
+                 @Override
+                 protected Result check() throws Exception {
+                    Connection conn = null;
+                    Statement stmt = null;
+                    ResultSet rs = null;
+                    try {
+                       conn = getConnection();
+                       stmt = conn.createStatement();
+                       rs = stmt.executeQuery(connectionTestSQL);
+                       if(rs.next()) {
+                          return HealthCheck.Result.healthy();
+                       } else {
+                          return HealthCheck.Result.unhealthy(connectionTestSQL + " failed");
+                       }
+                    } catch(Exception e) {
+                       return HealthCheck.Result.unhealthy("Database connection problem", e);
+                    } finally {
+                       SQLUtil.closeQuietly(conn, stmt, rs);
+                    }
+                 }
+              }
+      );
+   }
 
    private static final String getTopicIdSQL = "SELECT topicURL, createTime FROM topic WHERE id=?";
 
    @Override
-   public final Topic getTopic(final long topicId) throws DatastoreException {
+   public Topic getTopic(final long topicId) throws DatastoreException {
 
       Connection conn = null;
       PreparedStatement stmt = null;
       ResultSet rs = null;
-
       try {
          conn = getConnection();
          stmt = conn.prepareStatement(getTopicIdSQL);
@@ -71,7 +147,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    private static final String createTopicSQL = "INSERT IGNORE INTO topic (topicURL, topicHash) VALUES (?, MD5(?))";
 
    @Override
-   public final Topic getTopic(final String topicURL, final boolean create) throws DatastoreException {
+   public Topic getTopic(final String topicURL, final boolean create) throws DatastoreException {
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -197,7 +273,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
            " AND status=" + Subscription.Status.ACTIVE.getValue() + " LIMIT 1";
 
    @Override
-   public final boolean hasActiveSubscriptions(final long topicId) throws DatastoreException {
+   public boolean hasActiveSubscriptions(final long topicId) throws DatastoreException {
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -267,7 +343,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    private static final String getIdSubscriptionSQL = getSubscriptionSQL + "id=?";
 
    @Override
-   public final Subscription getSubscription(final long id) throws DatastoreException {
+   public Subscription getSubscription(final long id) throws DatastoreException {
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -358,9 +434,9 @@ public abstract class RDBHubDatastore implements HubDatastore {
    }
 
    @Override
-   public final List<Subscription> getHostSubscriptions(final String callbackHost,
-                                                        final Collection<Subscription.Status> status,
-                                                        final int start, final int limit) throws DatastoreException {
+   public List<Subscription> getHostSubscriptions(final String callbackHost,
+                                                  final Collection<Subscription.Status> status,
+                                                  final int start, final int limit) throws DatastoreException {
 
       StringBuilder sql = new StringBuilder(getSubscriptionSQL);
       sql.append(" callbackHost=? AND ");
@@ -452,7 +528,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
                    "VALUES (?,?,?,MD5(?),?,?,?,NOW(),?,?,NOW()+INTERVAL ? SECOND) ON DUPLICATE KEY UPDATE endpointId=?, status=?, leaseSeconds=?, hmacSecret=?, expireTime=NOW()+INTERVAL ? SECOND";
 
    @Override
-   public final Subscription updateSubscription(final Subscription subscription, boolean extendLease) throws DatastoreException {
+   public Subscription updateSubscription(final Subscription subscription, boolean extendLease) throws DatastoreException {
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -547,7 +623,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    private static final String changeSubscriptionStatusLeaseSQL = "UPDATE subscription SET status=?, leaseSeconds=?, expireTime = NOW() + INTERVAL ? SECOND WHERE id=?";
 
    @Override
-   public final void changeSubscriptionStatus(final long id, final Subscription.Status newStatus, final int newLeaseSeconds) throws DatastoreException {
+   public void changeSubscriptionStatus(final long id, final Subscription.Status newStatus, final int newLeaseSeconds) throws DatastoreException {
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -609,7 +685,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
            " topicId=? AND id >= ? AND status=" + Subscription.Status.ACTIVE.getValue() + " ORDER BY id ASC LIMIT ?";
 
    @Override
-   public final long getActiveSubscriptions(Topic topic, final Collection<Subscription> subscriptions, final long startId, final int maxReturned) throws DatastoreException {
+   public long getActiveSubscriptions(Topic topic, final Collection<Subscription> subscriptions, final long startId, final int maxReturned) throws DatastoreException {
 
       if(startId == HubDatastore.LAST_ID) {
          throw new DatastoreException("The 'startId' is invalid"); //Avoid possible infinite loop when paging.
@@ -658,7 +734,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    private static final String getActivePathSubscriptionsSQL = getSubscriptionSQL + "callbackPath=? AND status=" + Subscription.Status.ACTIVE.getValue();
 
    @Override
-   public final List<Subscription> getSubscriptionsForPath(final String callbackPath) throws DatastoreException {
+   public List<Subscription> getSubscriptionsForPath(final String callbackPath) throws DatastoreException {
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -799,17 +875,6 @@ public abstract class RDBHubDatastore implements HubDatastore {
          return request;
       }
    }
-
-   /**
-    * The event handler. May be <code>null</code>. Must be set during initialization.
-    */
-   protected HubDatastore.EventHandler eventHandler;
-
-   /**
-    * A logger. May not be <code>null</code>. Must be set during initialization.
-    */
-   protected Logger logger;
-
 
    private static final String getUniqueSubscriptionSQL = getSubscriptionSQL + "topicId=? AND callbackURL=?";
 
@@ -984,4 +1049,29 @@ public abstract class RDBHubDatastore implements HubDatastore {
          SQLUtil.closeQuietly(conn, stmt, rs);
       }
    }
+
+   /**
+    * The event handler. May be <code>null</code>. Must be set during initialization.
+    */
+   protected HubDatastore.EventHandler eventHandler;
+
+   /**
+    * A logger. May not be <code>null</code>. Must be set during initialization.
+    */
+   protected Logger logger;
+
+   /**
+    * The connection source.
+    */
+   private ConnectionSource connectionSource;
+
+   /**
+    * The SQL used for connection source health checks.
+    */
+   private String connectionTestSQL = "SELECT 1";
+
+   /**
+    * Make sure the datastore is initialized at most once.
+    */
+   private final AtomicBoolean isInit = new AtomicBoolean(false);
 }

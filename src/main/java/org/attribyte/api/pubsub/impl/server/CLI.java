@@ -19,7 +19,7 @@ import org.attribyte.api.ConsoleLogger;
 import org.attribyte.api.Logger;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.RDBHubDatastore;
-import org.attribyte.api.pubsub.impl.SimpleJDBCDatastore;
+import org.attribyte.api.pubsub.impl.SimpleRDBDatastore;
 import org.attribyte.util.InitUtil;
 
 import java.io.File;
@@ -49,7 +49,7 @@ public class CLI {
       Properties logProps = new Properties();
       loadProperties(args, props, logProps);
       Logger logger = new ConsoleLogger();
-      RDBHubDatastore datastore = new SimpleJDBCDatastore();
+      RDBHubDatastore datastore = new SimpleRDBDatastore();
       datastore.init(props.getProperty("prefix", ""), props, null, logger);
       if(props.containsKey("enableTopic")) {
          String topicURL = props.getProperty("enableTopic").trim();
