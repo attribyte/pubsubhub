@@ -118,7 +118,6 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
          }
       } else {
          response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-         failedSubscriptionVerifications.inc();
       }
    }
 
