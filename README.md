@@ -60,13 +60,14 @@ or on-disk.
 * [Dropwizard Metrics](http://metrics.codahale.com/)
 * [Apache Log4J](http://logging.apache.org/log4j/2.x/)
 
-##Additional Dependencies for Default (MySQL) Implementation
+##Additional (Optional) Implementation Dependencies
 
 * [Attribyte ACP](https://github.com/attribyte/acp)
 * [Apache commons-httpclient](http://hc.apache.org/httpclient-3.x/)
 * [Jetty](http://www.eclipse.org/jetty/documentation/current/)
 * [MySQL Connector (GPL)](http://dev.mysql.com/downloads/connector/j/)
 * [Typesafe Config](https://github.com/typesafehub/config)
+* [H2](http://www.h2database.com/html/main.html)
 
 ##License
 
