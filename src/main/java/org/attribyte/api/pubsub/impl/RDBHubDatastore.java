@@ -196,7 +196,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       }
    }
 
-   private static final String getTopicsSQL = "SELECT topicURL, id, createTime FROM topic ORDER BY id DESC LIMIT ?,?";
+   private static final String getTopicsSQL = "SELECT topicURL, id, createTime FROM topic ORDER BY id DESC LIMIT ? OFFSET ?";
 
    @Override
    public List<Topic> getTopics(int start, int limit) throws DatastoreException {
@@ -207,8 +207,8 @@ public abstract class RDBHubDatastore implements HubDatastore {
       try {
          conn = getConnection();
          stmt = conn.prepareStatement(getTopicsSQL);
-         stmt.setInt(1, start);
-         stmt.setInt(2, limit);
+         stmt.setInt(1, limit);
+         stmt.setInt(2, start);
          rs = stmt.executeQuery();
          while(rs.next()) {
             topics.add(new Topic(rs.getString(1), rs.getLong(2), new Date(rs.getTimestamp(3).getTime())));
@@ -396,7 +396,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
 
       StringBuilder sql = new StringBuilder(getSubscriptionSQL);
       inStatus(status, sql);
-      sql.append(" ORDER BY id ASC LIMIT ?,?");
+      sql.append(" ORDER BY id ASC LIMIT ? OFFSET ?");
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -406,8 +406,8 @@ public abstract class RDBHubDatastore implements HubDatastore {
       try {
          conn = getConnection();
          stmt = conn.prepareStatement(sql.toString());
-         stmt.setInt(1, start);
-         stmt.setInt(2, limit);
+         stmt.setInt(1, limit);
+         stmt.setInt(2, start);
          rs = stmt.executeQuery();
          while(rs.next()) {
             subscriptionBuilders.add(getSubscription(rs));
@@ -441,7 +441,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       StringBuilder sql = new StringBuilder(getSubscriptionSQL);
       sql.append(" callbackHost=? AND ");
       inStatus(status, sql);
-      sql.append(" ORDER BY id ASC LIMIT ?,?");
+      sql.append(" ORDER BY id ASC LIMIT ? OFFSET ?");
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -452,8 +452,8 @@ public abstract class RDBHubDatastore implements HubDatastore {
          conn = getConnection();
          stmt = conn.prepareStatement(sql.toString());
          stmt.setString(1, callbackHost);
-         stmt.setInt(2, start);
-         stmt.setInt(3, limit);
+         stmt.setInt(2, limit);
+         stmt.setInt(3, start);
          rs = stmt.executeQuery();
          while(rs.next()) {
             subscriptionBuilders.add(getSubscription(rs));
@@ -487,7 +487,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
       StringBuilder sql = new StringBuilder(getSubscriptionSQL);
       sql.append(" topicId=? AND ");
       inStatus(status, sql);
-      sql.append(" ORDER BY id ASC LIMIT ?,?");
+      sql.append(" ORDER BY id ASC LIMIT ? OFFSET ?");
 
       Connection conn = null;
       PreparedStatement stmt = null;
@@ -498,8 +498,8 @@ public abstract class RDBHubDatastore implements HubDatastore {
          conn = getConnection();
          stmt = conn.prepareStatement(sql.toString());
          stmt.setLong(1, topic.getId());
-         stmt.setInt(2, start);
-         stmt.setInt(3, limit);
+         stmt.setInt(2, limit);
+         stmt.setInt(3, start);
          rs = stmt.executeQuery();
          while(rs.next()) {
             subscriptionBuilders.add(getSubscription(rs));
@@ -1000,7 +1000,7 @@ public abstract class RDBHubDatastore implements HubDatastore {
    }
 
    private static final String getSubscriptionEndpointsSQL = "SELECT DISTINCT callbackHost FROM subscription " +
-           "ORDER BY callbackHost ASC LIMIT ?,?";
+           "ORDER BY callbackHost ASC LIMIT ? OFFSET ?";
 
    @Override
    public List<String> getSubscribedHosts(int start, int limit) throws DatastoreException {
@@ -1012,8 +1012,8 @@ public abstract class RDBHubDatastore implements HubDatastore {
       try {
          conn = getConnection();
          stmt = conn.prepareStatement(getSubscriptionEndpointsSQL);
-         stmt.setInt(1, start);
-         stmt.setInt(2, limit);
+         stmt.setInt(1, limit);
+         stmt.setInt(2, start);
          rs = stmt.executeQuery();
          while(rs.next()) {
             hosts.add(rs.getString(1));
