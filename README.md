@@ -1,9 +1,17 @@
 ##About
 
-A framework for building a [pubsubhub](https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html).
-No particular database is required to use it. However, a fully-functional implementation that
-uses [MySQL](http://www.mysql.com/) for subscription storage
-is included in the distribution.
+A complete implementation of the [PubSubHubbub](https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html)
+protocol with authentication and security extensions.
+
+Built on a flexible framework, two implementations that rely on a relational database for storage
+are included:
+
+*[MySQL](http://www.mysql.com/)
+*[H2](http://www.h2database.com/html/main.html).
+
+PubSubHubbub, though originally designed for Atom and RSS feeds,
+can be applied to any type of data to push notifications over HTTP and eliminate
+inefficient polling for changes.
 
 ##Documentation
 
