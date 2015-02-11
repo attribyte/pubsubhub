@@ -1,0 +1,43 @@
+CREATE TABLE test (
+  test INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS topic (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  topicURL VARCHAR_IGNORECASE NOT NULL,
+  topicHash VARCHAR_IGNORECASE(32) NOT NULL,
+  createTime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS topic_hash_key ON topic (topicHash);
+CREATE INDEX IF NOT EXISTS topic_key ON topic (topicURL);
+
+CREATE TABLE IF NOT EXISTS subscription (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  endpointId INT NOT NULL,
+  topicId INT NOT NULL,
+  callbackURL VARCHAR_IGNORECASE NOT NULL,
+  callbackHash VARCHAR_IGNORECASE(32) NOT NULL,
+  callbackHost VARCHAR_IGNORECASE(255) NOT NULL,
+  callbackPath VARCHAR_IGNORECASE NOT NULL,
+  status TINYINT NOT NULL DEFAULT '0',
+  createTime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  leaseSeconds INT NOT NULL DEFAULT '86400',
+  hmacSecret VARCHAR_IGNORECASE(200) DEFAULT NULL,
+  expireTime TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:00'
+);
+CREATE UNIQUE INDEX IF NOT EXISTS callback_hash ON subscription (callbackHash,topicId);
+CREATE INDEX IF NOT EXISTS callback_key ON subscription (callbackURL);
+CREATE INDEX IF NOT EXISTS callback_host_key ON subscription (callbackHost, status);
+CREATE INDEX IF NOT EXISTS callback_path_key ON subscription (callbackPath);
+CREATE INDEX IF NOT EXISTS topic_key ON subscription (topicId, status);
+CREATE INDEX IF NOT EXISTS expire_key ON subscription (expireTime);
+CREATE INDEX IF NOT EXISTS status_key ON subscription (createTime,status);
+
+CREATE TABLE IF NOT EXISTS subscriber (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  authScheme VARCHAR_IGNORECASE(64) NOT NULL DEFAULT '',
+  authId VARCHAR_IGNORECASE(255) NOT NULL DEFAULT '',
+  endpointURL VARCHAR_IGNORECASE(255) NOT NULL,
+  createTime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS endpoint_key ON subscriber (endpointURL,authId,authScheme);
