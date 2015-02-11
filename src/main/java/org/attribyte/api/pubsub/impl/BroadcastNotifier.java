@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InvalidURIException;
-import org.attribyte.api.http.AuthScheme;
 import org.attribyte.api.http.Header;
 import org.attribyte.api.http.PostRequestBuilder;
 import org.attribyte.api.http.Request;
@@ -30,7 +29,6 @@ import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -155,7 +153,8 @@ public class BroadcastNotifier extends Notifier {
          Header authHeader = null;
 
          if(subscriberId > 0) {
-            SubscriberCache.CachedSubscriber cachedSubscriber = subscriberCache.getSubscriber(subscriberId);
+            SubscriberCache.CachedSubscriber cachedSubscriber =
+                    subscriberCache != null ? subscriberCache.getSubscriber(subscriberId) : null;
             if(cachedSubscriber != null) {
                subscriber = cachedSubscriber.subscriber;
                authHeader = cachedSubscriber.authHeader;
@@ -164,7 +163,9 @@ public class BroadcastNotifier extends Notifier {
                   subscriber = hub.getDatastore().getSubscriber(subscriberId);
                   if(subscriber != null) {
                      authHeader = hub.getDatastore().getAuthHeader(subscriber);
-                     subscriberCache.cacheSubscriber(subscriber, authHeader);
+                     if(subscriberCache != null) {
+                        subscriberCache.cacheSubscriber(subscriber, authHeader);
+                     }
                   }
                } catch(DatastoreException de) {
                   hub.getLogger().error("Problem getting subscriber", de);
