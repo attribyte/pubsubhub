@@ -22,7 +22,24 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.List;
 
-public class ServletUtil {
+public class ServerUtil {
+
+   /**
+    * The system property that points to the installation directory.
+    */
+   public static final String PUBSUB_INSTALL_DIR_SYSPROP = "pubsub.install.dir";
+
+   /**
+    * Gets the system install directory (always ends with '/').
+    * @return The directory.
+    */
+   public static String systemInstallDir() {
+      String systemInstallDir = System.getProperty(PUBSUB_INSTALL_DIR_SYSPROP, "").trim();
+      if(systemInstallDir.length() > 0 && !systemInstallDir.endsWith("/")) {
+         systemInstallDir = systemInstallDir + "/";
+      }
+      return systemInstallDir;
+   }
 
    /**
     * Splits the path into a list of components.

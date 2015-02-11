@@ -20,6 +20,7 @@ import org.attribyte.api.Logger;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.MySQLDatastore;
 import org.attribyte.api.pubsub.impl.RDBDatastore;
+import org.attribyte.api.pubsub.impl.server.util.ServerUtil;
 import org.attribyte.util.InitUtil;
 
 import java.io.File;
@@ -28,11 +29,6 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class CLI {
-
-   /**
-    * The system property that points to the installation directory.
-    */
-   public static final String PUBSUB_INSTALL_DIR_SYSPROP = "pubsub.install.dir";
 
    /**
     * Various command line utilities.
@@ -125,7 +121,7 @@ public class CLI {
             if(filename.startsWith("/")) {
                filteredProps.put(key, filename);
             } else {
-               filteredProps.put(key, systemInstallDir() + filename);
+               filteredProps.put(key, ServerUtil.systemInstallDir() + filename);
             }
          } else {
             filteredProps.put(key, logProps.getProperty(key));
@@ -133,17 +129,5 @@ public class CLI {
       }
 
       return filteredProps;
-   }
-
-   /**
-    * Gets the system install directory (always ends with '/').
-    * @return The directory.
-    */
-   static String systemInstallDir() {
-      String systemInstallDir = System.getProperty(PUBSUB_INSTALL_DIR_SYSPROP, "").trim();
-      if(systemInstallDir.length() > 0 && !systemInstallDir.endsWith("/")) {
-         systemInstallDir = systemInstallDir + "/";
-      }
-      return systemInstallDir;
    }
 }

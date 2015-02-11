@@ -62,7 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.attribyte.api.pubsub.impl.server.util.ServletUtil.splitPath;
+import static org.attribyte.api.pubsub.impl.server.util.ServerUtil.splitPath;
 
 @SuppressWarnings("serial")
 /**

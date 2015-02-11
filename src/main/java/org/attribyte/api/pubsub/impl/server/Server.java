@@ -41,6 +41,7 @@ import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.server.admin.AdminAuth;
 import org.attribyte.api.pubsub.impl.server.admin.AdminConsole;
 import org.attribyte.api.pubsub.impl.server.util.Invalidatable;
+import org.attribyte.api.pubsub.impl.server.util.ServerUtil;
 import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -464,7 +465,7 @@ public class Server {
       String filename = props.getProperty(propName, "").trim();
       if(filename.length() > 0) {
          if(!filename.startsWith("/")) {
-            filename = CLI.systemInstallDir() + filename;
+            filename = ServerUtil.systemInstallDir() + filename;
          }
          return new File(filename);
       } else {
