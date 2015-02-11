@@ -23,13 +23,28 @@ are available:
 * `javadoc` - Generates javadoc.
 * `cleandoc` - Removes generated javadoc.
 
+##H2 Quick Start
+
+[H2](http://www.h2database.com/html/main.html) is an embedded database that can store tables in-memory
+or on-disk.
+
+* If ivy is not installed with your ant distribution: `ant init-ivy`
+* Build: `ant full-dist`
+* Create an install-specific config: `cp config/example.h2.properties config/local.properties`
+* The default settings use an in-memory database that is destroyed on restart. If you wish to persist
+  subscriptions, use the alternate `endpoint.acp.connection.pubsub.connectionString` property with
+  a local directory.
+* Start the server: `bin/start`
+* Go to `http://localhost:8086/metrics` to verify that the server is running.
+* Stop the server: `bin/stop`
+
 ##MySQL Quick Start
 
 * If ivy is not installed with your ant distribution: `ant init-ivy`
 * Build: `ant full-dist`
 * Create a `pubsub` database.
 * Create the database tables: `mysql -u [your user] -p -h [your host] pubsub < config/mysql_pubsub_hub.sql`
-* Create a install-specific config: `cp config/example.mysql.properties config/local.properties`
+* Create an install-specific config: `cp config/example.mysql.properties config/local.properties`
 * Edit `config/local.properties` to change `pubsub.user`, `pubsub.password` and `pubsub.connectionString` for your database.
   You may also want to change any usernames/passwords from their defaults at this time.
 * Start the server: `bin/start`
