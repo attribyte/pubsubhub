@@ -69,8 +69,6 @@ public abstract class RDBDatastore implements HubDatastore {
       if(connectionSource == null) {
          initUtil.throwRequiredException("connectionsClass");
       } else {
-         System.out.println("IN HERE !");
-         System.out.println("CLASS IS " + connectionSource.getClass().getName());
          connectionSource.init(prefix, props, logger);
       }
       return connectionSource;
