@@ -48,7 +48,7 @@ public class SimpleConnectionSource implements ConnectionSource {
       this.driver = initProps.getProperty("driver", "com.mysql.jdbc.Driver");
 
       try {
-         Class.forName("com.mysql.jdbc.Driver");
+         Class.forName(this.driver);
       } catch(Exception e) {
          throw new InitializationException("Unable to initialize JDBC driver", e);
       }
