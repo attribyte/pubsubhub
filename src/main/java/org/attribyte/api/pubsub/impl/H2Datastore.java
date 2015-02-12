@@ -35,9 +35,9 @@ public class H2Datastore extends RDBDatastore {
    @Override
    public void init(String prefix, Properties props, HubDatastore.EventHandler eventHandler, Logger logger) throws InitializationException {
       super.init(prefix,props, eventHandler, logger);
-
+      String h2InitFile = props.getProperty("h2.initFile", H2_INIT_FILE);
       logger.info("Creating H2 database and tables...");
-      File sqlInitFile = new File(ServerUtil.systemInstallDir(), H2_INIT_FILE);
+      File sqlInitFile = new File(ServerUtil.systemInstallDir(), h2InitFile);
       if(!sqlInitFile.exists()) {
          throw new InitializationException("The " + sqlInitFile.getAbsolutePath() + " must exist to use H2");
       }
