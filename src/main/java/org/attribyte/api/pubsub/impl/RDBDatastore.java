@@ -557,44 +557,6 @@ public abstract class RDBDatastore implements HubDatastore {
       }
    }
 
-   private static final String getActivePathSubscriptionsSQL = getSubscriptionSQL + "callbackPath=? AND status=" + Subscription.Status.ACTIVE.getValue();
-
-   @Override
-   public List<Subscription> getSubscriptionsForPath(final String callbackPath) throws DatastoreException {
-
-      Connection conn = null;
-      PreparedStatement stmt = null;
-      ResultSet rs = null;
-      List<Subscription.Builder> subscriptionBuilders = Lists.newArrayListWithExpectedSize(256);
-
-      try {
-         conn = getConnection();
-         stmt = conn.prepareStatement(getActivePathSubscriptionsSQL);
-         stmt.setString(1, callbackPath);
-         rs = stmt.executeQuery();
-         while(rs.next()) {
-            subscriptionBuilders.add(getSubscription(rs));
-         }
-      } catch(SQLException se) {
-         throw new DatastoreException("Problem getting path subscriptions", se);
-      } finally {
-         SQLUtil.closeQuietly(conn, stmt, rs);
-      }
-
-      List<Subscription> subscriptions = Lists.newArrayListWithCapacity(subscriptionBuilders.size());
-
-      for(Subscription.Builder builder : subscriptionBuilders) {
-         Topic topic = getTopic(builder.getTopicId());
-         if(topic == null) {
-            throw new DatastoreException("No topic found for id = " + builder.getTopicId());
-         } else {
-            subscriptions.add(builder.setTopic(topic).create());
-         }
-      }
-
-      return subscriptions;
-   }
-
    private static final String expireSubscriptionsSQL = "UPDATE subscription SET status=" + Subscription.Status.EXPIRED.getValue() +
            " WHERE status=" + Subscription.Status.ACTIVE.getValue() + " AND expireTime < NOW() LIMIT ?";
 

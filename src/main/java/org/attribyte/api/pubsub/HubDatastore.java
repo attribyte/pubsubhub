@@ -274,14 +274,6 @@ public interface HubDatastore {
    public int countActiveHostSubscriptions(String host) throws DatastoreException;
 
    /**
-    * Gets a list of all subscriptions mapped to a callback path.
-    * @param callbackPath The path.
-    * @return The list of subscriptions.
-    * @throws DatastoreException on datastore error.
-    */
-   public List<Subscription> getSubscriptionsForPath(String callbackPath) throws DatastoreException;
-
-   /**
     * Resolve an auth scheme from the scheme name.
     * @param scheme The scheme name.
     * @return The auth scheme or <code>null</code> if none.
