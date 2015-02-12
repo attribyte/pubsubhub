@@ -145,7 +145,13 @@ public class H2Datastore extends RDBDatastore {
 
       synchronized(UPDATE_SUBSCRIPTION_LOCK) {
 
-         Subscription currSubscription = getSubscription(subscription.getId());
+         final Subscription currSubscription;
+         if(subscription.getId() > 0L) {
+            currSubscription = getSubscription(subscription.getId());
+         } else {
+            currSubscription = getSubscription(subscription.getTopic().getURL(), subscription.getCallbackURL());
+         }
+
          Subscription newSubscription = null;
 
          try {
