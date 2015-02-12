@@ -15,7 +15,7 @@ public class H2DatastoreTest extends HubDatastoreTest<H2Datastore> {
       if(isInit.compareAndSet(false, true)) {
          H2Datastore datastore = new H2Datastore();
          Properties props = new Properties();
-         props.setProperty("driver.mysql.class", "org.h2.Driver");
+         props.setProperty("driver", "org.h2.Driver");
          props.setProperty("endpoint.connectionsClass", "org.attribyte.api.pubsub.impl.SimpleConnectionSource");
          props.setProperty("connectionString", "jdbc:h2:mem:pubsub;IGNORECASE=TRUE;DB_CLOSE_DELAY=-1");
          props.setProperty("h2.initFile", "/home/matt/devel/attribyte/git/pubsubhub/config/h2_pubsub_hub.sql"); //TODO
