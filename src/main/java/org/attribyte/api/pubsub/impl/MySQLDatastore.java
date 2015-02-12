@@ -85,7 +85,14 @@ public class MySQLDatastore extends RDBDatastore {
       Connection conn = null;
       PreparedStatement stmt = null;
       ResultSet rs = null;
-      Subscription currSubscription = getSubscription(subscription.getId());
+
+      final Subscription currSubscription;
+      if(subscription.getId() > 0L) {
+         currSubscription = getSubscription(subscription.getId());
+      } else {
+         currSubscription = getSubscription(subscription.getTopic().getURL(), subscription.getCallbackURL());
+      }
+
       Subscription newSubscription = null;
 
       try {
@@ -146,10 +153,10 @@ public class MySQLDatastore extends RDBDatastore {
             stmt.setInt(3, subscription.getLeaseSeconds() < 0 ? 0 : subscription.getLeaseSeconds());
             stmt.setString(4, subscription.getSecret());
             if(!extendLease) {
-               stmt.setLong(5, subscription.getId());
+               stmt.setLong(5, currSubscription.getId());
             } else {
                stmt.setInt(5, subscription.getLeaseSeconds());
-               stmt.setLong(6, subscription.getId());
+               stmt.setLong(6, currSubscription.getId());
             }
          }
 
@@ -159,7 +166,7 @@ public class MySQLDatastore extends RDBDatastore {
          stmt = null;
          rs = null;
 
-         return getSubscription(subscription.getId());
+         return getSubscription(currSubscription.getId());
 
       } catch(SQLException se) {
          throw new DatastoreException("Problem updating subscription", se);
