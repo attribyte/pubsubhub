@@ -271,17 +271,9 @@ public class H2Datastore extends RDBDatastore {
    @Override
    public Subscriber createSubscriber(final String endpointURL, final AuthScheme scheme, final String authId) throws DatastoreException {
       synchronized(CREATE_SUBSCRIBER_LOCK) {
-
-         System.out.println("Trying to create subscriber " + endpointURL);
-         if(scheme != null) {
-            System.out.println("Scheme " + scheme.getScheme());
-         }
-         System.out.println("Auth id " + authId);
-
          //Was the subscriber created by another thread while we were waiting for this lock?
          Subscriber subscriber = getSubscriber(endpointURL, scheme, authId, false);
          if(subscriber != null) {
-            System.out.println("WTF?");
             return subscriber;
          }
 
@@ -293,11 +285,10 @@ public class H2Datastore extends RDBDatastore {
             stmt = conn.prepareStatement(createSubscriberSQL, Statement.RETURN_GENERATED_KEYS);
             stmt.setString(1, endpointURL);
             stmt.setString(2, scheme == null ? "" : scheme.getScheme());
-            stmt.setString(3, authId);
+            stmt.setString(3, authId == null ? "" : authId);
             stmt.executeUpdate();
             rs = stmt.getGeneratedKeys();
             if(rs.next()) {
-               System.out.println("returning new subscriber...");
                return new Subscriber(endpointURL, rs.getLong(1), scheme, authId);
             } else {
                throw new DatastoreException("Problem creating subscriber: Expecting 'id' to be generated.");
