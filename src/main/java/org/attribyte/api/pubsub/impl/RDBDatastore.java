@@ -822,7 +822,7 @@ public abstract class RDBDatastore implements HubDatastore {
    }
 
    private static final String countActiveHostSubscriptionsSQL = "SELECT COUNT(id) FROM subscription " +
-           "WHERE callbackHost=?";
+           "WHERE callbackHost=? AND status=" + Subscription.Status.ACTIVE.getValue();
 
    @Override
    public int countActiveHostSubscriptions(String host) throws DatastoreException {
