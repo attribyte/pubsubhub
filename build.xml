@@ -4,6 +4,7 @@
 
     <property name="src" location="src" />
     <property name="build" location="build" />
+    <property name="build-test" location="build_test" />
     <property name="dist" location="dist" />
     <property name="doc" location="doc" />
 
@@ -63,6 +64,13 @@
         </javac>
     </target>
 
+    <target name="compile-test" depends="compile" description="Compiles the test source">
+        <mkdir dir="${build-test}"/>
+        <javac includeantruntime="false" srcdir="${src}/test/java" destdir="${build-test}" debug="on">
+            <classpath refid="classpath"/>
+        </javac>
+    </target>
+
     <target name="dist" depends="compile" description="Creates the distribution">
         <mkdir dir="${dist}/lib"/>
         <mkdir dir="${dist}/extlib"/>
@@ -76,6 +84,7 @@
 
     <target name="clean" description="Removes all build files">
         <delete dir="${build}"/>
+        <delete dir="${build-test}"/>
         <delete dir="${dist}"/>
     </target>
 
@@ -99,5 +108,36 @@
             </fileset>
         </javadoc>
     </target>
+
+    <target name="test" depends="compile-test" description="Runs H2 tests">
+        <junit printsummary="on" haltonfailure="yes">
+            <classpath>
+                <path refid="classpath"/>
+                <pathelement path="${build}"/>
+                <pathelement path="${build-test}"/>
+            </classpath>
+            <batchtest fork="yes">
+                <fileset dir="${src}/test/java">
+                    <include name="**/H2DatastoreTest.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <target name="test-mysql" depends="compile-test" description="Runs MySQL tests">
+        <junit printsummary="on" haltonfailure="yes">
+            <classpath>
+                <path refid="classpath"/>
+                <pathelement path="${build}"/>
+                <pathelement path="${build-test}"/>
+            </classpath>
+            <batchtest fork="yes">
+                <fileset dir="${src}/test/java">
+                    <include name="**/MySQLDatastoreTest.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
 
 </project>
