@@ -1,7 +1,7 @@
 ##About
 
 A complete pubsub implementation that conforms to the [PubSubHubbub](https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html)
-protocol with some non-standard extensions for authentication and security. PubSubHubbub, though originally designed for Atom and RSS feeds,
+protocol with some extensions for authentication and security. PubSubHubbub, though originally designed for Atom and RSS feeds,
 can be applied to any type of data to push notifications over HTTP, eliminating
 inefficient polling for changes.
 
