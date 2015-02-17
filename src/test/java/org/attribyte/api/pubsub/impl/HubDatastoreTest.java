@@ -23,14 +23,12 @@ import org.junit.Test;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.omg.PortableInterceptor.ACTIVE;
 
 import static org.junit.Assert.*;
 
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import java.io.IOException;
 
