@@ -19,8 +19,15 @@ import org.attribyte.api.http.Response;
 import org.attribyte.api.http.ResponseBuilder;
 
 import javax.servlet.http.HttpServlet;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 
+@SuppressWarnings("serial")
 public abstract class ServletBase extends HttpServlet {
+
+   private void writeObject(ObjectOutputStream o) throws IOException {
+      throw new IOException("Serialization of servlets is not supported");
+   }
 
    /**
     * The response sent when the topic for broadcast does not exist.
