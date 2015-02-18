@@ -52,11 +52,11 @@ public class AdminAuth {
       buf.setLength(0);
       buf.append("Basic ");
       buf.append(new String(upBytes, Charsets.US_ASCII));
-      return hashFunction.hashString(buf.toString());
+      return hashFunction.hashString(buf.toString(), Charsets.US_ASCII);
    }
 
    private boolean authIsValid(final String headerValue) {
-      return headerValue != null && expectedHeaderHash.equals(hashFunction.hashString(headerValue));
+      return headerValue != null && expectedHeaderHash.equals(hashFunction.hashString(headerValue, Charsets.UTF_8));
    }
 
    final String realm;

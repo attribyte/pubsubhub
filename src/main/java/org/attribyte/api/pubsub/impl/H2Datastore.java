@@ -1,5 +1,6 @@
 package org.attribyte.api.pubsub.impl;
 
+import com.google.common.base.Charsets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import org.attribyte.api.DatastoreException;
@@ -101,7 +102,7 @@ public class H2Datastore extends RDBDatastore {
 
                stmt = conn.prepareStatement(createTopicSQL, Statement.RETURN_GENERATED_KEYS);
                stmt.setString(1, topicURL);
-               stmt.setString(2, md5.hashString(topicURL).toString());
+               stmt.setString(2, md5.hashString(topicURL, Charsets.UTF_8).toString());
                stmt.executeUpdate();
                rs = stmt.getGeneratedKeys();
                if(rs.next()) {
@@ -168,7 +169,7 @@ public class H2Datastore extends RDBDatastore {
                stmt.setLong(1, subscription.getEndpointId());
                stmt.setLong(2, topic.getId());
                stmt.setString(3, subscription.getCallbackURL());
-               stmt.setString(4, md5.hashString(subscription.getCallbackURL()).toString());
+               stmt.setString(4, md5.hashString(subscription.getCallbackURL(), Charsets.UTF_8).toString());
                stmt.setString(5, subscription.getCallbackHost());
                stmt.setString(6, subscription.getCallbackPath());
                stmt.setInt(7, subscription.getStatus().getValue());
