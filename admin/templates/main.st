@@ -32,6 +32,7 @@ $head()$
                 New Subscription</a></li>
             <li><a href="/admin/metrics">Callback Metrics</a></li>
             <li><a href="/admin/nmetrics">Notification Metrics</a></li>
+            <li><a href="/admin/notifications">Recent Notifications</a></li>
             <li><a id="invalidate-caches" href="#">Invalidate Caches</a></li>
         </ul>
     </div>

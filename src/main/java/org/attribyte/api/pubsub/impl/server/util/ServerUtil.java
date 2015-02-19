@@ -57,4 +57,38 @@ public class ServerUtil {
 
    private static final Splitter pathSplitter = Splitter.on('/').omitEmptyStrings().trimResults();
 
+   /**
+    * Escape a string for HTML display.
+    * @param str The string.
+    * @return The escaped string.
+    */
+   public static final String htmlEscape(String str) {
+
+      if(str == null) {
+         return null;
+      }
+
+      StringBuilder buf = new StringBuilder();
+      char[] chars = str.toCharArray();
+      for(char curr : chars) {
+         switch(curr) {
+            case '&':
+               buf.append("&amp;");
+               break;
+            case '<':
+               buf.append("&lt;");
+               break;
+            case '>':
+               buf.append("&gt;");
+               break;
+            case '\"':
+               buf.append("&quot;");
+               break;
+            default:
+               buf.append(curr);
+         }
+      }
+
+      return buf.toString();
+   }
 }

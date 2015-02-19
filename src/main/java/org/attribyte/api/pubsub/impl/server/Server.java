@@ -364,8 +364,10 @@ public class Server {
       int maxBodySizeBytes = filterInit.getIntProperty("maxBodySizeBytes", BroadcastServlet.DEFAULT_MAX_BODY_BYTES);
       boolean autocreateTopics = filterInit.getProperty("autocreateTopics", "false").equalsIgnoreCase("true");
 
+      int maxSavedNotifications = filterInit.getIntProperty("maxSavedNotifications", 0);
+
       final BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics,
-              logger, publishURLFilters, topicCache, replicationTopic);
+              logger, publishURLFilters, topicCache, replicationTopic, maxSavedNotifications);
       rootContext.addServlet(new ServletHolder(broadcastServlet), "/notify/*");
 
       CallbackMetricsServlet callbackMetricsServlet = new CallbackMetricsServlet(endpoint);
@@ -406,7 +408,7 @@ public class Server {
                     }
                  }
          );
-         adminConsole.initServlets(rootContext, adminPath, allowedAssetPaths, invalidatables);
+         adminConsole.initServlets(rootContext, adminPath, allowedAssetPaths, invalidatables, broadcastServlet);
       }
 
       server.setDumpBeforeStop(false);

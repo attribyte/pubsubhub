@@ -17,6 +17,7 @@ package org.attribyte.api.pubsub.impl.server;
 
 import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
@@ -30,6 +31,7 @@ import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.NotificationMetrics;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.client.BasicAuth;
+import org.attribyte.api.pubsub.impl.server.util.NotificationRecord;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -37,15 +39,19 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @SuppressWarnings("serial")
 /**
  * A servlet that immediately queues notifications for broadcast
  * to subscribers.
  */
-public class BroadcastServlet extends ServletBase {
+public class BroadcastServlet extends ServletBase implements NotificationRecord.Source {
+
 
    /**
     * The default maximum body size (1MB).
@@ -69,8 +75,9 @@ public class BroadcastServlet extends ServletBase {
    public BroadcastServlet(final HubEndpoint endpoint, final Logger logger,
                            final List<BasicAuthFilter> filters,
                            final Cache<String, Topic> topicCache,
-                           final Topic replicationTopic) {
-      this(endpoint, DEFAULT_MAX_BODY_BYTES, DEFAULT_AUTOCREATE_TOPICS, logger, filters, topicCache, replicationTopic);
+                           final Topic replicationTopic,
+                           final int maxSavedNotifications) {
+      this(endpoint, DEFAULT_MAX_BODY_BYTES, DEFAULT_AUTOCREATE_TOPICS, logger, filters, topicCache, replicationTopic, maxSavedNotifications);
    }
 
    /**
@@ -86,7 +93,8 @@ public class BroadcastServlet extends ServletBase {
                            final Logger logger,
                            final List<BasicAuthFilter> filters,
                            final Cache<String, Topic> topicCache,
-                           final Topic replicationTopic) {
+                           final Topic replicationTopic,
+                           final int maxSavedNotifications) {
       this.endpoint = endpoint;
       this.datastore = endpoint.getDatastore();
       this.maxBodyBytes = maxBodyBytes;
@@ -95,6 +103,34 @@ public class BroadcastServlet extends ServletBase {
       this.filters = filters != null ? ImmutableList.copyOf(filters) : ImmutableList.<BasicAuthFilter>of();
       this.topicCache = topicCache;
       this.replicationTopic = replicationTopic;
+      this.maxSavedNotifications = maxSavedNotifications;
+      this.recentNotifications = maxSavedNotifications > 0 ? new ArrayBlockingQueue<NotificationRecord>(maxSavedNotifications) : null;
+      this.recentNotificationsSize = new AtomicInteger();
+      if(recentNotifications != null) {
+         this.recentNotificationsMonitor = new Thread(new Runnable() {
+            @Override
+            public void run() {
+               while(true) {
+                  try {
+                     if(recentNotificationsSize.get() > maxSavedNotifications) {
+                        List<NotificationRecord> drain = Lists.newArrayListWithCapacity(maxSavedNotifications);
+                        int numDrained = recentNotifications.drainTo(drain, maxSavedNotifications);
+                        recentNotificationsSize.addAndGet(-1 * numDrained);
+                     } else {
+                        Thread.sleep(100L);
+                     }
+                  } catch(InterruptedException ie) {
+                     return;
+                  }
+               }
+            }
+         });
+         this.recentNotificationsMonitor.setName("recent-notifications-monitor");
+         this.recentNotificationsMonitor.setDaemon(true);
+         this.recentNotificationsMonitor.start();
+      } else {
+         this.recentNotificationsMonitor = null;
+      }
    }
 
    @Override
@@ -107,6 +143,7 @@ public class BroadcastServlet extends ServletBase {
       long endNanos = System.nanoTime();
 
       if(maxBodyBytes > 0 && broadcastContent.length > maxBodyBytes) {
+         logNotification(request, toString(), NOTIFICATION_TOO_LARGE.statusCode, null);
          Bridge.sendServletResponse(NOTIFICATION_TOO_LARGE, response);
          return;
       }
@@ -118,6 +155,7 @@ public class BroadcastServlet extends ServletBase {
             String checkHeader = request.getHeader(BasicAuth.AUTH_HEADER_NAME);
             for(BasicAuthFilter filter : filters) {
                if(filter.reject(topicURL, checkHeader)) {
+                  logNotification(request, toString(), Response.Code.UNAUTHORIZED, broadcastContent);
                   response.sendError(Response.Code.UNAUTHORIZED, "Unauthorized");
                   return;
                }
@@ -163,6 +201,7 @@ public class BroadcastServlet extends ServletBase {
          endpointResponse = NO_TOPIC_RESPONSE;
       }
 
+      logNotification(request, toString(), endpointResponse.statusCode, broadcastContent);
       Bridge.sendServletResponse(endpointResponse, response);
    }
 
@@ -177,6 +216,10 @@ public class BroadcastServlet extends ServletBase {
    public void shutdown() {
       if(isShutdown.compareAndSet(false, true)) {
          logger.info("Shutting down broadcast servlet...");
+         if(recentNotificationsMonitor != null) {
+            logger.info("Shutting down recent notifications monitor...");
+            recentNotificationsMonitor.interrupt();
+         }
          endpoint.shutdown();
          logger.info("Broadcast servlet shutdown.");
       }
@@ -187,6 +230,42 @@ public class BroadcastServlet extends ServletBase {
     */
    public void invalidateCaches() {
       endpoint.invalidateCaches();
+   }
+
+
+   /**
+    * Logs a notification if recent notifications are configured.
+    */
+   private void logNotification(final HttpServletRequest request,
+                                final String topicURL, final int responseCode,
+                                final byte[] body) {
+      if(recentNotifications != null) {
+         if(!recentNotifications.offer(new NotificationRecord(request, topicURL, responseCode, body))) {
+            logger.warn("Recent notifications buffer is full! ");
+         } else {
+            recentNotificationsSize.incrementAndGet();
+         }
+      }
+   }
+
+   /**
+    * Gets the most recently added notifications (if configured).
+    * @param limit The maximum number returned.
+    * @return A list of recent notifications.
+    */
+   public List<NotificationRecord> latestNotifications(final int limit) {
+      if(recentNotifications != null) {
+         List<NotificationRecord> records = Lists.newArrayListWithCapacity(maxSavedNotifications);
+         records.addAll(recentNotifications);
+         Collections.sort(records);
+         if(records.size() >= limit) {
+            return records.subList(0, limit);
+         } else {
+            return records;
+         }
+      } else {
+         return Collections.emptyList();
+      }
    }
 
    /**
@@ -240,4 +319,23 @@ public class BroadcastServlet extends ServletBase {
     */
    private final Topic replicationTopic;
 
+   /**
+    * Saves the N most recent notifications.
+    */
+   private final BlockingQueue<NotificationRecord> recentNotifications;
+
+   /**
+    * Monitors the recent notifications queue and periodically evicts.
+    */
+   private final Thread recentNotificationsMonitor;
+
+   /**
+    * Tracks the size of the notification queue.
+    */
+   private final AtomicInteger recentNotificationsSize;
+
+   /**
+    * The maximum number of recent notifications.
+    */
+   private final int maxSavedNotifications;
 }

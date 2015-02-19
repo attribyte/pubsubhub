@@ -17,6 +17,7 @@ package org.attribyte.api.pubsub.impl.server.admin;
 
 import org.attribyte.api.Logger;
 import org.attribyte.api.pubsub.HubEndpoint;
+import org.attribyte.api.pubsub.impl.server.util.NotificationRecord;
 import org.attribyte.api.pubsub.impl.server.util.Invalidatable;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -74,11 +75,13 @@ public class AdminConsole {
     * @param allowedAssetPaths A list of paths (relative to the base directory)
     * from which static assets will be returned (<code>/css, /js, ...</code>).
     * @param invalidatables A collection of caches, etc that may be invalidated on-demand.
+    * @param notificationSource A source for recent notifications.
     */
    public void initServlets(final ServletContextHandler rootContext,
                             String adminPath,
                             final List<String> allowedAssetPaths,
-                            final Collection<Invalidatable> invalidatables) {
+                            final Collection<Invalidatable> invalidatables,
+                            final NotificationRecord.Source notificationSource) {
       if(servletInit.compareAndSet(false, true)) {
          DefaultServlet defaultServlet = new DefaultServlet();
          for(String path : allowedAssetPaths) {
@@ -90,7 +93,8 @@ public class AdminConsole {
          }
 
          logger.info("AdminConsole: Enabled on path, '" + adminPath + "'");
-         rootContext.addServlet(new ServletHolder(new AdminServlet(endpoint, invalidatables, auth, templateDirectory, logger)), adminPath + "*");
+         rootContext.addServlet(new ServletHolder(new AdminServlet(endpoint, invalidatables, notificationSource,
+                 auth, templateDirectory, logger)), adminPath + "*");
       }
    }
 

@@ -32,6 +32,7 @@ import org.attribyte.api.pubsub.NotificationMetrics;
 import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 import org.attribyte.api.pubsub.Topic;
+import org.attribyte.api.pubsub.impl.server.util.NotificationRecord;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayCallbackMetrics;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayCallbackMetricsDetail;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayNotificationMetrics;
@@ -72,11 +73,13 @@ public class AdminServlet extends HttpServlet {
 
    public AdminServlet(final HubEndpoint endpoint,
                        final Collection<Invalidatable> invalidateItems,
+                       final NotificationRecord.Source notificationSource,
                        final AdminAuth auth,
                        final String templateDirectory,
                        final Logger logger) {
       this.endpoint = endpoint;
       this.invalidateItems = ImmutableList.copyOf(invalidateItems);
+      this.notificationSource = notificationSource;
       this.datastore = endpoint.getDatastore();
       this.auth = auth;
       this.templateGroup = new STGroupDir(templateDirectory, '$', '$');
@@ -172,6 +175,8 @@ public class AdminServlet extends HttpServlet {
          } else {
             renderNotificationMetrics(request, response);
          }
+      } else if(obj.equals("notifications")) {
+         renderNotifications(request, response);
       } else {
          sendNotFound(response);
       }
@@ -523,6 +528,26 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
+   private void renderNotifications(final HttpServletRequest request,
+                                    final HttpServletResponse response) throws IOException {
+
+      ST mainTemplate = getTemplate("main");
+      ST notificationsTemplate = getTemplate("latest_notifications");
+
+      try {
+
+         List<NotificationRecord> notificationRecords = notificationSource.latestNotifications(100);
+         notificationsTemplate.add("notifications", notificationRecords);
+         mainTemplate.add("content", notificationsTemplate.render());
+         response.setContentType("text/html");
+         response.getWriter().print(mainTemplate.render());
+         response.getWriter().flush();
+      } catch(Exception se) {
+         se.printStackTrace();
+         response.sendError(500, "Datastore error");
+      }
+   }
+
    private void postTopicAdd(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
       String url = request.getParameter("url");
       if(url == null || url.trim().length() == 0) {
@@ -782,6 +807,7 @@ public class AdminServlet extends HttpServlet {
 
    private final HubDatastore datastore;
    private final ImmutableList<Invalidatable> invalidateItems;
+   private final NotificationRecord.Source notificationSource;
    private final HubEndpoint endpoint;
    private final Logger logger;
    private final AdminAuth auth;
