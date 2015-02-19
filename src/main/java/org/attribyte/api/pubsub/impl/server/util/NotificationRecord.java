@@ -16,6 +16,7 @@
 package org.attribyte.api.pubsub.impl.server.util;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import org.attribyte.api.pubsub.HTTPUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -52,7 +53,7 @@ public class NotificationRecord implements Comparable<NotificationRecord> {
                              final String topicURL, final int responseCode,
                              final byte[] body) {
       this.sourceIP = HTTPUtil.getClientIP(request);
-      this.topicURL = topicURL;
+      this.topicURL = Strings.nullToEmpty(topicURL);
       this.responseCode = responseCode;
       this.body = body;
    }
