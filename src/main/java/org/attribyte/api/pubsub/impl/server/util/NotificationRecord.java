@@ -76,7 +76,7 @@ public class NotificationRecord implements Comparable<NotificationRecord> {
     * Is this a failed notification?
     */
    public final boolean isFailed() {
-      return responseCode / 200 == 1;
+      return responseCode / 200 != 1;
    }
 
    /**
