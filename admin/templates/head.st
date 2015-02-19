@@ -5,6 +5,7 @@ head() ::= <<
     <title>$constants.defaultTitle$</title>
     <link rel="stylesheet" href="$constants.cssBase$/foundation.css"/>
     <link rel="stylesheet" href="$constants.cssBase$/foundation-icons/foundation-icons.css"/>
+    <link rel="stylesheet" href="$constants.cssBase$/custom.css"/>
     <script src="$constants.jsBase$/vendor/modernizr.js"></script>
     <script src="$constants.jsBase$/vendor/jquery.js"></script>
     <script src="$constants.jsBase$/custom.js"></script>

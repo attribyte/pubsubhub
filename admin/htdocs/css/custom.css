@@ -1,0 +1,17 @@
+.err {
+    background-color: #f04124;
+    border-color: #de2d0f;
+    color: white;
+}
+
+.warn {
+    background-color: #f08a24;
+    border-color: #de770f;
+    color: white;
+}
+
+.inf {
+    background-color: #a0d3e8;
+    border-color: #74bfdd;
+    color: #4f4f4f;
+}
