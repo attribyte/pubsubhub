@@ -104,7 +104,9 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
       this.topicCache = topicCache;
       this.replicationTopic = replicationTopic;
       this.maxSavedNotifications = maxSavedNotifications;
-      this.recentNotifications = maxSavedNotifications > 0 ? new ArrayBlockingQueue<NotificationRecord>(maxSavedNotifications) : null;
+
+      final int queueLimit = maxSavedNotifications * 2;
+      this.recentNotifications = maxSavedNotifications > 0 ? new ArrayBlockingQueue<NotificationRecord>(queueLimit) : null;
       this.recentNotificationsSize = new AtomicInteger();
       if(recentNotifications != null) {
          this.recentNotificationsMonitor = new Thread(new Runnable() {
@@ -112,7 +114,7 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
             public void run() {
                while(true) {
                   try {
-                     if(recentNotificationsSize.get() >= maxSavedNotifications) {
+                     if(recentNotificationsSize.get() >= queueLimit) {
                         List<NotificationRecord> drain = Lists.newArrayListWithCapacity(maxSavedNotifications);
                         int numDrained = recentNotifications.drainTo(drain, maxSavedNotifications);
                         recentNotificationsSize.addAndGet(-1 * numDrained);
