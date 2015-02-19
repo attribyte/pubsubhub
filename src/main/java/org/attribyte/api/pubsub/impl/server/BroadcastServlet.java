@@ -112,7 +112,7 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
             public void run() {
                while(true) {
                   try {
-                     if(recentNotificationsSize.get() > maxSavedNotifications) {
+                     if(recentNotificationsSize.get() >= maxSavedNotifications) {
                         List<NotificationRecord> drain = Lists.newArrayListWithCapacity(maxSavedNotifications);
                         int numDrained = recentNotifications.drainTo(drain, maxSavedNotifications);
                         recentNotificationsSize.addAndGet(-1 * numDrained);
