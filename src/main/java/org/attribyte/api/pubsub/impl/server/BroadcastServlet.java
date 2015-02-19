@@ -142,20 +142,21 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
 
       long endNanos = System.nanoTime();
 
+      String topicURL = request.getPathInfo();
+
       if(maxBodyBytes > 0 && broadcastContent.length > maxBodyBytes) {
-         logNotification(request, toString(), NOTIFICATION_TOO_LARGE.statusCode, null);
+         logNotification(request, topicURL, NOTIFICATION_TOO_LARGE.statusCode, null);
          Bridge.sendServletResponse(NOTIFICATION_TOO_LARGE, response);
          return;
       }
 
-      String topicURL = request.getPathInfo();
       Response endpointResponse;
       if(topicURL != null) {
          if(filters.size() > 0) {
             String checkHeader = request.getHeader(BasicAuth.AUTH_HEADER_NAME);
             for(BasicAuthFilter filter : filters) {
                if(filter.reject(topicURL, checkHeader)) {
-                  logNotification(request, toString(), Response.Code.UNAUTHORIZED, broadcastContent);
+                  logNotification(request, topicURL, Response.Code.UNAUTHORIZED, broadcastContent);
                   response.sendError(Response.Code.UNAUTHORIZED, "Unauthorized");
                   return;
                }
@@ -201,7 +202,7 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
          endpointResponse = NO_TOPIC_RESPONSE;
       }
 
-      logNotification(request, toString(), endpointResponse.statusCode, broadcastContent);
+      logNotification(request, topicURL, endpointResponse.statusCode, broadcastContent);
       Bridge.sendServletResponse(endpointResponse, response);
    }
 
