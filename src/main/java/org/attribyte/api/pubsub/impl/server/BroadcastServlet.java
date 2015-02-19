@@ -106,6 +106,8 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
       this.maxSavedNotifications = maxSavedNotifications;
 
       final int queueLimit = maxSavedNotifications * 2;
+      final int drainTriggerLimit = queueLimit - maxSavedNotifications / 2;
+
       this.recentNotifications = maxSavedNotifications > 0 ? new ArrayBlockingQueue<NotificationRecord>(queueLimit) : null;
       this.recentNotificationsSize = new AtomicInteger();
       if(recentNotifications != null) {
@@ -114,8 +116,10 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
             public void run() {
                while(true) {
                   try {
-                     if(recentNotificationsSize.get() >= queueLimit) {
-                        List<NotificationRecord> drain = Lists.newArrayListWithCapacity(maxSavedNotifications);
+                     int currSize = recentNotificationsSize.get();
+                     if(currSize >= drainTriggerLimit) {
+                        int maxDrained = currSize - maxSavedNotifications;
+                        List<NotificationRecord> drain = Lists.newArrayListWithCapacity(maxDrained);
                         int numDrained = recentNotifications.drainTo(drain, maxSavedNotifications);
                         recentNotificationsSize.addAndGet(-1 * numDrained);
                      } else {
