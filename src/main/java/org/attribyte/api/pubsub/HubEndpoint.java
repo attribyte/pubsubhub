@@ -343,6 +343,7 @@ public class HubEndpoint implements MetricSet {
          }
 
          this.logger = logger;
+         this.eventHandler = eventHandler;
 
          datastore.init(prefix, props, datastoreEventHandler, logger);
 
