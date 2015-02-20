@@ -33,15 +33,19 @@ import com.google.common.collect.Lists;
 import org.apache.log4j.PropertyConfigurator;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
+import org.attribyte.api.http.Request;
+import org.attribyte.api.http.Response;
 import org.attribyte.api.pubsub.BasicAuthFilter;
 import org.attribyte.api.pubsub.HubDatastore;
 import org.attribyte.api.pubsub.HubEndpoint;
+import org.attribyte.api.pubsub.Subscriber;
 import org.attribyte.api.pubsub.Subscription;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.server.admin.AdminAuth;
 import org.attribyte.api.pubsub.impl.server.admin.AdminConsole;
 import org.attribyte.api.pubsub.impl.server.util.Invalidatable;
 import org.attribyte.api.pubsub.impl.server.util.ServerUtil;
+import org.attribyte.api.pubsub.impl.server.util.SubscriptionRequestRecord;
 import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -55,6 +59,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
@@ -62,9 +67,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Server {
 
@@ -83,6 +90,62 @@ public class Server {
       Properties props = new Properties();
       Properties logProps = new Properties();
       CLI.loadProperties(args, props, logProps);
+      final Logger logger = initLogger(props, logProps);
+
+      //Buffer and log hub events for logging and debug...
+
+      final int MAX_STORED_SUBSCRIPTION_REQUESTS = 200;
+
+      final ArrayBlockingQueue<SubscriptionRequestRecord> recentSubscriptionRequests =
+              new ArrayBlockingQueue<SubscriptionRequestRecord>(MAX_STORED_SUBSCRIPTION_REQUESTS);
+
+      final HubEndpoint.EventHandler hubEventHandler = new HubEndpoint.EventHandler() {
+         private synchronized void offer(SubscriptionRequestRecord record) {
+            if(!recentSubscriptionRequests.offer(record)) {
+               List<SubscriptionRequestRecord> drain = Lists.newArrayListWithCapacity(MAX_STORED_SUBSCRIPTION_REQUESTS / 2);
+               recentSubscriptionRequests.drainTo(drain, drain.size());
+               recentSubscriptionRequests.offer(record);
+            }
+         }
+
+         @Override
+         public void subscriptionRequestAccepted(final Request request, final Response response, final Subscriber subscriber) {
+            final SubscriptionRequestRecord record;
+            try {
+               record = new SubscriptionRequestRecord(request, response, subscriber);
+            } catch(IOException ioe) {
+               return;
+            }
+
+            logger.info(record.toString());
+            offer(record);
+         }
+
+         @Override
+         public void subscriptionRequestRejected(final Request request, final Response response, final Subscriber subscriber) {
+
+            final SubscriptionRequestRecord record;
+            try {
+               record = new SubscriptionRequestRecord(request, response, subscriber);
+            } catch(IOException ioe) {
+               return;
+            }
+
+            logger.warn(record.toString());
+            offer(record);
+         }
+      };
+
+      /**
+       * A source for subscription request records (for console, etc).
+       */
+      final SubscriptionRequestRecord.Source subscriptionRequestRecordSource = new SubscriptionRequestRecord.Source() {
+         public List<SubscriptionRequestRecord> latestRequests(int limit) {
+            List<SubscriptionRequestRecord> records = Lists.newArrayList(recentSubscriptionRequests);
+            Collections.sort(records);
+            return records.size() < limit ? records : records.subList(0, limit);
+         }
+      };
 
       /**
        * A queue to which new topics are added as reported by the datastore event handler.
@@ -115,8 +178,7 @@ public class Server {
          }
       };
 
-      final Logger logger = initLogger(props, logProps);
-      final HubEndpoint endpoint = new HubEndpoint("endpoint.", props, logger, null, topicEventHandler);
+      final HubEndpoint endpoint = new HubEndpoint("endpoint.", props, logger, hubEventHandler, topicEventHandler);
 
       final String topicAddedTopicURL = Strings.emptyToNull(props.getProperty("endpoint.topicAddedTopic", ""));
       final Topic topicAddedTopic = topicAddedTopicURL != null ? endpoint.getDatastore().getTopic(topicAddedTopicURL, true) : null;
