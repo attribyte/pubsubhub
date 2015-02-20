@@ -137,9 +137,10 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
                hub.subscriptionVerified(updatedSubscription);
             }
          } else if(!bodyMatchesChallenge) {
+            hub.verifyChallengeMismatch(callbackURL);
             failedMeter.mark();
          } else { //Async verification error
-            boolean enqueued = hub.enqueueVerifierRetry(this);
+            boolean enqueued = hub.enqueueVerifierRetry(this, callbackURL, responseCode, null);
             if(!enqueued) {
                abandonedMeter.mark();
             }
@@ -148,7 +149,7 @@ public class SubscriptionVerifier extends org.attribyte.api.pubsub.SubscriptionV
          ioe.printStackTrace();
          failedMeter.mark();
          if(!(ioe instanceof DataLimitException)) {
-            hub.enqueueVerifierRetry(this);
+            hub.enqueueVerifierRetry(this, callbackURL, 0, ioe.getMessage());
          } else { //If response was too large - don't enqueue for a retry
             abandonedMeter.mark();
          }

@@ -87,6 +87,26 @@ public class HubEndpoint implements MetricSet {
        */
       public void subscriptionRequestRejected(Request request, Response response, Subscriber subscriber);
 
+
+      /**
+       * Reports a failed subscription verification.
+       * @param callbackURL The callback URL.
+       * @param callbackResponseCode The response code.
+       * @param reason A reason, if any.
+       * @param attempts The number of attempted verifications.
+       * @param abandoned Was this the last verification attempt.
+       */
+      public void subscriptionVerifyFailure(String callbackURL,
+                                            int callbackResponseCode,
+                                            String reason, int attempts,
+                                            boolean abandoned);
+
+      /**
+       * Reports a verified subscription.
+       * @param subscription The subscription.
+       */
+      public void subscriptionVerified(Subscription subscription);
+
    }
 
    /**
@@ -707,8 +727,12 @@ public class HubEndpoint implements MetricSet {
          for(URLFilter filter : topicURLFilters) {
             URLFilter.Result res = filter.apply(topicURL, request);
             if(res.rejected) {
-               return subscriptionRequestRejected(request, new ResponseBuilder(Response.Code.NOT_FOUND, "The '" + SUBSCRIPTION_TOPIC_PARAMETER +
-                       "' is not supported (" + res.rejectReason + ")").create(), null);
+               ResponseBuilder builder = new ResponseBuilder(res.rejectCode, "The '" + SUBSCRIPTION_TOPIC_PARAMETER +
+                       "' is not available (" + res.rejectReason + ")");
+               if(res.rejectCode == Response.Code.UNAUTHORIZED) {
+                  builder.addHeader("WWW-Authenticate", "Basic realm=pubsub"); //TODO: Assumes Basic auth...ok for now
+               }
+               return subscriptionRequestRejected(request, builder.create(), null);
             }
          }
       }
@@ -725,8 +749,12 @@ public class HubEndpoint implements MetricSet {
          for(URLFilter filter : callbackURLFilters) {
             URLFilter.Result res = filter.apply(callbackURL, request);
             if(res.rejected) {
-               return subscriptionRequestRejected(request, new ResponseBuilder(res.rejectCode, "The '" + SUBSCRIPTION_CALLBACK_PARAMETER +
-                       "' is not supported (" + res.rejectReason + ")").create(), null);
+               ResponseBuilder builder = new ResponseBuilder(res.rejectCode, "The '" + SUBSCRIPTION_CALLBACK_PARAMETER +
+                       "' is not available (" + res.rejectReason + ")");
+               if(res.rejectCode == Response.Code.UNAUTHORIZED) {
+                  builder.addHeader("WWW-Authenticate", "Basic realm=pubsub");
+               }
+               return subscriptionRequestRejected(request, builder.create(), null);
             }
          }
       }
@@ -788,6 +816,7 @@ public class HubEndpoint implements MetricSet {
     */
    public void subscriptionVerified(Subscription subscription) {
       subscriptionCallbackMetrics.invalidate(subscription.getId());
+      if(eventHandler != null) eventHandler.subscriptionVerified(subscription);
    }
 
    /**
@@ -797,16 +826,32 @@ public class HubEndpoint implements MetricSet {
     * <code>verifyRetryWaitMinutes</code>.
     * </p>
     * @param verifier The verifier.
+    * @param callbackURL The callback URL.
+    * @param callbackResponseCode The response code received when following the callback URL.
+    * @param reason An optional reason associated with the retry.
     * @return Was the verifier enqueued for retry?
     */
-   public boolean enqueueVerifierRetry(SubscriptionVerifier verifier) {
+   public boolean enqueueVerifierRetry(SubscriptionVerifier verifier,
+                                       String callbackURL,
+                                       int callbackResponseCode,
+                                       String reason) {
       int attempts = verifier.incrementAttempts();
       if(attempts > verifyRetryLimit) {
+         if(eventHandler != null) eventHandler.subscriptionVerifyFailure(callbackURL, callbackResponseCode, reason, attempts, true);
          return false;
       } else {
          verifierRetryService.schedule(verifier, verifyRetryWaitMinutes, TimeUnit.MINUTES);
+         if(eventHandler != null) eventHandler.subscriptionVerifyFailure(callbackURL, callbackResponseCode, reason, attempts, false);
          return true;
       }
+   }
+
+   /**
+    * Reports a verification with a challenge mismatch.
+    * @param callbackURL The callback URL.
+    */
+   public void verifyChallengeMismatch(String callbackURL) {
+      if(eventHandler != null) eventHandler.subscriptionVerifyFailure(callbackURL, 0, "Challenge Mismatch", 1, true);
    }
 
    /**

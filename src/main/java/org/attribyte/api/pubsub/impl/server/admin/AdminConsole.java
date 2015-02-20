@@ -19,7 +19,7 @@ import org.attribyte.api.Logger;
 import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.impl.server.util.NotificationRecord;
 import org.attribyte.api.pubsub.impl.server.util.Invalidatable;
-import org.attribyte.api.pubsub.impl.server.util.SubscriptionRequestRecord;
+import org.attribyte.api.pubsub.impl.server.util.SubscriptionEvent;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -82,7 +82,7 @@ public class AdminConsole {
                             String adminPath,
                             final List<String> allowedAssetPaths,
                             final Collection<Invalidatable> invalidatables,
-                            final SubscriptionRequestRecord.Source subscriptionRequestsSource,
+                            final SubscriptionEvent.Source subscriptionEventSource,
                             final NotificationRecord.Source notificationSource) {
       if(servletInit.compareAndSet(false, true)) {
          DefaultServlet defaultServlet = new DefaultServlet();
@@ -96,7 +96,7 @@ public class AdminConsole {
 
          logger.info("AdminConsole: Enabled on path, '" + adminPath + "'");
          rootContext.addServlet(new ServletHolder(new AdminServlet(endpoint, invalidatables,
-                 subscriptionRequestsSource, notificationSource,
+                 subscriptionEventSource, notificationSource,
                  auth, templateDirectory, logger)), adminPath + "*");
       }
    }

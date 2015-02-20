@@ -29,20 +29,7 @@ import java.util.List;
 /**
  * Optionally record subscription requests for logging, debugging.
  */
-public class SubscriptionRequestRecord implements Comparable<SubscriptionRequestRecord> {
-
-   /**
-    * An interface that allows recent subscription requests to be retrieved.
-    */
-   public static interface Source {
-
-      /**
-       * Gets the latest subscription requests.
-       * @param limit The maximum returned.
-       * @return The list of subscription requests.
-       */
-      public List<SubscriptionRequestRecord> latestRequests(int limit);
-   }
+public class SubscriptionRequestRecord extends SubscriptionEvent {
 
    public SubscriptionRequestRecord(final Request request,
                                     final Response response,
@@ -55,12 +42,6 @@ public class SubscriptionRequestRecord implements Comparable<SubscriptionRequest
       this.responseCode = response.getStatusCode();
       this.responseBody = response.getBody() != null ? response.getBody().toStringUtf8() : null;
       this.subscriberId = subscriber != null ? subscriber.getId() : 0L;
-   }
-
-   @Override
-   public final int compareTo(SubscriptionRequestRecord other) {
-      //Note...sort in descending order...
-      return -1 * createTime.compareTo(other.createTime);
    }
 
    @Override
@@ -133,9 +114,12 @@ public class SubscriptionRequestRecord implements Comparable<SubscriptionRequest
       return !Strings.nullToEmpty(responseBody).trim().isEmpty();
    }
 
-   /**
-    * Is this a failed request?
-    */
+   @Override
+   public final boolean isVerify() {
+      return false;
+   }
+
+   @Override
    public final boolean isFailed() {
       return responseCode / 200 != 1;
    }

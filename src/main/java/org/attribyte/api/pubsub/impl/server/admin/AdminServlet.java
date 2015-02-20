@@ -41,6 +41,7 @@ import org.attribyte.api.pubsub.impl.server.admin.model.DisplaySubscribedHost;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayTopic;
 import org.attribyte.api.pubsub.impl.server.admin.model.Paging;
 import org.attribyte.api.pubsub.impl.server.util.Invalidatable;
+import org.attribyte.api.pubsub.impl.server.util.SubscriptionEvent;
 import org.attribyte.api.pubsub.impl.server.util.SubscriptionRequestRecord;
 import org.attribyte.util.URIEncoder;
 import org.stringtemplate.v4.DateRenderer;
@@ -180,8 +181,8 @@ public class AdminServlet extends HttpServlet {
          }
       } else if(obj.equals("notifications")) {
          renderNotifications(request, response);
-      } else if(obj.equals("subscription_requests")) {
-         renderSubscriptionRequests(request, response);
+      } else if(obj.equals("subscription_events")) {
+         renderSubscriptionEvents(request, response);
       } else {
          sendNotFound(response);
       }
@@ -533,15 +534,15 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
-   private void renderSubscriptionRequests(final HttpServletRequest request,
-                                           final HttpServletResponse response) throws IOException {
+   private void renderSubscriptionEvents(final HttpServletRequest request,
+                                         final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
-      ST notificationsTemplate = getTemplate("latest_subscription_requests");
+      ST notificationsTemplate = getTemplate("latest_subscription_events");
 
       try {
-         List<SubscriptionRequestRecord> subscriptionRequestRecords = subscriptionRequestsSource.latestRequests(100);
-         notificationsTemplate.add("subscriptions", subscriptionRequestRecords);
+         List<SubscriptionEvent> subscriptionRequestRecords = subscriptionRequestsSource.latestEvents(100);
+         notificationsTemplate.add("events", subscriptionRequestRecords);
          mainTemplate.add("content", notificationsTemplate.render());
          response.setContentType("text/html");
          response.getWriter().print(mainTemplate.render());
