@@ -41,6 +41,7 @@ import org.attribyte.api.pubsub.impl.server.admin.model.DisplaySubscribedHost;
 import org.attribyte.api.pubsub.impl.server.admin.model.DisplayTopic;
 import org.attribyte.api.pubsub.impl.server.admin.model.Paging;
 import org.attribyte.api.pubsub.impl.server.util.Invalidatable;
+import org.attribyte.api.pubsub.impl.server.util.SubscriptionRequestRecord;
 import org.attribyte.util.URIEncoder;
 import org.stringtemplate.v4.DateRenderer;
 import org.stringtemplate.v4.ST;
@@ -73,12 +74,14 @@ public class AdminServlet extends HttpServlet {
 
    public AdminServlet(final HubEndpoint endpoint,
                        final Collection<Invalidatable> invalidateItems,
+                       final SubscriptionRequestRecord.Source subscriptionRequestsSource,
                        final NotificationRecord.Source notificationSource,
                        final AdminAuth auth,
                        final String templateDirectory,
                        final Logger logger) {
       this.endpoint = endpoint;
       this.invalidateItems = ImmutableList.copyOf(invalidateItems);
+      this.subscriptionRequestsSource = subscriptionRequestsSource;
       this.notificationSource = notificationSource;
       this.datastore = endpoint.getDatastore();
       this.auth = auth;
@@ -177,6 +180,8 @@ public class AdminServlet extends HttpServlet {
          }
       } else if(obj.equals("notifications")) {
          renderNotifications(request, response);
+      } else if(obj.equals("subscription_requests")) {
+         renderSubscriptionRequests(request, response);
       } else {
          sendNotFound(response);
       }
@@ -528,6 +533,25 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
+   private void renderSubscriptionRequests(final HttpServletRequest request,
+                                           final HttpServletResponse response) throws IOException {
+
+      ST mainTemplate = getTemplate("main");
+      ST notificationsTemplate = getTemplate("latest_subscription_requests");
+
+      try {
+         List<SubscriptionRequestRecord> subscriptionRequestRecords = subscriptionRequestsSource.latestRequests(100);
+         notificationsTemplate.add("subscriptions", subscriptionRequestRecords);
+         mainTemplate.add("content", notificationsTemplate.render());
+         response.setContentType("text/html");
+         response.getWriter().print(mainTemplate.render());
+         response.getWriter().flush();
+      } catch(Exception se) {
+         se.printStackTrace();
+         response.sendError(500, "Template error");
+      }
+   }
+
    private void renderNotifications(final HttpServletRequest request,
                                     final HttpServletResponse response) throws IOException {
 
@@ -544,7 +568,7 @@ public class AdminServlet extends HttpServlet {
          response.getWriter().flush();
       } catch(Exception se) {
          se.printStackTrace();
-         response.sendError(500, "Datastore error");
+         response.sendError(500, "Template error");
       }
    }
 
@@ -808,6 +832,7 @@ public class AdminServlet extends HttpServlet {
    private final HubDatastore datastore;
    private final ImmutableList<Invalidatable> invalidateItems;
    private final NotificationRecord.Source notificationSource;
+   private final SubscriptionRequestRecord.Source subscriptionRequestsSource;
    private final HubEndpoint endpoint;
    private final Logger logger;
    private final AdminAuth auth;

@@ -470,7 +470,8 @@ public class Server {
                     }
                  }
          );
-         adminConsole.initServlets(rootContext, adminPath, allowedAssetPaths, invalidatables, broadcastServlet);
+         adminConsole.initServlets(rootContext, adminPath, allowedAssetPaths, invalidatables,
+                 subscriptionRequestRecordSource, broadcastServlet);
       }
 
       server.setDumpBeforeStop(false);

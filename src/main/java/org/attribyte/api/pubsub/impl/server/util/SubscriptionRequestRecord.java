@@ -126,6 +126,14 @@ public class SubscriptionRequestRecord implements Comparable<SubscriptionRequest
    }
 
    /**
+    * Determine if the body has any content.
+    * @return Does the body have content?
+    */
+   public final boolean getBodyHasContent() {
+      return !Strings.nullToEmpty(responseBody).trim().isEmpty();
+   }
+
+   /**
     * Is this a failed request?
     */
    public final boolean isFailed() {
