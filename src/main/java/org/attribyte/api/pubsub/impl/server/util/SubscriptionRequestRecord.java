@@ -63,6 +63,60 @@ public class SubscriptionRequestRecord implements Comparable<SubscriptionRequest
       return -1 * createTime.compareTo(other.createTime);
    }
 
+   @Override
+   public final String toString() {
+
+      StringBuilder buf = new StringBuilder("Subscription request from ");
+      if(sourceIP != null) {
+         buf.append(sourceIP);
+      } else {
+         buf.append("[unknown]");
+      }
+
+      buf.append(" for topic, '");
+      if(topicURL != null) {
+         buf.append(topicURL);
+      }
+      buf.append("'");
+
+      buf.append(" with callback, '");
+      if(callbackURL != null) {
+         buf.append(callbackURL);
+      }
+      buf.append("'");
+
+      if(callbackAuthScheme != null) {
+         buf.append(" with auth scheme, '");
+         buf.append(callbackAuthScheme);
+         buf.append("'");
+         if(!callbackAuthSupplied) {
+            buf.append(" without callback auth");
+         }
+      } else if(callbackAuthSupplied) {
+         buf.append(" with callback auth but no scheme");
+      }
+
+      if(subscriberId > 0L) {
+         buf.append(" to subscriber id, '");
+         buf.append(subscriberId);
+         buf.append("'");
+      }
+
+      if(!Strings.isNullOrEmpty(responseBody)) {
+         buf.append(" (");
+         buf.append(responseCode);
+         buf.append(" - '");
+         buf.append(responseBody);
+         buf.append("')");
+      } else {
+         buf.append(" (");
+         buf.append(responseCode);
+         buf.append(")");
+      }
+
+      return buf.toString();
+   }
+
    /**
     * Gets the body as a string escaped appropriately for HTML.
     * @return The escaped string.
