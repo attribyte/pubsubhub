@@ -54,6 +54,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.attribyte.api.pubsub.ProtocolConstants.SUBSCRIPTION_TOPIC_PARAMETER;
+import static org.attribyte.api.pubsub.ProtocolConstants.SUBSCRIPTION_CALLBACK_PARAMETER;
+import static org.attribyte.api.pubsub.ProtocolConstants.SUBSCRIPTION_CALLBACK_AUTH_SCHEME;
+import static org.attribyte.api.pubsub.ProtocolConstants.SUBSCRIPTION_CALLBACK_AUTH;
+
 /**
  * A pubsubhubub hub.
  * @author Attribyte, LLC
@@ -61,11 +66,35 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class HubEndpoint implements MetricSet {
 
    /**
+    * Reports significant internal events.
+    */
+   public interface EventHandler {
+
+      /**
+       * Report a subscription request accepted for validation.
+       * @param request The request.
+       * @param response The response sent to the server.
+       * @param subscriber The subscriber associated with the subscription.
+       */
+      public void subscriptionRequestAccepted(Request request, Response response, Subscriber subscriber);
+
+
+      /**
+       * Report a rejected subscription request.
+       * @param request The request.
+       * @param response The response sent to the server.
+       * @param subscriber The subscriber associated with the subscription, if available.
+       */
+      public void subscriptionRequestRejected(Request request, Response response, Subscriber subscriber);
+
+   }
+
+   /**
     * Creates an uninitialized endpoint. Required for reflected instantiation.
     * <p>
     * The <code>init</code> method must be called to initialize the endpoint.
     * </p>
-    * @see #init(String, Properties, Logger, org.attribyte.api.pubsub.HubDatastore.EventHandler)
+    * @see #init(String, Properties, Logger, org.attribyte.api.pubsub.HubEndpoint.EventHandler, org.attribyte.api.pubsub.HubDatastore.EventHandler)
     */
    public HubEndpoint() {
    }
@@ -75,12 +104,13 @@ public class HubEndpoint implements MetricSet {
     * @param prefix The property prefix.
     * @param props The properties.
     * @param logger The logger.
-    * @param eventHandler The (optional) event handler.
+    * @param datastoreEventHandler The (optional) event handler.
     * @throws InitializationException on initialization error.
     */
-   public HubEndpoint(String prefix, Properties props, Logger logger,
-                      HubDatastore.EventHandler eventHandler) throws InitializationException {
-      init(prefix, props, logger, eventHandler);
+   public HubEndpoint(final String prefix, final Properties props, final Logger logger,
+                      final HubEndpoint.EventHandler eventHandler,
+                      final HubDatastore.EventHandler datastoreEventHandler) throws InitializationException {
+      init(prefix, props, logger, eventHandler, datastoreEventHandler);
    }
 
    /**
@@ -88,14 +118,17 @@ public class HubEndpoint implements MetricSet {
     * @param prefix The property prefix.
     * @param props The properties.
     * @param logger The logger.
-    * @param eventHandler The (optional) event handler.
+    * @param datastoreEventHandler The (optional) event handler.
     * @param topicURLFilters A list of topic URL filters to add after any initialized filters.
     * @param callbackURLFilters A list of callback URL filters to add after any initialized filters.
     * @throws InitializationException on initialization error.
     */
-   public HubEndpoint(String prefix, Properties props, Logger logger, HubDatastore.EventHandler eventHandler,
-                      List<URLFilter> topicURLFilters, List<URLFilter> callbackURLFilters) throws InitializationException {
-      init(prefix, props, logger, eventHandler);
+   public HubEndpoint(final String prefix, final Properties props, final Logger logger,
+                      final HubEndpoint.EventHandler eventHandler,
+                      final HubDatastore.EventHandler datastoreEventHandler,
+                      final List<URLFilter> topicURLFilters,
+                      final List<URLFilter> callbackURLFilters) throws InitializationException {
+      init(prefix, props, logger, eventHandler, datastoreEventHandler);
 
       if(topicURLFilters != null && topicURLFilters.size() > 0) {
          if(this.topicURLFilters == null || this.topicURLFilters.size() == 0) {
@@ -293,11 +326,12 @@ public class HubEndpoint implements MetricSet {
     * @param prefix The prefix for all properties (e.g. 'hub.').
     * @param props The properties.
     * @param logger The logger. If unspecified, messages are logged to the console.
-    * @param eventHandler A datastore event handler.
+    * @param datastoreEventHandler A datastore event handler.
     * @throws InitializationException on initialization error.
     */
    public void init(final String prefix, final Properties props, final Logger logger,
-                    final HubDatastore.EventHandler eventHandler) throws InitializationException {
+                    final HubEndpoint.EventHandler eventHandler,
+                    final HubDatastore.EventHandler datastoreEventHandler) throws InitializationException {
 
       if(isInit.compareAndSet(false, true)) {
 
@@ -310,7 +344,7 @@ public class HubEndpoint implements MetricSet {
 
          this.logger = logger;
 
-         datastore.init(prefix, props, eventHandler, logger);
+         datastore.init(prefix, props, datastoreEventHandler, logger);
 
          userAgent = initUtil.getProperty("httpclient.userAgent");
          if(!StringUtil.hasContent(userAgent)) {
@@ -663,15 +697,17 @@ public class HubEndpoint implements MetricSet {
       if(topicURLFilters != null) {
          String topicURL;
          try {
-            topicURL = urlDecoder.recode(request.getParameterValue("hub.topic"));
+            topicURL = urlDecoder.recode(request.getParameterValue(SUBSCRIPTION_TOPIC_PARAMETER));
          } catch(Exception e) {
-            return new ResponseBuilder(Response.Code.BAD_REQUEST, "Invalid URL").create();
+            return subscriptionRequestRejected(request,
+                    new ResponseBuilder(Response.Code.BAD_REQUEST, "Invalid URL").create(), null);
          }
 
          for(URLFilter filter : topicURLFilters) {
             URLFilter.Result res = filter.apply(topicURL, request);
             if(res.rejected) {
-               return new ResponseBuilder(Response.Code.NOT_FOUND, "The 'hub.topic' is not supported (" + res.rejectReason + ")").create();
+               return subscriptionRequestRejected(request, new ResponseBuilder(Response.Code.NOT_FOUND, "The '" + SUBSCRIPTION_TOPIC_PARAMETER +
+                       "' is not supported (" + res.rejectReason + ")").create(), null);
             }
          }
       }
@@ -679,16 +715,17 @@ public class HubEndpoint implements MetricSet {
       String callbackURL = null;
 
       try {
-         callbackURL = urlDecoder.recode(request.getParameterValue("hub.callback"));
+         callbackURL = urlDecoder.recode(request.getParameterValue(SUBSCRIPTION_CALLBACK_PARAMETER));
       } catch(Exception e) {
-         return new ResponseBuilder(Response.Code.BAD_REQUEST, "Invalid URL").create();
+         return subscriptionRequestRejected(request, new ResponseBuilder(Response.Code.BAD_REQUEST, "Invalid URL").create(), null);
       }
 
       if(callbackURLFilters != null) {
          for(URLFilter filter : callbackURLFilters) {
             URLFilter.Result res = filter.apply(callbackURL, request);
             if(res.rejected) {
-               return new ResponseBuilder(res.rejectCode, "The 'hub.callback' is not supported (" + res.rejectReason + ")").create();
+               return subscriptionRequestRejected(request, new ResponseBuilder(res.rejectCode, "The '" + SUBSCRIPTION_CALLBACK_PARAMETER +
+                       "' is not supported (" + res.rejectReason + ")").create(), null);
             }
          }
       }
@@ -698,24 +735,26 @@ public class HubEndpoint implements MetricSet {
       try {
          callbackHostURL = Request.getHostURL(callbackURL);
       } catch(InvalidURIException iue) {
-         return new ResponseBuilder(Response.Code.BAD_REQUEST, iue.toString()).create();
+         return subscriptionRequestRejected(request, new ResponseBuilder(Response.Code.BAD_REQUEST, iue.toString()).create(), null);
       }
 
       final AuthScheme authScheme;
       final String authId;
 
-      String callbackAuthScheme = request.getParameterValue("hub.x-callback_auth_scheme");
-      String callbackAuth = request.getParameterValue("hub.x-callback_auth");
+      String callbackAuthScheme = request.getParameterValue(SUBSCRIPTION_CALLBACK_AUTH_SCHEME);
+      String callbackAuth = request.getParameterValue(SUBSCRIPTION_CALLBACK_AUTH);
 
       if(StringUtil.hasContent(callbackAuthScheme) && StringUtil.hasContent(callbackAuth)) {
          try {
             authScheme = datastore.resolveAuthScheme(callbackAuthScheme);
             if(authScheme == null) {
-               return new ResponseBuilder(Response.Code.BAD_REQUEST, "Unsupported auth scheme, '" + callbackAuthScheme + "'").create();
+               return subscriptionRequestRejected(request,
+                       new ResponseBuilder(Response.Code.BAD_REQUEST,
+                               "Unsupported auth scheme, '" + callbackAuthScheme + "'").create(), null);
             }
             authId = callbackAuth;
          } catch(DatastoreException de) {
-            return new ResponseBuilder(Response.Code.SERVER_ERROR, "Internal error").create();
+            return subscriptionRequestRejected(request, new ResponseBuilder(Response.Code.SERVER_ERROR, "Internal error").create(), null);
          }
       } else {
          authScheme = null;
@@ -723,22 +762,23 @@ public class HubEndpoint implements MetricSet {
       }
 
       final SubscriptionVerifier verifier;
+      final Subscriber subscriber;
 
       try {
-         Subscriber subscriber = datastore.getSubscriber(callbackHostURL, authScheme, authId, true); //Create...
+         subscriber = datastore.getSubscriber(callbackHostURL, authScheme, authId, true); //Create...
          verifier = verifierFactory.create(request, this, subscriber);
          Response response = verifier.validate();
          if(response != null) { //Error
-            return response;
+            return subscriptionRequestRejected(request, response, subscriber);
          }
       } catch(DatastoreException de) {
          de.printStackTrace();
          logger.error("Problem getting/creating subscriber", de);
-         return new ResponseBuilder(Response.Code.SERVER_ERROR).create();
+         return subscriptionRequestRejected(request, new ResponseBuilder(Response.Code.SERVER_ERROR).create(), null);
       }
 
       verifierService.execute(verifier);
-      return new ResponseBuilder(Response.Code.ACCEPTED).create();
+      return subscriptionRequestAccepted(request, new ResponseBuilder(Response.Code.ACCEPTED).create(), subscriber);
    }
 
    /**
@@ -968,6 +1008,17 @@ public class HubEndpoint implements MetricSet {
       return maxReturned >= metrics.size() ? metrics : metrics.subList(0, maxReturned);
    }
 
+   private Response subscriptionRequestAccepted(Request request, Response response, Subscriber subscriber) {
+      if(eventHandler != null) eventHandler.subscriptionRequestAccepted(request, response, subscriber);
+      return response;
+   }
+
+
+   public Response subscriptionRequestRejected(Request request, Response response, Subscriber subscriber) {
+      if(eventHandler != null) eventHandler.subscriptionRequestRejected(request, response, subscriber);
+      return response;
+   }
+
    private int maxMetricsCacheSize = 65536; //TODO: Configure(?)
 
    /**
@@ -1033,6 +1084,8 @@ public class HubEndpoint implements MetricSet {
    private List<URLFilter> callbackURLFilters;
 
    private URIEncoder urlDecoder = new URIEncoder();
+
+   private HubEndpoint.EventHandler eventHandler;
 
    private int maxParameterBytes = 1024;
    private String defaultEncoding = "ISO-8859-1";

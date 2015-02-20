@@ -116,7 +116,7 @@ public class Server {
       };
 
       final Logger logger = initLogger(props, logProps);
-      final HubEndpoint endpoint = new HubEndpoint("endpoint.", props, logger, topicEventHandler);
+      final HubEndpoint endpoint = new HubEndpoint("endpoint.", props, logger, null, topicEventHandler);
 
       final String topicAddedTopicURL = Strings.emptyToNull(props.getProperty("endpoint.topicAddedTopic", ""));
       final Topic topicAddedTopic = topicAddedTopicURL != null ? endpoint.getDatastore().getTopic(topicAddedTopicURL, true) : null;
