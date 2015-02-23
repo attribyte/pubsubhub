@@ -15,12 +15,15 @@
 
 package org.attribyte.api.pubsub.impl.server;
 
+import com.codahale.metrics.JvmAttributeGaugeSet;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.graphite.Graphite;
-import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.health.HealthCheck;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.codahale.metrics.health.jvm.ThreadDeadlockHealthCheck;
+import com.codahale.metrics.jvm.FileDescriptorRatioGauge;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.codahale.metrics.servlets.HealthCheckServlet;
 import com.codahale.metrics.servlets.MetricsServlet;
 import com.codahale.metrics.servlets.ThreadDumpServlet;
@@ -48,8 +51,8 @@ import org.attribyte.api.pubsub.impl.server.util.ServerUtil;
 import org.attribyte.api.pubsub.impl.server.util.SubscriptionEvent;
 import org.attribyte.api.pubsub.impl.server.util.SubscriptionRequestRecord;
 import org.attribyte.api.pubsub.impl.server.util.SubscriptionVerifyRecord;
+import org.attribyte.metrics.Reporting;
 import org.attribyte.util.InitUtil;
-import org.attribyte.util.StringUtil;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NCSARequestLog;
@@ -62,7 +65,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
@@ -214,31 +216,12 @@ public class Server {
          }
       }
 
-      final MetricRegistry registry = new MetricRegistry();
+      final MetricRegistry registry = instrumentJVM(new MetricRegistry());
       registry.registerAll(endpoint);
 
       final HealthCheckRegistry healthCheckRegistry = new HealthCheckRegistry(); //TODO
 
-      final GraphiteReporter reporter;
-      String graphiteHost = props.getProperty("graphite.host");
-      if(StringUtil.hasContent(graphiteHost)) {
-         String graphitePrefix = props.getProperty("graphite.prefix", getHostname()).trim();
-         GraphiteReporter.Builder builder = GraphiteReporter.forRegistry(registry);
-
-         int graphitePort = Integer.parseInt(props.getProperty("graphite.port", "2003"));
-         long frequencyMillis = InitUtil.millisFromTime(props.getProperty("graphite.frequency", "1m"));
-         if(StringUtil.hasContent(graphitePrefix)) {
-            builder.prefixedWith(graphitePrefix);
-         }
-         builder.convertDurationsTo(TimeUnit.MILLISECONDS);
-         builder.convertRatesTo(TimeUnit.MINUTES);
-         InetSocketAddress addy = new InetSocketAddress(graphiteHost.trim(), graphitePort);
-         Graphite graphite = new Graphite(addy);
-         reporter = builder.build(graphite);
-         reporter.start(frequencyMillis, TimeUnit.MILLISECONDS);
-      } else {
-         reporter = null;
-      }
+      final Reporting reporting = new Reporting("metrics-reporting.", props, registry, null); //No filter...
 
       String httpAddress = props.getProperty("http.address", "127.0.0.1");
       int httpPort = Integer.parseInt(props.getProperty("http.port", "8086"));
@@ -264,9 +247,8 @@ public class Server {
          }
 
          public void lifeCycleStopping(LifeCycle event) {
-            if(reporter != null) {
-               reporter.stop();
-            }
+            System.out.println("Shutting down metrics reporting...");
+            reporting.stop();
             if(topicAddedNotifier != null) {
                System.out.println("Shutting down new topic notifier...");
                topicAddedNotifier.interrupt();
@@ -493,6 +475,9 @@ public class Server {
                  subscriptionEventSource, broadcastServlet);
       }
 
+      int numReporters = reporting.start();
+      logger.info("Started " + numReporters + " metrics reporters");
+
       server.setDumpBeforeStop(false);
       server.setStopAtShutdown(true);
       server.start();
@@ -555,5 +540,19 @@ public class Server {
       } else {
          return null;
       }
+   }
+
+   /**
+    * Adds JVM instrumentation to a registry.
+    * @param registry The registry.
+    * @return The registry.
+    */
+   private static MetricRegistry instrumentJVM(final MetricRegistry registry) {
+      registry.register("jvm.general", new JvmAttributeGaugeSet());
+      registry.register("jvm.general.used-file-descriptors", new FileDescriptorRatioGauge());
+      registry.register("jvm.memory", new MemoryUsageGaugeSet());
+      registry.register("jvm.gc", new GarbageCollectorMetricSet());
+      registry.register("jvm.threads", new ThreadStatesGaugeSet());
+      return registry;
    }
 }
