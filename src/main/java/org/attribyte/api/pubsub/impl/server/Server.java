@@ -437,6 +437,10 @@ public class Server {
       ServletHolder callbackMetricsServletHolder = new ServletHolder(callbackMetricsServlet);
       rootContext.addServlet(callbackMetricsServletHolder, "/metrics/callback/*");
 
+      NotificationMetricsServlet notificationMetricsServlet = new NotificationMetricsServlet(endpoint);
+      ServletHolder notificationMetricsServletHolder = new ServletHolder(notificationMetricsServlet);
+      rootContext.addServlet(notificationMetricsServletHolder, "/metrics/notification/*");
+
       MetricsServlet metricsServlet = new MetricsServlet(registry);
       ServletHolder metricsServletHolder = new ServletHolder(metricsServlet);
       rootContext.setInitParameter(MetricsServlet.RATE_UNIT, "SECONDS");

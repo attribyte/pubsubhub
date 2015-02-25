@@ -64,7 +64,7 @@ class CallbackMetricsServlet extends HttpServlet {
       if(obj == null) {
          MetricRegistry registry = new MetricRegistry();
          registry.register("", endpoint.getGlobalCallbackMetrics());
-         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(registry);
+         String json = mapper.writer().writeValueAsString(registry);
          response.setContentType("application/json");
          response.getWriter().print(json);
          response.getWriter().flush();
@@ -95,7 +95,7 @@ class CallbackMetricsServlet extends HttpServlet {
             registry.register(callbackMetrics.host, callbackMetrics);
          }
 
-         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(registry);
+         String json = mapper.writer().writeValueAsString(registry);
          response.setContentType("application/json");
          response.getWriter().print(json);
          response.getWriter().flush();
@@ -105,7 +105,7 @@ class CallbackMetricsServlet extends HttpServlet {
             SubscriptionCallbackMetrics metrics = endpoint.getSubscriptionCallbackMetrics(subscriptionId);
             MetricRegistry registry = new MetricRegistry();
             registry.register("", metrics);
-            String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(registry);
+            String json = mapper.writer().writeValueAsString(registry);
             response.setContentType("application/json");
             response.getWriter().print(json);
             response.getWriter().flush();
