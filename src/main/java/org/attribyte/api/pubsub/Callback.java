@@ -15,6 +15,8 @@
 
 package org.attribyte.api.pubsub;
 
+import static org.attribyte.api.pubsub.TimestampUtil.timestampToMicros;
+
 /**
  * A <code>Runnable</code> implementation used to send subscription
  * callbacks. The <code>Comparable</code> implementation
@@ -53,6 +55,7 @@ public abstract class Callback implements Runnable, Comparable<Callback> {
 
    /**
     * Increments the number of attempts for this callback.
+    * <em>Not</em> thread-safe (which should never be a problem).
     * @return The number of attempts after the increment.
     */
    public int incrementAttempts() {
@@ -64,6 +67,7 @@ public abstract class Callback implements Runnable, Comparable<Callback> {
 
    /**
     * Gets the number of attempts.
+    * <em>Not</em> thread-safe (which should never be a problem).
     * @return The number of attempts.
     */
    public int getAttempts() {
@@ -79,6 +83,14 @@ public abstract class Callback implements Runnable, Comparable<Callback> {
    }
 
    /**
+    * Gets the callback create time in microseconds..
+    * @return The create timestamp.
+    */
+   public long getCreateTimestampMicros() {
+      return timestampMicros;
+   }
+
+   /**
     * Gets the time, if any, of the last failed callback attempt.
     * @return The timestamp, or <code>0</code> if never failed.
     */
@@ -87,8 +99,9 @@ public abstract class Callback implements Runnable, Comparable<Callback> {
    }
 
    protected final HubEndpoint hub;
+   protected final long createTimestamp = System.currentTimeMillis();
+   protected final long timestampMicros = timestampToMicros(createTimestamp);
 
    protected int attempts;
-   protected long createTimestamp = System.currentTimeMillis();
    protected long lastFailedTimestamp = 0L;
 }

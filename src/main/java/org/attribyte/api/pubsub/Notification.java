@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Attribyte, LLC 
+ * Copyright 2010, 2015 Attribyte, LLC
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); 
  * you may not use this file except in compliance with the License. 
@@ -21,6 +21,8 @@ import org.attribyte.api.http.Header;
 
 import java.util.Collection;
 import java.util.Collections;
+
+import static org.attribyte.api.pubsub.TimestampUtil.currTimestampMicros;
 
 /**
  * A notification is pushed to all subscribers when a topic is updated.
@@ -84,7 +86,16 @@ public class Notification {
       return content;
    }
 
+   /**
+    * Gets the create time of this notification in microseconds..
+    * @return The create timestamp.
+    */
+   public long getCreateTimestampMicros() {
+      return timestampMicros;
+   }
+
    private final Topic topic;
    private final Collection<Header> headers;
    private final ByteString content;
+   private final long timestampMicros = currTimestampMicros();
 }
