@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import org.attribyte.api.DatastoreException;
 import org.attribyte.api.InvalidURIException;
-import org.attribyte.api.http.AuthScheme;
 import org.attribyte.api.http.Header;
 import org.attribyte.api.http.PostRequestBuilder;
 import org.attribyte.api.http.Request;
@@ -36,6 +35,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import static org.attribyte.api.pubsub.TimestampUtil.currTimestampMicros;
+
 /**
  * A notifier that randomly selects a subscriber.
  */
@@ -49,6 +50,7 @@ public class RandomSubscriptionNotifier extends Notifier {
    private static class RandomSubscriptionCallback extends Callback {
 
       protected RandomSubscriptionCallback(final long receiveTimestampNanos,
+                                           final long receiveTimestampMicros,
                                            final List<Subscription> subscriptions,
                                            final SubscriberCache subscriberCache,
                                            final ByteString notificationContent,
@@ -59,7 +61,10 @@ public class RandomSubscriptionNotifier extends Notifier {
          this.subscriberCache = subscriberCache;
          this.notificationContent = notificationContent;
          this.notificationHeaders = notificationHeaders;
+         this.receiveTimestampMicros = receiveTimestampMicros;
       }
+
+      private final long receiveTimestampMicros;
 
       @Override
       Request getRequest() {
@@ -74,6 +79,9 @@ public class RandomSubscriptionNotifier extends Notifier {
             if(notificationHeaders != null) {
                builder.addHeaders(notificationHeaders);
             }
+
+            builder.addHeader(Notifier.PUBSUB_RECEIVED_HEADER, Long.toString(receiveTimestampMicros));
+            builder.addHeader(Notifier.PUBSUB_NOTIFIED_HEADER, Long.toString(currTimestampMicros()));
 
             long subscriberId = subscription.getEndpointId();
             Subscriber subscriber;
@@ -200,7 +208,7 @@ public class RandomSubscriptionNotifier extends Notifier {
     * @param subscriptions The subscription.
     */
    protected void sendNotification(final Notification notification, final List<Subscription> subscriptions) {
-      hub.enqueueCallback(new RandomSubscriptionCallback(receiveTimestampNanos, subscriptions,
+      hub.enqueueCallback(new RandomSubscriptionCallback(receiveTimestampNanos, notification.getCreateTimestampMicros(), subscriptions,
               subscriberCache, notification.getContent(), notification.getHeaders(), hub));
    }
 }

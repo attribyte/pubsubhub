@@ -28,6 +28,17 @@ import java.security.SignatureException;
  */
 public abstract class Notifier extends org.attribyte.api.pubsub.Notifier {
 
+   /**
+    * A header that indicates when the notification event was received (in microseconds).
+    */
+   public static final String PUBSUB_RECEIVED_HEADER = "X-PubSub-Received";
+
+   /**
+    * A header that indicates the time the notification was sent to the subscriber (in microseconds).
+    */
+   public static final String PUBSUB_NOTIFIED_HEADER = "X-PubSub-Notified";
+
+
    protected Notifier(final Notification notification,
                       final HubEndpoint hub,
                       final SubscriptionCache subscriptionCache,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010, 2014 Attribyte, LLC
+ * Copyright 2010, 2014, 2015 Attribyte, LLC
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); 
  * you may not use this file except in compliance with the License. 
@@ -32,6 +32,7 @@ import org.attribyte.api.pubsub.Subscription;
 import java.util.Collections;
 import java.util.List;
 
+import static org.attribyte.api.pubsub.TimestampUtil.currTimestampMicros;
 
 /**
  * A notifier that broadcasts to all subscribers.
@@ -147,6 +148,9 @@ public class BroadcastNotifier extends Notifier {
          if(notification.getHeaders() != null) {
             builder.addHeaders(notification.getHeaders());
          }
+
+         builder.addHeader(Notifier.PUBSUB_RECEIVED_HEADER, Long.toString(notification.getCreateTimestampMicros()));
+         builder.addHeader(Notifier.PUBSUB_NOTIFIED_HEADER, Long.toString(currTimestampMicros()));
 
          final long subscriberId = subscription.getEndpointId();
          Subscriber subscriber;
