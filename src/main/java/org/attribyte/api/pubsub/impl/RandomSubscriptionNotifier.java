@@ -80,8 +80,8 @@ public class RandomSubscriptionNotifier extends Notifier {
                builder.addHeaders(notificationHeaders);
             }
 
-            builder.addHeader(Notifier.PUBSUB_RECEIVED_HEADER, Long.toString(receiveTimestampMicros));
-            builder.addHeader(Notifier.PUBSUB_NOTIFIED_HEADER, Long.toString(currTimestampMicros()));
+            builder.addHeader(Constants.PUBSUB_RECEIVED_HEADER, Long.toString(receiveTimestampMicros));
+            builder.addHeader(Constants.PUBSUB_NOTIFIED_HEADER, Long.toString(currTimestampMicros()));
 
             long subscriberId = subscription.getEndpointId();
             Subscriber subscriber;

@@ -149,8 +149,8 @@ public class BroadcastNotifier extends Notifier {
             builder.addHeaders(notification.getHeaders());
          }
 
-         builder.addHeader(Notifier.PUBSUB_RECEIVED_HEADER, Long.toString(notification.getCreateTimestampMicros()));
-         builder.addHeader(Notifier.PUBSUB_NOTIFIED_HEADER, Long.toString(currTimestampMicros()));
+         builder.addHeader(Constants.PUBSUB_RECEIVED_HEADER, Long.toString(notification.getCreateTimestampMicros()));
+         builder.addHeader(Constants.PUBSUB_NOTIFIED_HEADER, Long.toString(currTimestampMicros()));
 
          final long subscriberId = subscription.getEndpointId();
          Subscriber subscriber;
