@@ -23,6 +23,7 @@ public class Constants {
     * A header that indicates when the notification event was received (in microseconds).
     */
    public static final String PUBSUB_RECEIVED_HEADER = "X-PubSub-Received";
+
    /**
     * A header that indicates the time the notification was sent to the subscriber (in microseconds).
     */

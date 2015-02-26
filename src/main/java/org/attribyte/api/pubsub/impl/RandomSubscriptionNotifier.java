@@ -194,7 +194,9 @@ public class RandomSubscriptionNotifier extends Notifier {
             subscriptionCache.cacheSubscriptions(notification.getTopic(), cachedSubscriptions.build());
          }
 
-         sendNotification(notification, subscriptions);
+         boolean queued = sendNotification(notification, subscriptions);
+         //TODO!
+
       } catch(DatastoreException de) {
          hub.getLogger().error("Problem selecting subscriptions for notification", de);
       } finally {
@@ -206,9 +208,10 @@ public class RandomSubscriptionNotifier extends Notifier {
     * Sends a notification to a randomly selected subscription.
     * @param notification The notification.
     * @param subscriptions The subscription.
+    * @return Was the notification queued?
     */
-   protected void sendNotification(final Notification notification, final List<Subscription> subscriptions) {
-      hub.enqueueCallback(new RandomSubscriptionCallback(receiveTimestampNanos, notification.getCreateTimestampMicros(), subscriptions,
+   protected boolean sendNotification(final Notification notification, final List<Subscription> subscriptions) {
+      return hub.enqueueCallback(new RandomSubscriptionCallback(receiveTimestampNanos, notification.getCreateTimestampMicros(), subscriptions,
               subscriberCache, notification.getContent(), notification.getHeaders(), hub));
    }
 }

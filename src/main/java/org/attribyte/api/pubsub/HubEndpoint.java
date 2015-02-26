@@ -48,6 +48,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -401,7 +402,7 @@ public class HubEndpoint implements MetricSet {
 
             if(maxNotifierQueueSize > 0) {
 
-               final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(maxNotifierQueueSize, true); //Fair
+               final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(maxNotifierQueueSize, false); //Fair
                notifierServiceQueueSize = new CachedGauge<Integer>(15, TimeUnit.SECONDS) {
                   @Override
                   protected Integer loadValue() {
@@ -411,7 +412,8 @@ public class HubEndpoint implements MetricSet {
 
                notifierService = new ThreadPoolExecutor(baseConcurrentNotifiers > 0 ? baseConcurrentNotifiers : 1, maxConcurrentNotifiers,
                        notifierThreadKeepAliveMinutes, TimeUnit.MINUTES, queue,
-                       new ThreadFactoryBuilder().setNameFormat("notifier-executor-%d").build());
+                       new ThreadFactoryBuilder().setNameFormat("notifier-executor-%d").build(),
+                       new ThreadPoolExecutor.AbortPolicy());
             } else {
 
                final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
@@ -424,7 +426,8 @@ public class HubEndpoint implements MetricSet {
 
                notifierService = new ThreadPoolExecutor(maxConcurrentNotifiers, maxConcurrentNotifiers,
                        notifierThreadKeepAliveMinutes, TimeUnit.MINUTES, queue,
-                       new ThreadFactoryBuilder().setNameFormat("notifier-executor-%d").build());
+                       new ThreadFactoryBuilder().setNameFormat("notifier-executor-%d").build(),
+                       new ThreadPoolExecutor.AbortPolicy());
             }
          }
 
@@ -450,7 +453,8 @@ public class HubEndpoint implements MetricSet {
 
             callbackService = new ThreadPoolExecutor(maxConcurrentCallbacks, maxConcurrentCallbacks,
                     callbackThreadKeepAliveMinutes, TimeUnit.MINUTES, queue,
-                    new ThreadFactoryBuilder().setNameFormat("callback-executor-%d").build());
+                    new ThreadFactoryBuilder().setNameFormat("callback-executor-%d").build(),
+                    new ThreadPoolExecutor.AbortPolicy());
          }
 
          int maxConcurrentFailedCallbacks = initUtil.getIntProperty("maxConcurrentFailedCallbacks", 4);
@@ -498,11 +502,13 @@ public class HubEndpoint implements MetricSet {
             if(maxVerifierQueueSize > 0) {
                verifierService = new ThreadPoolExecutor(baseConcurrentVerifiers > 0 ? baseConcurrentVerifiers : 1, maxConcurrentVerifiers,
                        verifierThreadKeepAliveMinutes, TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(maxVerifierQueueSize, true),
-                       new ThreadFactoryBuilder().setNameFormat("verifier-executor-%d").build());
+                       new ThreadFactoryBuilder().setNameFormat("verifier-executor-%d").build(),
+                       new ThreadPoolExecutor.AbortPolicy());
             } else {
                verifierService = new ThreadPoolExecutor(maxConcurrentVerifiers, maxConcurrentVerifiers,
                        verifierThreadKeepAliveMinutes, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>(),
-                       new ThreadFactoryBuilder().setNameFormat("verifier-executor-%d").build());
+                       new ThreadFactoryBuilder().setNameFormat("verifier-executor-%d").build(),
+                       new ThreadPoolExecutor.AbortPolicy());
             }
          }
 
@@ -703,9 +709,16 @@ public class HubEndpoint implements MetricSet {
     * at their callback URL.
     * </p>
     * @param notification The notification.
+    * @return Was the notification queued? If <code>false</code> configured thread, queue resources are maximally utilized.
     */
-   public void enqueueNotification(final Notification notification) {
-      notifierService.execute(notifierFactory.create(notification, this));
+   public boolean enqueueNotification(final Notification notification) {
+      try {
+         notifierService.execute(notifierFactory.create(notification, this));
+         return true;
+      } catch(RejectedExecutionException ree) {
+         logger.error("Rejected notification - capacity", ree);
+         return false;
+      }
    }
 
    /**
@@ -806,8 +819,13 @@ public class HubEndpoint implements MetricSet {
          return subscriptionRequestRejected(request, new ResponseBuilder(Response.Code.SERVER_ERROR).create(), null);
       }
 
-      verifierService.execute(verifier);
-      return subscriptionRequestAccepted(request, new ResponseBuilder(Response.Code.ACCEPTED).create(), subscriber);
+      try {
+         verifierService.execute(verifier);
+         return subscriptionRequestAccepted(request, new ResponseBuilder(Response.Code.ACCEPTED).create(), subscriber);
+      } catch(RejectedExecutionException ree) {
+         logger.error("Verify rejected - capacity", ree);
+         return subscriptionRequestRejected(request, new ResponseBuilder(Response.Code.SERVER_UNAVAILABLE).create(), null);
+      }
    }
 
    /**
@@ -857,10 +875,17 @@ public class HubEndpoint implements MetricSet {
    /**
     * Enqueue a subscriber callback.
     * @param callback The callback.
+    * @return Was the callback queued? If <code>false</code>, capacity has been reached.
     */
-   public void enqueueCallback(final Callback callback) {
+   public boolean enqueueCallback(final Callback callback) {
       callback.incrementAttempts();
-      callbackService.submit(callback);
+      try {
+         callbackService.submit(callback);
+         return true;
+      } catch(RejectedExecutionException ree) {
+         logger.error("Rejected callback - capacity", ree);
+         return false;
+      }
    }
 
    /**

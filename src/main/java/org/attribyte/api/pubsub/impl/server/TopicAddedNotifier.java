@@ -51,7 +51,11 @@ public class TopicAddedNotifier implements Runnable {
             final Topic newTopic = newTopicQueue.take();
             final Notification notification = new Notification(topicAddedTopic, null,
                     newTopic.getURL().getBytes(Charsets.UTF_8));
-            endpoint.enqueueNotification(notification);
+            final boolean queued = endpoint.enqueueNotification(notification);
+            if(!queued) {
+               //TODO!
+               System.err.println("Topic added notification failure due to capacity limits!");
+            }
          } catch(InterruptedException ie) {
             return;
          }

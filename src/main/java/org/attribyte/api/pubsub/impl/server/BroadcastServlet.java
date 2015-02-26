@@ -188,15 +188,23 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
                metrics.notifications.update(acceptTimeNanos, TimeUnit.NANOSECONDS);
                globalMetrics.notifications.update(acceptTimeNanos, TimeUnit.NANOSECONDS);
                Notification notification = new Notification(topic, null, broadcastContent); //No custom headers...
-               endpoint.enqueueNotification(notification);
-               if(replicationTopic != null) {
-                  endpoint.enqueueNotification(new Notification(
-                          replicationTopic,
-                          Collections.singleton(new Header(REPLICATION_TOPIC_HEADER, topic.getURL())),
-                          broadcastContent
-                  ));
+               final boolean queued = endpoint.enqueueNotification(notification);
+               if(queued) {
+                  if(replicationTopic != null) {
+                     final boolean replicationQueued =
+                             endpoint.enqueueNotification(new Notification(
+                                     replicationTopic,
+                                     Collections.singleton(new Header(REPLICATION_TOPIC_HEADER, topic.getURL())),
+                                     broadcastContent
+                     ));
+                     if(!replicationQueued) { //What to do?
+                        logger.error("Replication failure due to notification capacity limits!");
+                     }
+                  }
+                  endpointResponse = ACCEPTED_RESPONSE;
+               } else {
+                  endpointResponse = CAPACITY_ERROR_RESPONSE;
                }
-               endpointResponse = ACCEPTED_RESPONSE;
             } else {
                endpointResponse = UNKNOWN_TOPIC_RESPONSE;
             }

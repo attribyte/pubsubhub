@@ -181,8 +181,15 @@ public class BroadcastNotifier extends Notifier {
                if(authHeader != null) {
                   builder.addHeaders(Collections.singleton(authHeader));
                }
-               hub.enqueueCallback(new BroadcastCallback(receiveTimestampNanos, builder.create(), subscription.getId(), subscriber.getPriority(), hub));
-               return true;
+
+               final Callback callback = new BroadcastCallback(receiveTimestampNanos, builder.create(),
+                       subscription.getId(), subscriber.getPriority(), hub);
+               final boolean queued = hub.enqueueCallback(callback);
+               if(!queued) {
+                  hub.getLogger().warn("Callback threads/queue are at capacity! Queuing as failed callback");
+                  hub.enqueueFailedCallback(callback);
+               }
+               return queued;
             } else {
                return false;
             }

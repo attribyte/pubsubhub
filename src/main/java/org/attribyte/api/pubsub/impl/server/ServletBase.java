@@ -59,4 +59,10 @@ public abstract class ServletBase extends HttpServlet {
    protected static final Response INTERNAL_ERROR_RESPONSE =
            new ResponseBuilder(Response.Code.SERVER_ERROR, "The hub is currently unable to accept broadcast requests").create();
 
+   /**
+    * The response sent on internal server errors due to capacity constraints.
+    */
+   protected static final Response CAPACITY_ERROR_RESPONSE =
+           new ResponseBuilder(Response.Code.SERVER_UNAVAILABLE, "The hub is currently unable to accept broadcast requests due to capacity issues").create();
+
 }
