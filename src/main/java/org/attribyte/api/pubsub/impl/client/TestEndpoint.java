@@ -134,14 +134,18 @@ public class TestEndpoint {
          System.out.println("Subscription created!");
       }
 
+      while(!notificationEndpoint.allTopicsVerified()) {
+         System.out.println("Waiting for async subscription verification...");
+         Thread.sleep(100L);
+      }
+
+      System.out.println("Subscription verified!");
+
       int numPublisherProcessors = Integer.parseInt(props.getProperty("publisher.numProcessors", "4"));
       int publisherQueueSize = Integer.parseInt(props.getProperty("publisher.QueueSize", "0"));
 
       AsyncPublisher publisher = new AsyncPublisher(numPublisherProcessors, publisherQueueSize, 10); //10s timeout
       publisher.start();
-
-      Publisher.NotificationResult notificationRes = publisher.enqueueNotification(buildNotification(notificationURL), hubAuth).get();
-      if(notificationRes.message.isPresent()) System.out.println(notificationRes.message);
 
       for(int i = 0; i < numNotifications; i++) {
          if(i % 100 == 0) System.out.println("Enqueued " + i + " notifications...");

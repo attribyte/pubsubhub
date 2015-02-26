@@ -97,7 +97,7 @@ public class NotificationEndpoint implements MetricSet {
       PingServlet pingServlet = new PingServlet();
       rootContext.addServlet(new ServletHolder(pingServlet), "/ping/*");
 
-      final NotificationEndpointServlet notificationServlet = new NotificationEndpointServlet(topics, callback, endpointAuth.isPresent());
+      this.notificationServlet = new NotificationEndpointServlet(topics, callback, endpointAuth.isPresent());
       this.metrics = notificationServlet.getMetrics();
       rootContext.addServlet(new ServletHolder(notificationServlet), "/*");
 
@@ -167,6 +167,15 @@ public class NotificationEndpoint implements MetricSet {
       return metrics;
    }
 
+   /**
+    * Determine if all configured topics have been verified.
+    * @return Have all topics been verified?
+    */
+   public boolean allTopicsVerified() {
+      return notificationServlet.allVerified();
+   }
+
    private final Server server;
    private final Map<String, Metric> metrics;
+   private final NotificationEndpointServlet notificationServlet;
 }

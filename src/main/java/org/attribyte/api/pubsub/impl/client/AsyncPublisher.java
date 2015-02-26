@@ -66,7 +66,7 @@ public class AsyncPublisher implements Publisher {
 
 
       ThreadPoolExecutor executor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS,
-              notifications, new ThreadFactoryBuilder().setNameFormat("async-publisher-%d").build());
+              notifications, new ThreadFactoryBuilder().setNameFormat("async-publisher-%d").build(), new ThreadPoolExecutor.AbortPolicy());
       executor.prestartAllCoreThreads();
       this.notificationExecutor = MoreExecutors.listeningDecorator(executor);
       this.notificationQueueSize = new CachedGauge<Integer>(15L, TimeUnit.SECONDS) {
