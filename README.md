@@ -1,7 +1,7 @@
 ##About
 
-A complete pubsub implementation that conforms to the [PubSubHubbub](https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html)
-protocol with some extensions for authentication and security. PubSubHubbub, though originally designed for Atom and RSS feeds,
+A pubsub implementation that conforms to the [PubSubHubbub](https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html)
+protocol with extensions for authentication and security. PubSubHubbub, though originally designed for Atom and RSS feeds,
 can be applied to any type of data to push notifications over HTTP, eliminating
 inefficient polling for changes.
 
@@ -35,7 +35,9 @@ or on-disk.
   subscriptions, use the alternate `endpoint.acp.connection.pubsub.connectionString` property with
   a local directory.
 * Start the server: `bin/start`
-* Go to `http://localhost:8086/metrics` to verify that the server is running.
+* Verify that the server is running `http://localhost:8086/health`
+* Run a performance test: `bin/test`
+* View metrics `http://localhost:8086/metrics`.
 * Stop the server: `bin/stop`
 
 ##MySQL Quick Start
@@ -48,7 +50,9 @@ or on-disk.
 * Edit `config/local.properties` to change `pubsub.user`, `pubsub.password` and `pubsub.connectionString` for your database.
   You may also want to change any usernames/passwords from their defaults at this time.
 * Start the server: `bin/start`
-* Go to `http://localhost:8086/metrics` to verify that the server is running.
+* Verify that the server is running `http://localhost:8086/health`
+* Run a performance test: `bin/test`
+* View metrics `http://localhost:8086/metrics`.
 * Stop the server: `bin/stop`
 
 ##Framework Dependencies
@@ -60,7 +64,7 @@ or on-disk.
 * [Dropwizard Metrics](http://metrics.codahale.com/)
 * [Apache Log4J](http://logging.apache.org/log4j/2.x/)
 
-##Additional (Optional) Implementation Dependencies
+##Implementation Dependencies
 
 * [Attribyte ACP](https://github.com/attribyte/acp)
 * [Apache commons-httpclient](http://hc.apache.org/httpclient-3.x/)
@@ -71,7 +75,7 @@ or on-disk.
 
 ##License
 
-Copyright 2014 [Attribyte, LLC](https://attribyte.com)
+Copyright 2010, 2015 [Attribyte, LLC](https://attribyte.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

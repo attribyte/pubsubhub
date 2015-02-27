@@ -1,11 +1,13 @@
 footer() ::= <<
 <footer class="row">
     <div class="large-12 columns">
-        <p class="right">
-            <small>© Copyright <a href="https://attribyte.com">Attribyte, LLC</a> &ndash;
-                Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache License, Version
-                    2.0</a>
-            </small>
+        <p class="right"><small>
+            API:&nbsp;
+            <a href="/ping">Ping</a>&nbsp;&middot;&nbsp;
+            <a href="/health">Health Check</a>&nbsp;&middot;&nbsp;
+            <a href="/metrics">Metrics</a>&nbsp;&middot;&nbsp;
+            <a href="/metrics/notification/topic">Notification Metrics</a>&nbsp;&middot;&nbsp;
+            <a href="/metrics/callback/host">Subscription Metrics</a></small>
         </p>
     </div>
 </footer>
