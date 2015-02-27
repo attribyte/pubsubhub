@@ -8,9 +8,13 @@ $head()$
     </div>
     <div class="large-9 columns">
         <ul class="inline-list right">
-            <li>
-                <small>$hostname$ @ $time; format="long"$</small>
-            </li>
+            <li><a href="/ping">Ping</a></li>
+            <li><a href="/health">Health Check</a></li>
+            <li><a href="/metrics">Metrics</a></li>
+            <li><a href="/metrics/notification/topic">Notification Metrics</a></li>
+            <li><a href="/metrics/callback/host">Subscription Metrics</a></li>
+            <li><a href="https://github.com/attribyte/pubsubhub">Source/Docs</a></li>
+            <li><a href="https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html">Spec</a></li>
         </ul>
     </div>
 </div>
