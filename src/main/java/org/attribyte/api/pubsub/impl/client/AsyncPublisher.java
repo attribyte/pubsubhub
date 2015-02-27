@@ -16,6 +16,7 @@
 package org.attribyte.api.pubsub.impl.client;
 
 import com.codahale.metrics.CachedGauge;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Optional;
@@ -112,6 +113,7 @@ public class AsyncPublisher implements Publisher {
       try {
          return notificationExecutor.submit(new NotificationCallable(notification, auth));
       } catch(RejectedExecutionException re) {
+         rejectedNotifications.mark();
          return Futures.immediateFailedFuture(re);
       }
    }
@@ -214,6 +216,7 @@ public class AsyncPublisher implements Publisher {
       ImmutableMap.Builder<String, Metric> builder = ImmutableMap.builder();
       builder.put("notification-queue-size", notificationQueueSize);
       builder.put("notification-send-time", notificationSendTime);
+      builder.put("rejected-notifications", rejectedNotifications);
       return builder.build();
    }
 
@@ -231,6 +234,11 @@ public class AsyncPublisher implements Publisher {
     * Measures timing for notification send.
     */
    private final Timer notificationSendTime = new Timer();
+
+   /**
+    * Tracks any rejected notifications.
+    */
+   private final Meter rejectedNotifications = new Meter();
 
    /**
     * The notification send timeout.

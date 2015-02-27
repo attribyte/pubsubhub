@@ -17,6 +17,7 @@ package org.attribyte.api.pubsub;
 
 import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.google.common.cache.CacheBuilder;
@@ -717,6 +718,7 @@ public class HubEndpoint implements MetricSet {
          return true;
       } catch(RejectedExecutionException ree) {
          logger.error("Rejected notification - capacity", ree);
+         rejectedNotifications.mark();
          return false;
       }
    }
@@ -824,6 +826,7 @@ public class HubEndpoint implements MetricSet {
          return subscriptionRequestAccepted(request, new ResponseBuilder(Response.Code.ACCEPTED).create(), subscriber);
       } catch(RejectedExecutionException ree) {
          logger.error("Verify rejected - capacity", ree);
+         rejectedVerifications.mark();
          return subscriptionRequestRejected(request, new ResponseBuilder(Response.Code.SERVER_UNAVAILABLE).create(), null);
       }
    }
@@ -884,6 +887,7 @@ public class HubEndpoint implements MetricSet {
          return true;
       } catch(RejectedExecutionException ree) {
          logger.error("Rejected callback - capacity", ree);
+         rejectedCallbacks.mark();
          return false;
       }
    }
@@ -947,6 +951,9 @@ public class HubEndpoint implements MetricSet {
          builder.put("callback-service-queue-size", callbackServiceQueueSize);
       }
       builder.put("auto-disabled-subscriptions", autoDisabledSubscriptions);
+      builder.put("rejected-callbacks", rejectedCallbacks);
+      builder.put("rejected-notifications", rejectedNotifications);
+      builder.put("rejected-verifications", rejectedVerifications);
       return builder.build();
    }
 
@@ -977,6 +984,9 @@ public class HubEndpoint implements MetricSet {
    private RetryStrategy failedCallbackRetryStrategy;
    private DisableSubscriptionStrategy disableSubscriptionStrategy;
    private Counter autoDisabledSubscriptions = new Counter();
+   private Meter rejectedCallbacks = new Meter();
+   private Meter rejectedNotifications = new Meter();
+   private Meter rejectedVerifications = new Meter();
 
    /**
     * Gets callback metrics for a subscription.
