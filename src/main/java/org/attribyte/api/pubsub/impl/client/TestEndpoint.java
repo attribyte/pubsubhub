@@ -69,8 +69,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  *          May be <code>0</code>. If so, this endpoint will only
  *          receive callbacks triggered by notifications an external source.
  *       </dd>
- *       <dt>test.meanNotificationSize</dt>
- *       <dd>Default 256. Test will send random bytes with this value as the mean size.</dd>
+ *       <dt>test.minNotificationSize</dt>
+ *       <dd>Default 256. The minimum notification size.</dd>
+ *       <dt>test.maxNotificationSize</dt>
+ *       <dd>
+ *          Default 256. The maximum notification size.
+ *          Test will generate random bytes within the specified size range.
+ *       </dd>
  *       <dt>publisher.numProcessors</dt>
  *       <dd>The number of concurrent processors sending notifications if test.numNotifications > 0</dd>
  *    </dl>
@@ -198,11 +203,13 @@ public class TestEndpoint {
       publisher.start();
 
       int numNotifications = Integer.parseInt(props.getProperty("test.numNotifications", "100000"));
-      int avgNotificationSize = Integer.parseInt(props.getProperty("test.avgNotificationSize", "256"));
+      int minNotificationSize = Integer.parseInt(props.getProperty("test.minNotificationSize", "256"));
+      int maxNotificationSize = Integer.parseInt(props.getProperty("test.maxNotificationSize", "256"));
+
       int numVariations = 512;
 
-      Publisher.Notification[] notifications = buildNotificationVariations(notificationURL, avgNotificationSize, numVariations);
-      System.out.println("Built " + numVariations + " variations of notifications with average size " + avgNotificationSize + " bytes...");
+      Publisher.Notification[] notifications = buildNotificationVariations(notificationURL,
+              minNotificationSize, maxNotificationSize, numVariations);
 
       if(numNotifications > 0) {
          long startMillis = System.currentTimeMillis();
@@ -273,15 +280,17 @@ public class TestEndpoint {
    /**
     * Pre-build a pool of notifications to send.
     * @param url The hub URL.
-    * @param avgSize The average size of the notification.
+    * @param minSize The minimum size of the notification.
+    * @param maxSize The minimum size of the notification.
     * @param numVariations The number of variations to generate.
     * @return An array of notifications.
     */
    private static Publisher.Notification[] buildNotificationVariations(final String url,
-                                                                       final int avgSize, final int numVariations) {
+                                                                       final int minSize, final int maxSize,
+                                                                       final int numVariations) {
       Publisher.Notification[] notifications = new Publisher.Notification[numVariations];
       for(int i = 0; i < numVariations; i++) {
-         int size = rnd.nextInt(avgSize * 2 + 1) + 1;
+         int size = minSize == maxSize ? minSize : minSize + rnd.nextInt(maxSize - minSize);
          byte[] bytes = new byte[size];
          rnd.nextBytes(bytes);
          notifications[i] = new Publisher.Notification(url, ByteString.copyFrom(bytes));
