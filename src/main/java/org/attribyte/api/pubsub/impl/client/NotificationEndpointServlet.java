@@ -20,8 +20,7 @@ import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
-import com.codahale.metrics.Reservoir;
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.UniformReservoir;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -73,7 +72,7 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
            final Collection<Topic> topics,
            final NotificationEndpoint.Callback callback,
            final boolean allowUnsubscribe) {
-      this(topics, callback, allowUnsubscribe, new ExponentiallyDecayingReservoir(), false);
+      this(topics, callback, allowUnsubscribe, true, false);
    }
 
    /**
@@ -81,7 +80,7 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
     * @param topics The topics from which notifications are allowed.
     * @param callback The callback that accepts notifications when they arrive.
     * @param allowUnsubscribe Are unsubscribe requests allowed?
-    * @param histogramReservoir The reservoir used when measuring the latency distribution.
+    * @param exponentiallyDecayingReservoir If <code>false</code>, a uniform reservoir is used for timers/histograms.
     * @param recordTotalLatency Should the total latency be recorded? This is likely to be inaccurate
     * unless the client and server are running on the same machine or are carefully synchronized.
     */
@@ -89,7 +88,7 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
            final Collection<Topic> topics,
            final NotificationEndpoint.Callback callback,
            final boolean allowUnsubscribe,
-           final Reservoir histogramReservoir,
+           final boolean exponentiallyDecayingReservoir,
            final boolean recordTotalLatency) {
       this.callback = callback;
       ImmutableMap.Builder<String, Topic> builder = ImmutableMap.builder();
@@ -98,20 +97,25 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
       }
       this.topics = builder.build();
       this.allowedVerifyModes = allowUnsubscribe ? ImmutableSet.of("subscribe", "unsubscribe") : ImmutableSet.of("subscribe");
-      this.publishLatency = new Histogram(histogramReservoir);
+      this.publishLatency = exponentiallyDecayingReservoir ?
+              new Histogram(new ExponentiallyDecayingReservoir()) : new Histogram(new UniformReservoir());
       if(recordTotalLatency) {
-         this.totalLatency = new Histogram(histogramReservoir);
+         this.totalLatency = exponentiallyDecayingReservoir ?
+                 new Histogram(new ExponentiallyDecayingReservoir()) : new Histogram(new UniformReservoir());
       } else {
          this.totalLatency = null;
       }
+      this.notificationSize = exponentiallyDecayingReservoir ?
+              new Histogram(new ExponentiallyDecayingReservoir()) : new Histogram(new UniformReservoir());
    }
 
    @Override
    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-      Timer.Context ctx = notificationTimer.time();
+      notificationCounter.inc();
       try {
          Request notificationRequest = Bridge.fromServletRequest(request, 1024 * 1024);
          byte[] body = notificationRequest.body.toByteArray();
+         notificationSize.update(body.length);
          String topicURL = request.getPathInfo();
          long pubsubReceivedMillis = timingHeader(request, Constants.PUBSUB_RECEIVED_HEADER) / 1000L;
          long pubsubNotifiedMillis = timingHeader(request, Constants.PUBSUB_NOTIFIED_HEADER) / 1000L;
@@ -129,8 +133,6 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
          }
       } catch(Throwable t) {
          t.printStackTrace();
-      } finally {
-         ctx.stop();
       }
    }
 
@@ -180,11 +182,12 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
    @Override
    public Map<String, Metric> getMetrics() {
       ImmutableMap.Builder<String, Metric> builder = ImmutableMap.builder();
-      builder.put("notifications-received", notificationTimer);
+      builder.put("notifications-received", notificationCounter);
       builder.put("subscription-verifications", subscriptionVerifications);
       builder.put("failed-subscription-verifications", failedSubscriptionVerifications);
       builder.put("publish-latency", publishLatency);
       if(totalLatency != null) builder.put("total-latency", totalLatency);
+      builder.put("notification-size", notificationSize);
       return builder.build();
    }
 
@@ -193,10 +196,12 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
    private final ConcurrentMap<String, Topic> verifiedTopics = Maps.newConcurrentMap();
    private final Set<String> allowedVerifyModes;
 
-   final Timer notificationTimer = new Timer();
    final Histogram publishLatency;
    final Histogram totalLatency;
+   final Histogram notificationSize;
+   final Counter notificationCounter = new Counter();
    final Counter subscriptionVerifications = new Counter();
    final Counter failedSubscriptionVerifications = new Counter();
+
 }
 

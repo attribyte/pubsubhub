@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Attribyte, LLC
+ * Copyright 2014, 2015 Attribyte, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,31 +15,88 @@
 
 package org.attribyte.api.pubsub.impl.client;
 
-import com.codahale.metrics.SlidingWindowReservoir;
-import com.codahale.metrics.Timer;
-import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
-import org.attribyte.api.http.Header;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
+import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 
 import java.io.FileInputStream;
-import java.util.Collection;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * An endpoint for measuring hub performance.
+ *
+ * <p>
+ *    To start: java org.attribyte.api.pubsub.impl.client.TestEndpoint -[property name]=[property file], ... [property file]
+ *    Command line parameters override those in the property file.
+ * </p>
+ * <ol>
+ *    <li>Starts a server to listen for subscription verification and test callbacks.</li>
+ *    <li>Sends a subscription request to the configured topic.</li>
+ *    <li>Waits for the subscription to be acknowledged.</li>
+ *    <li>Optionally issues notifications with configurable concurrency.</li>
+ *    <li>Tracks and reports statistics about notification rate and timing.</li>
+ * </ol>
+ * <p>
+ *    Properties:
+ *    <dl>
+ *       <dt>hub.hurl</dt>
+ *       <dd>The endpoint of the hub to be tested</dd>
+ *       <dt>hub.topic</dt>
+ *       <dd>The topic used for testing, e.g. <code>/test</code></dd>
+ *       <dt>hub.username</dt>
+ *       <dd>An optional username for hub authentication</dd>
+ *       <dt>hub.password</dt>
+ *       <dd>An optional password for hub authentication</dd>
+ *       <dt>endpoint.listenAddress</dt>
+ *       <dd>The address <em>this</em> endpoint listens on to receive callbacks</dd>
+ *       <dt>endpoint.listenPort</dt>
+ *       <dd>The port this endpoint listens on for callbacks</dd>
+ *       <dt>endpoint.callbackBase</dt>
+ *       <dd>The base URL where callbacks are received</dd>
+ *       <dt>endpoint.username</dt>
+ *       <dd>An optional username for <em>this</em> endpoint</dd>
+ *       <dt>endpoint.password</dt>
+ *       <dd>An optional password for this endpoint</dd>
+ *       <dt>test.numNotifications</dt>
+ *       <dd>
+ *          Default 5000. The number of notifications to be sent on startup.
+ *          May be <code>0</code>. If so, this endpoint will only
+ *          receive callbacks triggered by notifications an external source.
+ *       </dd>
+ *       <dt>test.meanNotificationSize</dt>
+ *       <dd>Default 256. Test will send random bytes with this value as the mean size.</dd>
+ *       <dt>publisher.numProcessors</dt>
+ *       <dd>The number of concurrent processors sending notifications if test.numNotifications > 0</dd>
+ *    </dl>
+ * </p>
+ */
 public class TestEndpoint {
 
+   /**
+    * Starts the endpoint.
+    * @param args The command line arguments.
+    * @throws Exception On initialization error.
+    */
    public static void main(String[] args) throws Exception {
 
+      Properties commandLineOverrides = new Properties();
+      args = InitUtil.fromCommandLine(args, commandLineOverrides);
+
       Properties props = new Properties();
-      FileInputStream fis = new FileInputStream(args[0]);
-      props.load(fis);
-      fis.close();
+
+      if(args.length > 0) {
+         FileInputStream fis = new FileInputStream(args[0]);
+         props.load(fis);
+         fis.close();
+      }
+
+      props.putAll(commandLineOverrides);
 
       String hubURL = props.getProperty("hub.url");
       if(hubURL == null) {
@@ -73,8 +130,8 @@ public class TestEndpoint {
       String notificationURL = hubURL + "/notify" + hubTopic;
       Topic acceptTopic = new Topic.Builder().setTopicURL(hubTopic).setId(2L).create();
 
-      String listenAddress = props.getProperty("endpoint.listenAddress", "127.0.0.1");
-      int listenPort = Integer.parseInt(props.getProperty("endpoint.listenPort", "8087"));
+      final String listenAddress = props.getProperty("endpoint.listenAddress", "127.0.0.1");
+      final int listenPort = Integer.parseInt(props.getProperty("endpoint.listenPort", "8087"));
       String endpointUsername = props.getProperty("endpoint.username");
       String endpointPassword = props.getProperty("endpoint.password");
       final Optional<BasicAuth> endpointAuth;
@@ -84,24 +141,17 @@ public class TestEndpoint {
          endpointAuth = Optional.absent();
       }
 
-      int numNotifications = Integer.parseInt(props.getProperty("test.numNotifications", "100000"));
-
-      final Timer timer = new Timer(new SlidingWindowReservoir(numNotifications));
       final AtomicInteger completeCount = new AtomicInteger(0);
 
-      NotificationEndpoint notificationEndpoint = new NotificationEndpoint(
+      final NotificationEndpoint notificationEndpoint = new NotificationEndpoint(
               listenAddress, listenPort, endpointAuth, ImmutableList.of(acceptTopic),
               new NotificationEndpoint.Callback() {
                  @Override
                  public void notification(final Notification notification) {
                     byte[] body = notification.getContent().toByteArray();
-                    long endNanos = System.nanoTime();
-                    long startNanos = Long.parseLong(new String(body, Charsets.UTF_8));
-                    long measuredNanos = endNanos - startNanos;
-                    timer.update(measuredNanos, TimeUnit.NANOSECONDS);
                     completeCount.incrementAndGet();
                  }
-              }
+              }, false, true //Uniform reservoir, record total latency
       );
 
       notificationEndpoint.start();
@@ -116,7 +166,7 @@ public class TestEndpoint {
          endpointCallbackBase = endpointCallbackBase.substring(0, endpointCallbackBase.length() - 1);
       }
 
-      SubscriptionClient subscriptionClient = new SubscriptionClient();
+      final SubscriptionClient subscriptionClient = new SubscriptionClient();
       subscriptionClient.start();
       SubscriptionClient.Result res = subscriptionClient.postSubscriptionRequest(hubTopic, hubURL + "/subscribe",
               endpointCallbackBase + hubTopic,
@@ -144,44 +194,98 @@ public class TestEndpoint {
       int numPublisherProcessors = Integer.parseInt(props.getProperty("publisher.numProcessors", "4"));
       int publisherQueueSize = Integer.parseInt(props.getProperty("publisher.QueueSize", "0"));
 
-      AsyncPublisher publisher = new AsyncPublisher(numPublisherProcessors, publisherQueueSize, 10); //10s timeout
+      final AsyncPublisher publisher = new AsyncPublisher(numPublisherProcessors, publisherQueueSize, 10); //10s timeout
       publisher.start();
 
-      for(int i = 0; i < numNotifications; i++) {
-         if(i % 100 == 0) System.out.println("Enqueued " + i + " notifications...");
-         publisher.enqueueNotification(buildNotification(notificationURL), hubAuth);
-      }
+      int numNotifications = Integer.parseInt(props.getProperty("test.numNotifications", "100000"));
+      int avgNotificationSize = Integer.parseInt(props.getProperty("test.avgNotificationSize", "256"));
+      int numVariations = 512;
 
-      while(completeCount.get() < numNotifications) {
+      Publisher.Notification[] notifications = buildNotificationVariations(notificationURL, avgNotificationSize, numVariations);
+      System.out.println("Built " + numVariations + " variations of notifications with average size " + avgNotificationSize + " bytes...");
+
+      if(numNotifications > 0) {
+         long startMillis = System.currentTimeMillis();
+
+         for(int i = 0; i < numNotifications; i++) {
+            if(i % 100 == 0) System.out.println("Queued " + i + " notifications...");
+            publisher.enqueueNotification(notifications[rnd.nextInt(numVariations)], hubAuth);
+         }
+
+         long completeMillis = 0L;
+         int checks = 0;
+
+         while(completeCount.get() < numNotifications) {
+            completeMillis = System.currentTimeMillis();
+            checks++;
+            if(checks % 10 == 0) System.out.println("Completed " + completeCount.get() + "...");
+            Thread.sleep(50L);
+         }
+
          System.out.println("Completed " + completeCount.get() + "...");
-         System.out.println("Average time in queue: " + timer.getSnapshot().getMean() / (double)TimeUnit.NANOSECONDS.convert(1, TimeUnit.MILLISECONDS));
-         Thread.sleep(5000L);
+
+         long elapsedMillis = completeMillis - startMillis;
+         double averageRate = (double)numNotifications / (double)elapsedMillis * 1000.0;
+
+         System.out.println("Average notifications/s " + averageRate);
       }
 
-      System.out.println("Shutting down subscription client...");
+      Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+         @Override
+         public void run() {
+            try {
+               System.out.println("Shutting down subscription client...");
 
-      subscriptionClient.shutdown();
+               subscriptionClient.shutdown();
 
-      System.out.println("Shutting down publisher...");
+               System.out.println("Shutting down publisher...");
 
-      publisher.shutdown(15);
+               publisher.shutdown(15);
 
-      System.out.println("Shutting down notification endpoint...");
-      notificationEndpoint.stop();
+               System.out.println("Shutting down notification endpoint...");
+               notificationEndpoint.stop();
 
-      System.out.println("Notification endpoint stopped...");
+               System.out.println("Notification endpoint stopped...");
+            } catch(Exception e) {
+               e.printStackTrace();
+            }
+         }
+      }));
+
+      System.out.println();
+      System.out.println("View detailed metrics for this test at http://" + listenAddress + ":" + listenPort + "/metrics");
+      System.out.println();
+      System.out.println("Ctrl-c to quit...");
+      while(true) {
+         try {
+            Thread.sleep(1000L);
+         } catch(InterruptedException ie) {
+            return;
+         }
+      }
    }
 
    /**
-    * Creates a notification with payload the current nano time.
-    * @param url The hub URL.
-    * @return The notification.
+    * The random number generator.
     */
-   private static Publisher.Notification buildNotification(final String url) {
-      String body = Long.toString(System.nanoTime());
-      return new Publisher.Notification(url, ByteString.copyFrom(body.getBytes(Charsets.UTF_8)));
+   private static Random rnd = new Random();
+
+   /**
+    * Pre-build a pool of notifications to send.
+    * @param url The hub URL.
+    * @param avgSize The average size of the notification.
+    * @param numVariations The number of variations to generate.
+    * @return An array of notifications.
+    */
+   private static Publisher.Notification[] buildNotificationVariations(final String url,
+                                                                       final int avgSize, final int numVariations) {
+      Publisher.Notification[] notifications = new Publisher.Notification[numVariations];
+      for(int i = 0; i < numVariations; i++) {
+         int size = rnd.nextInt(avgSize * 2 + 1) + 1;
+         byte[] bytes = new byte[size];
+         rnd.nextBytes(bytes);
+         notifications[i] = new Publisher.Notification(url, ByteString.copyFrom(bytes));
+      }
+      return notifications;
    }
-
-   private static Collection<Header> EMPTY_HEADERS = ImmutableList.of();
-
 }

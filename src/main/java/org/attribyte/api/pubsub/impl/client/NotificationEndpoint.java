@@ -15,11 +15,9 @@
 
 package org.attribyte.api.pubsub.impl.client;
 
-import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
-import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.servlets.MetricsServlet;
 import com.codahale.metrics.servlets.PingServlet;
 import com.google.common.base.Optional;
@@ -77,7 +75,7 @@ public class NotificationEndpoint implements MetricSet {
                                final Optional<BasicAuth> endpointAuth,
                                final Collection<Topic> topics,
                                final Callback callback) {
-      this(listenAddress, listenPort, endpointAuth, topics, callback, new ExponentiallyDecayingReservoir(), false);
+      this(listenAddress, listenPort, endpointAuth, topics, callback, true, false);
    }
 
    /**
@@ -87,7 +85,7 @@ public class NotificationEndpoint implements MetricSet {
     * @param endpointAuth Optional 'Basic' auth required for calls to the endpoint.
     * @param topics A collection of topics.
     * @param callback The callback.
-    * @param histogramReservoir The reservoir used when measuring the latency distribution.
+    * @param exponentiallyDecayingReservoir If <code>false</code>, a uniform reservoir is used for timers/histograms.
     * @param recordTotalLatency Should the total latency be recorded? This is likely to be inaccurate
     * unless the client and server are running on the same machine or are carefully synchronized.
     */
@@ -96,7 +94,7 @@ public class NotificationEndpoint implements MetricSet {
                                final Optional<BasicAuth> endpointAuth,
                                final Collection<Topic> topics,
                                final Callback callback,
-                               final Reservoir histogramReservoir,
+                               final boolean exponentiallyDecayingReservoir,
                                final boolean recordTotalLatency) {
 
       this.server = new org.eclipse.jetty.server.Server();
@@ -121,12 +119,13 @@ public class NotificationEndpoint implements MetricSet {
       rootContext.addServlet(new ServletHolder(pingServlet), "/ping/*");
 
       this.notificationServlet = new NotificationEndpointServlet(topics, callback, endpointAuth.isPresent(),
-              histogramReservoir, recordTotalLatency);
+              exponentiallyDecayingReservoir, recordTotalLatency);
       this.metrics = notificationServlet.getMetrics();
       rootContext.addServlet(new ServletHolder(notificationServlet), "/*");
 
       MetricRegistry registry = new MetricRegistry();
       registry.registerAll(notificationServlet);
+
       MetricsServlet metricsServlet = new MetricsServlet(registry);
       ServletHolder metricsServletHolder = new ServletHolder(metricsServlet);
       rootContext.setInitParameter(MetricsServlet.RATE_UNIT, "SECONDS");

@@ -35,4 +35,4 @@ do
 done
 
 export CLASSPATH
-$JAVA_EXE org.attribyte.api.pubsub.impl.client.TestEndpoint $PUBSUB_INSTALL_DIR/config/testendpoint.properties
+$JAVA_EXE org.attribyte.api.pubsub.impl.client.TestEndpoint $PUBSUB_INSTALL_DIR/config/testendpoint.properties $1 $2 $3 $4 $5
