@@ -4,7 +4,7 @@ $head()$
 <div class="row">
     <div class="large-3 columns">
         <h1><a href="/admin"><img src="$constants.imageBase$/$constants.logo$"/></a></h1>
-        <h4 class="subheader">pubsubhub</h4>
+        <h5 class="subheader">$constants.subheader$</h5>
     </div>
     <div class="large-9 columns">
         <ul class="inline-list right">

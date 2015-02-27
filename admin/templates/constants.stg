@@ -1,6 +1,7 @@
 constants ::= [
 "defaultTitle":"Attribyte Pubsubhub - Admin Console",
-"logo":"AttribyteLogo.png",
+"logo":"PsHLogo.png",
+"subheader" : "pubsubhub",
 "imageBase":"/img",
 "jsBase":"/js",
 "cssBase":"/css",
