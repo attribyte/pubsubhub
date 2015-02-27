@@ -1,3 +1,5 @@
+![Logo](/admin/htdocs/img/PsHLogo.png)
+
 ##About
 
 A pubsub implementation that conforms to the [PubSubHubbub](https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html)
