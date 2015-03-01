@@ -51,6 +51,7 @@ import org.attribyte.api.pubsub.impl.server.util.ServerUtil;
 import org.attribyte.api.pubsub.impl.server.util.SubscriptionEvent;
 import org.attribyte.api.pubsub.impl.server.util.SubscriptionRequestRecord;
 import org.attribyte.api.pubsub.impl.server.util.SubscriptionVerifyRecord;
+import org.attribyte.essem.sysmon.linux.SystemMonitor;
 import org.attribyte.metrics.Reporting;
 import org.attribyte.util.InitUtil;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -216,7 +217,14 @@ public class Server {
          }
       }
 
-      final MetricRegistry registry = instrumentJVM(new MetricRegistry());
+      final MetricRegistry registry =
+              props.getProperty("endpoint.instrumentJVM", "true").equalsIgnoreCase("true") ?
+              instrumentJVM(new MetricRegistry()) : new MetricRegistry();
+
+      if(props.getProperty("endpoint.instrumentSystem", "true").equalsIgnoreCase("true")) {
+         instrumentSystem(registry);
+      }
+
       registry.registerAll(endpoint);
 
       final HealthCheckRegistry healthCheckRegistry = new HealthCheckRegistry(); //TODO
@@ -557,6 +565,11 @@ public class Server {
       registry.register("jvm.memory", new MemoryUsageGaugeSet());
       registry.register("jvm.gc", new GarbageCollectorMetricSet());
       registry.register("jvm.threads", new ThreadStatesGaugeSet());
+      return registry;
+   }
+
+   private static MetricRegistry instrumentSystem(final MetricRegistry registry) {
+      registry.register("system", new SystemMonitor(10));
       return registry;
    }
 }

@@ -43,6 +43,11 @@
     <path id="classpath">
         <fileset refid="ivy.fileset"/>
         <pathelement location="${build}"/>
+        <!--
+        <fileset dir="testlib">
+            <include name="**/*.jar"/>
+        </fileset>
+        -->
     </path>
 
     <target name="resolve" description="Use ivy to resolve classpaths">
