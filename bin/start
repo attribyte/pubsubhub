@@ -31,6 +31,7 @@ then
   exit 1
 fi
 
+LOCAL_LIB_DIR="$PUBSUB_INSTALL_DIR/lib"
 LIB_DIR="$PUBSUB_INSTALL_DIR/dist/lib"
 EXTLIB_DIR="$PUBSUB_INSTALL_DIR/dist/extlib"
 CLASSPATH=""
@@ -44,6 +45,14 @@ for jar in `ls $LIB_DIR/*.jar`;
 do
   CLASSPATH=$CLASSPATH:$jar
 done
+
+if [ -d "$LOCAL_LIB_DIR" ]
+then
+  for jar in `ls $LOCAL_LIB_DIR/*.jar`;
+    do
+    CLASSPATH=$CLASSPATH:$jar
+    done
+fi
 
 export CLASSPATH
 
