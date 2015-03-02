@@ -936,7 +936,10 @@ public class HubEndpoint implements MetricSet {
    @Override
    public Map<String, Metric> getMetrics() {
       ImmutableMap.Builder<String, Metric> builder = ImmutableMap.builder();
+
       builder.putAll(notifierFactory.getMetrics());
+      builder.put("message-size", globalNotificationMetrics.notificationSize);
+
       builder.putAll(globalCallbackMetrics.getMetrics());
       //Note: Subscription and host-specific metrics are not included by design!
       builder.putAll(verifierFactory.getMetrics());
