@@ -91,10 +91,19 @@ public class Server {
          System.exit(1);
       }
 
+      Properties commandLineOverrides = new Properties();
+      args = InitUtil.fromCommandLine(args, commandLineOverrides);
+
       Properties props = new Properties();
       Properties logProps = new Properties();
       CLI.loadProperties(args, props, logProps);
+
+      props.putAll(commandLineOverrides);
+      logProps.putAll(commandLineOverrides);
+
       final Logger logger = initLogger(props, logProps);
+
+      logger.info("Applied command line overrides: " + commandLineOverrides.toString());
 
       //Buffer and log hub events for logging and debug...
 

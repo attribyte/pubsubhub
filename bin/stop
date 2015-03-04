@@ -15,7 +15,7 @@ then
 	exit 0
 fi
 
-PID=`cat $PUBSUB_INSTALL_DIR/bin/$PIDFILE`
+PID=$(cat $PUBSUB_INSTALL_DIR/bin/$PIDFILE)
 echo "Stopping pubsubhub $PID"
 
 ATTEMPTS_LEFT=30

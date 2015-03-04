@@ -9,7 +9,7 @@
         <dependency org="org.attribyte" name="attribyte-shared-base" rev="1.0" conf="compile->default"/>
         <dependency org="org.attribyte" name="acp" rev="0.6.0" conf="compile->default"/>
         <dependency org="org.attribyte" name="attribyte-http" rev="0.5.1" conf="compile->default"/>
-        <dependency org="org.attribyte" name="essem-reporter" rev="1.0.1" conf="compile->default"/>
+        <dependency org="org.attribyte" name="essem-reporter" rev="1.0.2" conf="compile->default"/>
         <dependency org="org.attribyte" name="metrics-reporting" rev="1.0.0" conf="compile->default"/>
         <dependency org="commons-codec" name="commons-codec" rev="1.4" conf="compile->default"/>
         <dependency org="commons-httpclient" name="commons-httpclient" rev="3.1" conf="compile->default"/>

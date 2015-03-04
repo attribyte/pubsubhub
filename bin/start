@@ -36,19 +36,19 @@ LIB_DIR="$PUBSUB_INSTALL_DIR/dist/lib"
 EXTLIB_DIR="$PUBSUB_INSTALL_DIR/dist/extlib"
 CLASSPATH=""
 
-for jar in `ls $EXTLIB_DIR/*.jar`;
+for jar in $(ls $EXTLIB_DIR/*.jar);
 do
   CLASSPATH=$CLASSPATH:$jar
 done
 
-for jar in `ls $LIB_DIR/*.jar`;
+for jar in $(ls $LIB_DIR/*.jar);
 do
   CLASSPATH=$CLASSPATH:$jar
 done
 
 if [ -d "$LOCAL_LIB_DIR" ]
 then
-  for jar in `ls $LOCAL_LIB_DIR/*.jar`;
+  for jar in $(ls $LOCAL_LIB_DIR/*.jar);
     do
     CLASSPATH=$CLASSPATH:$jar
     done
@@ -79,5 +79,8 @@ then
   exit 1
 fi
 
-nohup $JAVA_EXE -Dpubsub.install.dir="$PUBSUB_INSTALL_DIR" org.attribyte.api.pubsub.impl.server.Server $SYSTEM_CONFIG $LOG_CONFIG $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
+# Command line arguments in the format -[name]=value override properties in config files.
+# For example: -http.port=8091 causes the server to listen on 8091 instead of the value supplied in config.
+
+nohup $JAVA_EXE -Dpubsub.install.dir="$PUBSUB_INSTALL_DIR" org.attribyte.api.pubsub.impl.server.Server $SYSTEM_CONFIG $LOG_CONFIG $@ $LOCAL_CONFIG 1> $CONSOLE_LOG 2>&1 &
 echo $! > $PUBSUB_INSTALL_DIR/bin/$PIDFILE

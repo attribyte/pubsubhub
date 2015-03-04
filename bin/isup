@@ -20,7 +20,7 @@ else
 fi
 
 while [ $ATTEMPTS_LEFT -gt 0 ]; do
-  RESPONSE=`curl -s $1`
+  RESPONSE=$(curl -s $1)
   echo $RESPONSE
   if [[ $RESPONSE == *$2* ]]; then
      break

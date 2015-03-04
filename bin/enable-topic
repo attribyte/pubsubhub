@@ -24,13 +24,13 @@ LIB_DIR="$PUBSUB_INSTALL_DIR/dist/lib"
 EXTLIB_DIR="$PUBSUB_INSTALL_DIR/dist/extlib"
 CLASSPATH=""
 
-for jar in `ls $EXTLIB_DIR/*.jar`;
+for jar in $(ls $EXTLIB_DIR/*.jar);
 do
         CLASSPATH=$CLASSPATH:$jar
 done
 
 
-for jar in `ls $LIB_DIR/*.jar`;
+for jar in $(ls $LIB_DIR/*.jar);
 do
         CLASSPATH=$CLASSPATH:$jar
 done
