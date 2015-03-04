@@ -34,23 +34,50 @@ fi
 LOCAL_LIB_DIR="$PUBSUB_INSTALL_DIR/lib"
 LIB_DIR="$PUBSUB_INSTALL_DIR/dist/lib"
 EXTLIB_DIR="$PUBSUB_INSTALL_DIR/dist/extlib"
+
+SBT_DIR="$PUBSUB_INSTALL_DIR/target/scala-2.10"
+XITRUM_DIR="$PUBSUB_INSTALL_DIR/target/xitrum/lib"
+
 CLASSPATH=""
-
-for jar in $(ls $EXTLIB_DIR/*.jar);
-do
-  CLASSPATH=$CLASSPATH:$jar
-done
-
-for jar in $(ls $LIB_DIR/*.jar);
-do
-  CLASSPATH=$CLASSPATH:$jar
-done
 
 if [ -d "$LOCAL_LIB_DIR" ]
 then
   for jar in $(ls $LOCAL_LIB_DIR/*.jar);
     do
-    CLASSPATH=$CLASSPATH:$jar
+      CLASSPATH=$CLASSPATH:$jar
+    done
+fi
+
+
+if [ -d "$EXTLIB_DIR" ]
+then
+  for jar in $(ls $EXTLIB_DIR/*.jar);
+    do
+      CLASSPATH=$CLASSPATH:$jar
+    done
+fi
+
+if [ -d "$XITRUM_DIR" ]
+then
+  for jar in $(ls $XITRUM_DIR/*.jar);
+    do
+      CLASSPATH=$CLASSPATH:$jar
+    done
+fi
+
+if [ -d "$LIB_DIR" ]
+then
+  for jar in $(ls $LIB_DIR/*.jar);
+    do
+      CLASSPATH=$CLASSPATH:$jar
+    done
+fi
+
+if [ -d "$SBT_DIR" ]
+then
+  for jar in $(ls $SBT_DIR/*.jar);
+    do
+      CLASSPATH=$CLASSPATH:$jar
     done
 fi
 
