@@ -13,7 +13,7 @@ inefficient polling for changes.
 
 ##Building
 
-The build uses [Apache Ant](http://ant.apache.org/) and
+The normal build uses [Apache Ant](http://ant.apache.org/) and
 [Apache Ivy](https://ant.apache.org/ivy/) to resolve dependencies. The following ant tasks
 are available:
 
@@ -24,6 +24,8 @@ are available:
 * `clean` - Removes all build files and jars.
 * `javadoc` - Generates javadoc.
 * `cleandoc` - Removes generated javadoc.
+
+For Scala users, an sbt build is also available.
 
 ##H2 Quick Start
 
