@@ -108,4 +108,9 @@ public class ServerUtil {
          return defaultValue;
       }
    }
+
+   /**
+    * The content type header for JSON ('application/json').
+    */
+   public static final String JSON_CONTENT_TYPE = "application/json";
 }

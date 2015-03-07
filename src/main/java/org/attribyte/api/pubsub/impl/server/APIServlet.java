@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.attribyte.api.http.impl.servlet.Bridge.fromServletRequest;
+import static org.attribyte.api.pubsub.impl.server.util.ServerUtil.JSON_CONTENT_TYPE;
 import static org.attribyte.api.pubsub.impl.server.util.ServerUtil.splitPath;
 import static org.attribyte.api.http.impl.servlet.Bridge.sendServletResponse;
 
@@ -174,7 +175,7 @@ public class APIServlet extends ServletBase {
     */
    private void sendJSONResponse(HttpServletResponse response, ObjectNode responseNode) throws IOException {
       response.setStatus(HttpServletResponse.SC_OK);
-      response.setContentType("application/json");
+      response.setContentType(JSON_CONTENT_TYPE);
       response.getOutputStream().write(responseNode.toString().getBytes(Charsets.UTF_8));
    }
 

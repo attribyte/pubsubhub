@@ -15,6 +15,10 @@
 
 package org.attribyte.api.pubsub.impl.server;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Charsets;
 import com.google.common.cache.Cache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -23,6 +27,7 @@ import org.attribyte.api.DatastoreException;
 import org.attribyte.api.Logger;
 import org.attribyte.api.http.Header;
 import org.attribyte.api.http.Response;
+import org.attribyte.api.http.ResponseBuilder;
 import org.attribyte.api.http.impl.servlet.Bridge;
 import org.attribyte.api.pubsub.BasicAuthFilter;
 import org.attribyte.api.pubsub.HubDatastore;
@@ -32,6 +37,7 @@ import org.attribyte.api.pubsub.NotificationMetrics;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.client.BasicAuth;
 import org.attribyte.api.pubsub.impl.server.util.NotificationRecord;
+import org.attribyte.api.pubsub.impl.server.util.ServerUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -71,22 +77,31 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
     * @param logger A logger.
     * @param filters A list of filters to be applied.
     * @param topicCache A topic cache.
+    * @param replicationTopic A system topic to which all notifications are replicated. May be <code>null</code>.
+    * @param maxSavedNotifications The maximum number of notifications saved in-memory for debugging purposes.
+    * @param jsonEnabled If <code>true</code> a JSON body will be sent with the notification response.
     */
    public BroadcastServlet(final HubEndpoint endpoint, final Logger logger,
                            final List<BasicAuthFilter> filters,
                            final Cache<String, Topic> topicCache,
                            final Topic replicationTopic,
-                           final int maxSavedNotifications) {
-      this(endpoint, DEFAULT_MAX_BODY_BYTES, DEFAULT_AUTOCREATE_TOPICS, logger, filters, topicCache, replicationTopic, maxSavedNotifications);
+                           final int maxSavedNotifications,
+                           final boolean jsonEnabled) {
+      this(endpoint, DEFAULT_MAX_BODY_BYTES, DEFAULT_AUTOCREATE_TOPICS, logger, filters, topicCache,
+              replicationTopic, maxSavedNotifications, jsonEnabled);
    }
 
    /**
     * Creates a servlet with a specified maximum body size.
     * @param endpoint The hub endpoint.
     * @param maxBodyBytes The maximum size of accepted for a notification body.
+    * @param autocreateTopics If <code>true</code>, topics will be automatically created if they do not exist.
     * @param logger The logger.
     * @param filters A list of filters to be applied.
     * @param topicCache A topic cache.
+    * @param replicationTopic A system topic to which all notifications are replicated. May be <code>null</code>.
+    * @param maxSavedNotifications The maximum number of notifications saved in-memory for debugging purposes.
+    * @param jsonEnabled If <code>true</code> a JSON body will be sent with the notification response.
     */
    public BroadcastServlet(final HubEndpoint endpoint, final int maxBodyBytes,
                            final boolean autocreateTopics,
@@ -94,7 +109,8 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
                            final List<BasicAuthFilter> filters,
                            final Cache<String, Topic> topicCache,
                            final Topic replicationTopic,
-                           final int maxSavedNotifications) {
+                           final int maxSavedNotifications,
+                           final boolean jsonEnabled) {
       this.endpoint = endpoint;
       this.datastore = endpoint.getDatastore();
       this.maxBodyBytes = maxBodyBytes;
@@ -104,6 +120,7 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
       this.topicCache = topicCache;
       this.replicationTopic = replicationTopic;
       this.maxSavedNotifications = maxSavedNotifications;
+      this.jsonEnabled = jsonEnabled;
 
       final int queueLimit = maxSavedNotifications * 2;
       final int drainTriggerLimit = queueLimit - maxSavedNotifications / 2;
@@ -188,6 +205,7 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
                metrics.notifications.update(acceptTimeNanos, TimeUnit.NANOSECONDS);
                globalMetrics.notifications.update(acceptTimeNanos, TimeUnit.NANOSECONDS);
                Notification notification = new Notification(topic, null, broadcastContent); //No custom headers...
+
                final boolean queued = endpoint.enqueueNotification(notification);
                if(queued) {
                   if(replicationTopic != null) {
@@ -201,7 +219,18 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
                         logger.error("Replication failure due to notification capacity limits!");
                      }
                   }
-                  endpointResponse = ACCEPTED_RESPONSE;
+                  if(!jsonEnabled) {
+                     endpointResponse = ACCEPTED_RESPONSE;
+                  } else {
+                     ResponseBuilder builder = new ResponseBuilder();
+                     builder.setStatusCode(ACCEPTED_RESPONSE.statusCode);
+                     builder.addHeader("Content-Type", ServerUtil.JSON_CONTENT_TYPE);
+                     ObjectNode responseNode = JsonNodeFactory.instance.objectNode();
+                     ArrayNode idsNode = responseNode.putArray("messageIds");
+                     idsNode.add(Long.toString(notification.getCreateTimestampMicros()));
+                     builder.setBody(responseNode.toString().getBytes(Charsets.UTF_8));
+                     endpointResponse = builder.create();
+                  }
                } else {
                   endpointResponse = CAPACITY_ERROR_RESPONSE;
                }
@@ -353,4 +382,9 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
     * The maximum number of recent notifications.
     */
    private final int maxSavedNotifications;
+
+   /**
+    * If <code>true</code>, a JSON response body is returned with the notification response.
+    */
+   private final boolean jsonEnabled;
 }

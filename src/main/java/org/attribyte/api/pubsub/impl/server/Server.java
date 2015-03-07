@@ -446,8 +446,10 @@ public class Server {
 
       int maxSavedNotifications = filterInit.getIntProperty("maxSavedNotifications", 0);
 
+      boolean jsonEnabled = filterInit.getProperty("jsonEnabled", "false").equalsIgnoreCase("true");
+
       final BroadcastServlet broadcastServlet = new BroadcastServlet(endpoint, maxBodySizeBytes, autocreateTopics,
-              logger, publishURLFilters, topicCache, replicationTopic, maxSavedNotifications);
+              logger, publishURLFilters, topicCache, replicationTopic, maxSavedNotifications, jsonEnabled);
       rootContext.addServlet(new ServletHolder(broadcastServlet), "/notify/*");
 
       CallbackMetricsServlet callbackMetricsServlet = new CallbackMetricsServlet(endpoint);
