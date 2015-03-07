@@ -16,6 +16,7 @@
 package org.attribyte.api.pubsub.impl.server.util;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
 import javax.servlet.http.HttpServletRequest;
@@ -90,5 +91,21 @@ public class ServerUtil {
       }
 
       return buf.toString();
+   }
+
+   /**
+    * Gets an integer value from a servlet request.
+    * @param request The request.
+    * @param name The parameter name.
+    * @param defaultValue The default value.
+    * @return The request or default value.
+    */
+   public static int getParameter(final HttpServletRequest request, final String name, final int defaultValue) {
+      String intVal = Strings.nullToEmpty(request.getParameter(name)).trim();
+      try {
+         return intVal.isEmpty() ? defaultValue : Integer.parseInt(intVal);
+      } catch(NumberFormatException nfe) {
+         return defaultValue;
+      }
    }
 }

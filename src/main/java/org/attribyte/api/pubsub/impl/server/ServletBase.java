@@ -65,4 +65,9 @@ public abstract class ServletBase extends HttpServlet {
    protected static final Response CAPACITY_ERROR_RESPONSE =
            new ResponseBuilder(Response.Code.SERVER_UNAVAILABLE, "The hub is currently unable to accept broadcast requests due to capacity issues").create();
 
+   /**
+    * The response sent an operation is expected.
+    */
+   protected static final Response NO_OPERATION_RESPONSE =
+           new ResponseBuilder(Response.Code.BAD_REQUEST, "An operation must be specified").create();
 }
