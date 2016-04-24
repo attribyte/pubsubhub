@@ -60,9 +60,9 @@ public class AsyncPublisher implements Publisher {
       final BlockingQueue<Runnable> notifications;
       assert (numProcessors > 0);
       if(maxQueueSize > 0) {
-         notifications = new ArrayBlockingQueue<Runnable>(maxQueueSize);
+         notifications = new ArrayBlockingQueue<>(maxQueueSize);
       } else {
-         notifications = new LinkedBlockingQueue<Runnable>();
+         notifications = new LinkedBlockingQueue<>();
       }
 
 
