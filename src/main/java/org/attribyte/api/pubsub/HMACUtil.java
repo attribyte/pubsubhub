@@ -16,7 +16,7 @@
 package org.attribyte.api.pubsub;
 
 import com.google.common.base.Charsets;
-import org.apache.commons.codec.binary.Hex;
+import com.google.common.io.BaseEncoding;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -43,7 +43,7 @@ public class HMACUtil {
          Mac mac = Mac.getInstance(HMAC_SHA1_ALGORITHM);
          mac.init(signingKey);
          byte[] hmac = mac.doFinal(data);
-         return new String(Hex.encodeHex(hmac));
+         return BaseEncoding.base16().encode(hmac);
       } catch(Exception e) {
          throw new SignatureException("Unable to generate HMAC : " + e.getMessage());
       }
