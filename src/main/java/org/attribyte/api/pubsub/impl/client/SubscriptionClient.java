@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Attribyte, LLC
+ * Copyright 2014, 2016 Attribyte, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package org.attribyte.api.pubsub.impl.client;
 
 import com.google.common.base.Optional;
-import org.attribyte.api.http.Response;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FormContentProvider;
@@ -49,7 +49,7 @@ public class SubscriptionClient {
     * The single instance of accepted subscription result. New instances of result will only be
     * created on errors.
     */
-   private static final Result ACCEPTED_RESULT = new Result(Response.Code.ACCEPTED, "", null);
+   private static final Result ACCEPTED_RESULT = new Result(HttpStatus.ACCEPTED_202, "", null);
 
    /**
     * A subscription request result.
@@ -60,7 +60,7 @@ public class SubscriptionClient {
          this.code = code;
          this.message = message != null ? Optional.of(message) : Optional.<String>absent();
          this.cause = cause != null ? Optional.of(cause) : Optional.<Throwable>absent();
-         this.isError = code != Response.Code.ACCEPTED;
+         this.isError = code != HttpStatus.ACCEPTED_202;
       }
 
       /**
@@ -160,7 +160,7 @@ public class SubscriptionClient {
 
          ContentResponse response = request.send();
          int status = response.getStatus();
-         if(status == Response.Code.ACCEPTED) {
+         if(status == HttpStatus.ACCEPTED_202) {
             return ACCEPTED_RESULT;
          } else {
             String content = response.getContentAsString();
@@ -216,7 +216,7 @@ public class SubscriptionClient {
 
          ContentResponse response = request.send();
          int status = response.getStatus();
-         if(status == Response.Code.ACCEPTED) {
+         if(status == HttpStatus.ACCEPTED_202) {
             return ACCEPTED_RESULT;
          } else {
             String content = response.getContentAsString();
