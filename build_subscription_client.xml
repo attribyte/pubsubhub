@@ -1,17 +1,17 @@
-<project name="pubsubhub-publisher" default="dist" xmlns:ivy="antlib:org.apache.ivy.ant">
+<project name="pubsubhub-subscription-client" default="dist" xmlns:ivy="antlib:org.apache.ivy.ant">
 
-    <description>Build the Attribyte, LLC pubsubhub-publisher project</description>
+    <description>Build the Attribyte, LLC pubsubhub subscription client project</description>
 
     <property name="jdkVersion" value="1.8" />
 
     <property name="src" location="src" />
-    <property name="build" location="build_publisher" />
-    <property name="dist" location="dist_publisher" />
+    <property name="build" location="build_subscrription_client" />
+    <property name="dist" location="dist_subscription_client" />
 
 
     <property name="groupId" value="org.attribyte" />
-    <property name="artifactId" value="pubsubhub-publisher" />
-    <property name="version" value="1.0.1" />
+    <property name="artifactId" value="pubsubhub-subscription-client" />
+    <property name="version" value="1.0.0" />
 
     <property name="jar" value="${dist}/lib/${artifactId}-${version}.jar" />
     <property name="javadoc-jar" value="${dist}/lib/${artifactId}-${version}-javadoc.jar" />
@@ -23,7 +23,7 @@
     </path>
 
     <target name="resolve" description="Use ivy to resolve classpaths">
-        <ivy:resolve file="ivy_publisher.xml" conf="compile"/>
+        <ivy:resolve file="ivy_subscription_client.xml" conf="compile"/>
         <ivy:cachefileset setid="ivy.fileset" conf="compile"/>
     </target>
 
@@ -37,9 +37,8 @@
         <javac includeantruntime="false"
                source="${jdkVersion}"
                srcdir="${src}/main/java"
-               includes="org/attribyte/api/pubsub/impl/client/AsyncPublisher.java,
-                         org/attribyte/api/pubsub/impl/client/BasicAuth.java,
-                         org/attribyte/api/pubsub/impl/client/Publisher.java"
+               includes="org/attribyte/api/pubsub/impl/client/SubscriptionClient.java,
+                         org/attribyte/api/pubsub/impl/client/BasicAuth.java"
                destdir="${build}" debug="on">
             <classpath refid="classpath"/>
         </javac>
@@ -64,9 +63,8 @@
                 windowtitle="org.attribyte"
                 >
             <fileset dir="${src}/main/java" defaultexcludes="yes">
-                <include name="org/attribyte/api/pubsub/impl/client/AsyncPublisher.java"/>
+                <include name="org/attribyte/api/pubsub/impl/client/SubscriptionClient.java"/>
                 <include name="org/attribyte/api/pubsub/impl/client/BasicAuth.java"/>
-                <include name="org/attribyte/api/pubsub/impl/client/Publisher.java"/>
             </fileset>
         </javadoc>
         <jar jarfile="${javadoc-jar}">
@@ -74,9 +72,8 @@
         </jar>
         <jar jarfile="${sources-jar}">
             <fileset dir="${src}/main/java" defaultexcludes="yes">
-                <include name="org/attribyte/api/pubsub/impl/client/AsyncPublisher.java"/>
+                <include name="org/attribyte/api/pubsub/impl/client/SubscriptionClient.java"/>
                 <include name="org/attribyte/api/pubsub/impl/client/BasicAuth.java"/>
-                <include name="org/attribyte/api/pubsub/impl/client/Publisher.java"/>
             </fileset>
         </jar>
     </target>
