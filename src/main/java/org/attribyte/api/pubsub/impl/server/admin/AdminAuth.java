@@ -19,7 +19,7 @@ import com.google.common.base.Charsets;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import org.apache.commons.codec.binary.Base64;
+import com.google.common.io.BaseEncoding;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -48,7 +48,7 @@ public class AdminAuth {
       buf.append(":");
       buf.append(password);
       String up = buf.toString();
-      byte[] upBytes = Base64.encodeBase64(up.getBytes());
+      byte[] upBytes = BaseEncoding.base64().encode(up.getBytes()).getBytes();
       buf.setLength(0);
       buf.append("Basic ");
       buf.append(new String(upBytes, Charsets.US_ASCII));
