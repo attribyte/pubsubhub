@@ -37,7 +37,7 @@ public class SubscriptionClient {
    /**
     * Creates the client.
     */
-   public SubscriptionClient() throws Exception {
+   public SubscriptionClient() {
       SslContextFactory sslContextFactory = new SslContextFactory();
       this.httpClient = new HttpClient(sslContextFactory);
       this.httpClient.setFollowRedirects(false);
