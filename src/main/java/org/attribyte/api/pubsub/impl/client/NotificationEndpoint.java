@@ -112,7 +112,7 @@ public class NotificationEndpoint implements MetricSet {
       HandlerCollection serverHandlers = new HandlerCollection();
       server.setHandler(serverHandlers);
 
-      ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
+      ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
       rootContext.setContextPath("/");
 
       PingServlet pingServlet = new PingServlet();
