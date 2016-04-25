@@ -88,7 +88,7 @@ public class SubscriptionClient {
        * Throws an exception if this result is an error.
        * @throws Exception if the result is an error.
        */
-      public void throwException() throws Exception {
+      public void throwExceptionIfError() throws Exception {
          if(isError) {
             String message = Integer.toString(code);
             if(this.message.isPresent()) {
