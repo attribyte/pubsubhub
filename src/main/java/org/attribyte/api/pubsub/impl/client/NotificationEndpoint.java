@@ -58,12 +58,14 @@ public class NotificationEndpoint implements MetricSet {
       /**
        * Receive a notification.
        * @param notification The notification.
+       * @return Was the notification processed?
        */
-      public void notification(Notification notification);
+      public boolean notification(Notification notification);
    }
 
    /**
-    * Creates an endpoint.
+    * Creates an endpoint that uses an exponentially decaying reservoir for timers/histograms
+    * and allows notifications to be of unlimited size.
     * @param listenAddress The address to listen on.
     * @param listenPort The port to listen on.
     * @param endpointAuth Optional 'Basic' auth required for calls to the endpoint.
@@ -75,7 +77,7 @@ public class NotificationEndpoint implements MetricSet {
                                final Optional<BasicAuth> endpointAuth,
                                final Collection<Topic> topics,
                                final Callback callback) {
-      this(listenAddress, listenPort, endpointAuth, topics, callback, true, false);
+      this(listenAddress, listenPort, endpointAuth, topics, callback, true, false, Integer.MAX_VALUE);
    }
 
    /**
@@ -95,7 +97,8 @@ public class NotificationEndpoint implements MetricSet {
                                final Collection<Topic> topics,
                                final Callback callback,
                                final boolean exponentiallyDecayingReservoir,
-                               final boolean recordTotalLatency) {
+                               final boolean recordTotalLatency,
+                               final int maxNotificationSize) {
 
       this.server = new org.eclipse.jetty.server.Server();
       HttpConfiguration httpConfig = new HttpConfiguration();
@@ -119,7 +122,7 @@ public class NotificationEndpoint implements MetricSet {
       rootContext.addServlet(new ServletHolder(pingServlet), "/ping/*");
 
       this.notificationServlet = new NotificationEndpointServlet(topics, callback, endpointAuth.isPresent(),
-              exponentiallyDecayingReservoir, recordTotalLatency);
+              exponentiallyDecayingReservoir, recordTotalLatency, maxNotificationSize);
       this.metrics = notificationServlet.getMetrics();
       rootContext.addServlet(new ServletHolder(notificationServlet), "/*");
 

@@ -16,6 +16,7 @@
         <dependency org="org.eclipse.jetty" name="jetty-client" rev="9.3.8.v20160314" conf="compile->default"/>
         <dependency org="com.codahale.metrics" name="metrics-core" rev="3.0.2" conf="compile->default"/>
         <dependency org="com.codahale.metrics" name="metrics-servlets" rev="3.0.2" conf="compile->default"/>
+        <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.7.5" conf="compile->default"/>
     </dependencies>
 </ivy-module>
 

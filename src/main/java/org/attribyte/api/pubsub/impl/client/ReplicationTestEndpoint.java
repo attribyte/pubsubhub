@@ -18,7 +18,6 @@ package org.attribyte.api.pubsub.impl.client;
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.protobuf.ByteString;
 import org.attribyte.api.http.Header;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
@@ -90,7 +89,7 @@ public class ReplicationTestEndpoint {
               listenAddress, listenPort, endpointAuth, ImmutableList.of(replicationTopic),
               new NotificationEndpoint.Callback() {
                  @Override
-                 public void notification(final Notification notification) {
+                 public boolean notification(final Notification notification) {
                     byte[] body = notification.getContent().toByteArray();
                     System.out.println(new String(body, Charsets.UTF_8));
                     Collection<Header> headers = notification.getHeaders();
@@ -100,6 +99,7 @@ public class ReplicationTestEndpoint {
                        }
                     }
                     completeCount.incrementAndGet();
+                    return true;
                  }
               }
       );

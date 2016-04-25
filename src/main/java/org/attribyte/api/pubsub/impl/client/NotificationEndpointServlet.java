@@ -20,16 +20,20 @@ import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
+import com.codahale.metrics.Timer;
 import com.codahale.metrics.UniformReservoir;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Longs;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.impl.servlet.Bridge;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -38,7 +42,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 
@@ -50,32 +53,6 @@ import java.util.concurrent.ConcurrentMap;
 public class NotificationEndpointServlet extends HttpServlet implements MetricSet {
 
    /**
-    * Creates the servlet with unsubscribe disallowed, and pubsub latency
-    * collected with an exponentially decaying reservoir.
-    * @param topics The topics from which notifications are allowed.
-    * @param callback The callback that accepts notifications when they arrive.
-    */
-   public NotificationEndpointServlet(
-           final Collection<Topic> topics,
-           final NotificationEndpoint.Callback callback) {
-      this(topics, callback, false);
-   }
-
-   /**
-    * Creates the servlet with optional unsubscribe and pubsub latency
-    * collected with an exponentially decaying reservoir.
-    * @param topics The topics from which notifications are allowed.
-    * @param callback The callback that accepts notifications when they arrive.
-    * @param allowUnsubscribe Are unsubscribe requests allowed?
-    */
-   public NotificationEndpointServlet(
-           final Collection<Topic> topics,
-           final NotificationEndpoint.Callback callback,
-           final boolean allowUnsubscribe) {
-      this(topics, callback, allowUnsubscribe, true, false);
-   }
-
-   /**
     * Creates the servlet.
     * @param topics The topics from which notifications are allowed.
     * @param callback The callback that accepts notifications when they arrive.
@@ -83,13 +60,15 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
     * @param exponentiallyDecayingReservoir If <code>false</code>, a uniform reservoir is used for timers/histograms.
     * @param recordTotalLatency Should the total latency be recorded? This is likely to be inaccurate
     * unless the client and server are running on the same machine or are carefully synchronized.
+    * @param maxNotificationSize The maximum allowed size (bytes) for notifications.
     */
    public NotificationEndpointServlet(
            final Collection<Topic> topics,
            final NotificationEndpoint.Callback callback,
            final boolean allowUnsubscribe,
            final boolean exponentiallyDecayingReservoir,
-           final boolean recordTotalLatency) {
+           final boolean recordTotalLatency,
+           final int maxNotificationSize) {
       this.callback = callback;
       ImmutableMap.Builder<String, Topic> builder = ImmutableMap.builder();
       for(Topic topic : topics) {
@@ -107,13 +86,15 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
       }
       this.notificationSize = exponentiallyDecayingReservoir ?
               new Histogram(new ExponentiallyDecayingReservoir()) : new Histogram(new UniformReservoir());
+      this.maxNotificationSize = maxNotificationSize;
    }
 
    @Override
    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-      notificationCounter.inc();
+
+      final Timer.Context ctx = notifications.time();
       try {
-         Request notificationRequest = Bridge.fromServletRequest(request, 1024 * 1024);
+         Request notificationRequest = Bridge.fromServletRequest(request, maxNotificationSize);
          byte[] body = notificationRequest.body.toByteArray();
          notificationSize.update(body.length);
          String topicURL = request.getPathInfo();
@@ -125,28 +106,34 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
                totalLatency.update(System.currentTimeMillis() - pubsubReceivedMillis);
             }
          }
-         response.setStatus(HttpServletResponse.SC_ACCEPTED); //Accept anything to avoid hub retry on topics we aren't interested in...
          Topic topic = topics.get(topicURL);
          if(topic != null) {
             Notification notification = new Notification(topic, notificationRequest.getHeaders(), body);
-            callback.notification(notification);
+            boolean processed = callback.notification(notification);
+            if(processed) {
+               response.setStatus(HttpServletResponse.SC_ACCEPTED);
+            } else {
+               failedNotificationCounter.inc();
+               response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+         } else {
+            unknownTopicCounter.inc();
+            response.setStatus(HttpServletResponse.SC_ACCEPTED); //Accept anything to avoid hub retry on topics we aren't interested in...
          }
+      } catch(IOException e) {
+         logger.error("Notification error", e);
+         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
       } catch(Throwable t) {
-         t.printStackTrace();
+         logger.error("Notification error", t);
+         response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      } finally {
+         ctx.stop();
       }
    }
 
    private long timingHeader(final HttpServletRequest request, final String name) {
-      String headerVal = Strings.nullToEmpty(request.getHeader(name)).trim();
-      if(!headerVal.isEmpty()) {
-         try {
-            return Long.parseLong(headerVal);
-         } catch(NumberFormatException nfe) {
-            return 0L;
-         }
-      } else {
-         return 0L;
-      }
+      Long val = Longs.tryParse(Strings.nullToEmpty(request.getHeader(name)).trim());
+      return val != null ? val : 0L;
    }
 
    @Override
@@ -182,26 +169,33 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
    @Override
    public Map<String, Metric> getMetrics() {
       ImmutableMap.Builder<String, Metric> builder = ImmutableMap.builder();
-      builder.put("notifications-received", notificationCounter);
+      builder.put("notifications", notifications);
+      builder.put("failed-notifications", failedNotificationCounter);
       builder.put("subscription-verifications", subscriptionVerifications);
       builder.put("failed-subscription-verifications", failedSubscriptionVerifications);
       builder.put("publish-latency", publishLatency);
       if(totalLatency != null) builder.put("total-latency", totalLatency);
       builder.put("notification-size", notificationSize);
+      builder.put("unknown-topics", unknownTopicCounter);
       return builder.build();
    }
+
+   static final Logger logger = LoggerFactory.getLogger(NotificationEndpoint.class);
 
    private final Map<String, Topic> topics;
    private final NotificationEndpoint.Callback callback;
    private final ConcurrentMap<String, Topic> verifiedTopics = Maps.newConcurrentMap();
-   private final Set<String> allowedVerifyModes;
+   private final ImmutableSet<String> allowedVerifyModes;
+   private final int maxNotificationSize;
 
    final Histogram publishLatency;
    final Histogram totalLatency;
    final Histogram notificationSize;
-   final Counter notificationCounter = new Counter();
+   final Timer notifications = new Timer();
+   final Counter failedNotificationCounter = new Counter();
    final Counter subscriptionVerifications = new Counter();
    final Counter failedSubscriptionVerifications = new Counter();
+   final Counter unknownTopicCounter = new Counter();
 
 }
 

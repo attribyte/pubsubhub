@@ -152,11 +152,12 @@ public class TestEndpoint {
               listenAddress, listenPort, endpointAuth, ImmutableList.of(acceptTopic),
               new NotificationEndpoint.Callback() {
                  @Override
-                 public void notification(final Notification notification) {
+                 public boolean notification(final Notification notification) {
                     byte[] body = notification.getContent().toByteArray();
                     completeCount.incrementAndGet();
+                    return true;
                  }
-              }, false, true //Uniform reservoir, record total latency
+              }, false, true, Integer.MAX_VALUE //Uniform reservoir, record total latency, no limit on message size.
       );
 
       notificationEndpoint.start();
