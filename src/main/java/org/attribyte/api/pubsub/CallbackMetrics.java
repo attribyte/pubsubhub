@@ -17,7 +17,7 @@ public class CallbackMetrics implements MetricSet {
    /**
     * Specifies sort for metrics.
     */
-   public static enum Sort {
+   public enum Sort {
 
       /**
        * Sort by highest throughput.

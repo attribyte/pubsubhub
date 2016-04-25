@@ -230,7 +230,7 @@ public class Subscription {
    /**
     * Defines allowed subscription status.
     */
-   public static enum Status {
+   public enum Status {
 
       /**
        * Subscription is pending.

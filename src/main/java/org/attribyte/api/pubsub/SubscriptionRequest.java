@@ -21,7 +21,7 @@ package org.attribyte.api.pubsub;
  */
 public class SubscriptionRequest {
 
-   public static enum Mode {
+   public enum Mode {
 
       /**
        * Mode is 'subscribe'.
@@ -57,7 +57,7 @@ public class SubscriptionRequest {
    /**
     * The subscription status (verified or unverified).
     */
-   public static enum Status {
+   public enum Status {
       /**
        * Request is verified.
        */

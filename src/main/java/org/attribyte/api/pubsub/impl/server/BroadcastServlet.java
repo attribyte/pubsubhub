@@ -125,7 +125,7 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
       final int queueLimit = maxSavedNotifications * 2;
       final int drainTriggerLimit = queueLimit - maxSavedNotifications / 2;
 
-      this.recentNotifications = maxSavedNotifications > 0 ? new ArrayBlockingQueue<NotificationRecord>(queueLimit) : null;
+      this.recentNotifications = maxSavedNotifications > 0 ? new ArrayBlockingQueue<>(queueLimit) : null;
       this.recentNotificationsSize = new AtomicInteger();
       if(recentNotifications != null) {
          this.recentNotificationsMonitor = new Thread(new Runnable() {

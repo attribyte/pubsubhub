@@ -49,12 +49,7 @@ public class SubscriptionCache {
          this.evictionService = null;
       }
 
-      this.cacheSizeGauge = new Gauge<Integer>() {
-         @Override
-         public Integer getValue() {
-            return cache.size();
-         }
-      };
+      this.cacheSizeGauge = cache::size;
       this.requests = new Meter();
       this.hits = new Meter();
       this.hitRatio = new RatioGauge() {

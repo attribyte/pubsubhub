@@ -52,11 +52,8 @@ public class PingServlet extends HttpServlet {
       response.setStatus(200);
       response.setHeader(CACHE_CONTROL_HEADER, NO_CACHE_VALUE);
       response.setContentType(CONTENT_TYPE);
-      PrintWriter writer = response.getWriter();
-      try {
+      try(PrintWriter writer = response.getWriter()) {
          writer.println(nameJoiner.join(getPublicNames()));
-      } finally {
-         writer.close();
       }
    }
 

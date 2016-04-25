@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Longs;
 import org.attribyte.api.Logger;
 import org.attribyte.api.http.AuthScheme;
 import org.attribyte.api.http.impl.BasicAuthScheme;
@@ -64,6 +65,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.attribyte.api.pubsub.impl.server.util.ServerUtil.splitPath;
 
@@ -91,7 +93,7 @@ public class AdminServlet extends HttpServlet {
       this.templateGroup.registerRenderer(java.util.Date.class, new DateRenderer());
 
       File globalConstantsFile = new File(templateDirectory, "constants.stg");
-      STGroupFile globalConstants = null;
+      STGroupFile globalConstants;
       if(globalConstantsFile.exists()) {
          globalConstants = new STGroupFile(globalConstantsFile.getAbsolutePath());
          this.templateGroup.importTemplates(globalConstants);
@@ -108,9 +110,7 @@ public class AdminServlet extends HttpServlet {
       if(obj != null) {
          if(obj.equals("cache")) {
             endpoint.invalidateCaches();
-            for(Invalidatable item : invalidateItems) {
-               item.invalidate();
-            }
+            invalidateItems.forEach(Invalidatable::invalidate);
             response.setStatus(HttpServletResponse.SC_OK);
          } else {
             sendNotFound(response);
@@ -126,12 +126,16 @@ public class AdminServlet extends HttpServlet {
       List<String> path = splitPath(request);
       String obj = path.size() > 0 ? path.get(0) : null;
       if(obj != null) {
-         if(obj.equals("subscription")) {
-            postSubscriptionEdit(request, path.size() > 1 ? path.get(1) : null, response);
-         } else if(obj.equals("topic")) {
-            postTopicAdd(request, response);
-         } else {
-            sendNotFound(response);
+         switch(obj) {
+            case "subscription":
+               postSubscriptionEdit(request, path.size() > 1 ? path.get(1) : null, response);
+               break;
+            case "topic":
+               postTopicAdd(request, response);
+               break;
+            default:
+               sendNotFound(response);
+               break;
          }
       } else {
          sendNotFound(response);
@@ -168,21 +172,21 @@ public class AdminServlet extends HttpServlet {
          renderAllSubscriptions(request, activeOnly, response);
       } else if(obj.equals("metrics")) {
          if(path.size() > 1) {
-            renderCallbackMetricsDetail(request, path.get(1), response);
+            renderCallbackMetricsDetail(path.get(1), response);
          } else {
-            renderCallbackMetrics(request, response);
+            renderCallbackMetrics(response);
          }
       } else if(obj.equals("nmetrics")) {
          if(path.size() > 1) {
             long topicId = Long.parseLong(path.get(1));
-            renderNotificationMetricsDetail(request, topicId, response);
+            renderNotificationMetricsDetail(topicId, response);
          } else {
-            renderNotificationMetrics(request, response);
+            renderNotificationMetrics(response);
          }
       } else if(obj.equals("notifications")) {
-         renderNotifications(request, response);
+         renderNotifications(response);
       } else if(obj.equals("subscription_events")) {
-         renderSubscriptionEvents(request, response);
+         renderSubscriptionEvents(response);
       } else {
          sendNotFound(response);
       }
@@ -193,6 +197,11 @@ public class AdminServlet extends HttpServlet {
 
       ST mainTemplate = getTemplate("main");
       ST subscriberTemplate = getTemplate("subscribers");
+
+      if(mainTemplate == null || subscriberTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
 
       try {
          Paging paging = getPaging(request);
@@ -220,6 +229,11 @@ public class AdminServlet extends HttpServlet {
 
       ST mainTemplate = getTemplate("main");
       ST subscriberTemplate = getTemplate("topics");
+
+      if(mainTemplate == null || subscriberTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
 
       try {
 
@@ -276,6 +290,11 @@ public class AdminServlet extends HttpServlet {
       ST mainTemplate = getTemplate("main");
       ST subscriptionsTemplate = getTemplate("topic_subscriptions");
 
+      if(mainTemplate == null || subscriptionsTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
+
       try {
          long topicId = Long.parseLong(topicIdStr);
          Topic topic = datastore.getTopic(topicId);
@@ -312,6 +331,11 @@ public class AdminServlet extends HttpServlet {
       ST mainTemplate = getTemplate("main");
       ST subscriptionsTemplate = getTemplate("host_subscriptions");
 
+      if(mainTemplate == null || subscriptionsTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
+
       try {
          Paging paging = getPaging(request);
          List<Subscription> subscriptions = datastore.getHostSubscriptions(host, getSubscriptionStatus(request, activeOnly),
@@ -340,6 +364,11 @@ public class AdminServlet extends HttpServlet {
 
       ST mainTemplate = getTemplate("main");
       ST subscriptionsTemplate = getTemplate("all_subscriptions");
+
+      if(mainTemplate == null || subscriptionsTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
 
       try {
 
@@ -380,7 +409,7 @@ public class AdminServlet extends HttpServlet {
     * @param pageList The list of objects.
     * @return The new paging.
     */
-   private Paging nextPaging(final Paging currPage, final List<? extends Object> pageList) {
+   private Paging nextPaging(final Paging currPage, final List<?> pageList) {
       if(pageList.size() > maxPerPage) {
          while(pageList.size() > maxPerPage) pageList.remove(pageList.size() - 1);
          return new Paging(currPage.getCurr(), maxPerPage, true);
@@ -389,11 +418,15 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
-   private void renderCallbackMetrics(final HttpServletRequest request,
-                                      final HttpServletResponse response) throws IOException {
+   private void renderCallbackMetrics(final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
       ST metricsTemplate = getTemplate("callback_metrics");
+
+      if(mainTemplate == null || metricsTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
 
       try {
 
@@ -402,9 +435,7 @@ public class AdminServlet extends HttpServlet {
 
          List<DisplayCallbackMetrics> displayMetrics = Lists.newArrayListWithCapacity(metrics.size() + 1);
          displayMetrics.add(new DisplayCallbackMetrics("[all]", globalMetrics));
-         for(HostCallbackMetrics hcm : metrics) {
-            displayMetrics.add(new DisplayCallbackMetrics(hcm.host, hcm));
-         }
+         displayMetrics.addAll(metrics.stream().map(hcm -> new DisplayCallbackMetrics(hcm.host, hcm)).collect(Collectors.toList()));
          metricsTemplate.add("metrics", displayMetrics);
          mainTemplate.add("content", metricsTemplate.render());
          response.setContentType("text/html");
@@ -418,27 +449,32 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
-   private void renderCallbackMetricsDetail(final HttpServletRequest request,
-                                            final String hostOrId,
+   private void renderCallbackMetricsDetail(final String hostOrId,
                                             final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
       ST metricsTemplate = getTemplate("metrics_detail");
 
+      if(mainTemplate == null || metricsTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
+
       try {
          final CallbackMetrics detailMetrics;
          final String title;
 
-         long subscriptionId = 0L;
-         if(hostOrId != null) {
-            try {
-               subscriptionId = Long.parseLong(hostOrId);
-            } catch(NumberFormatException ne) {
-               subscriptionId = 0L;
-            }
+         final String host;
+         final long subscriptionId;
+         Long maybeSubscriptionId = hostOrId == null ? null : Longs.tryParse(hostOrId);
+         if(maybeSubscriptionId != null) {
+            subscriptionId = maybeSubscriptionId;
+            host = null;
+         } else {
+            subscriptionId = 0L;
+            host = hostOrId;
          }
 
-         final String host = hostOrId;
          if(subscriptionId > 0) {
             Subscription subscription = datastore.getSubscription(subscriptionId);
             if(subscription != null) {
@@ -468,11 +504,15 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
-   private void renderNotificationMetrics(final HttpServletRequest request,
-                                          final HttpServletResponse response) throws IOException {
+   private void renderNotificationMetrics(final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
       ST metricsTemplate = getTemplate("notification_metrics");
+
+      if(mainTemplate == null || metricsTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
 
       try {
          NotificationMetrics globalMetrics = endpoint.getGlobalNotificationMetrics();
@@ -497,12 +537,16 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
-   private void renderNotificationMetricsDetail(final HttpServletRequest request,
-                                                final long topicId,
+   private void renderNotificationMetricsDetail(final long topicId,
                                                 final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
       ST metricsTemplate = getTemplate("notification_metrics_detail");
+
+      if(mainTemplate == null || metricsTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
 
       try {
          final NotificationMetrics detailMetrics;
@@ -534,11 +578,16 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
-   private void renderSubscriptionEvents(final HttpServletRequest request,
-                                         final HttpServletResponse response) throws IOException {
+   private void renderSubscriptionEvents(final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
       ST notificationsTemplate = getTemplate("latest_subscription_events");
+
+      if(mainTemplate == null || notificationsTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
+
 
       try {
          List<SubscriptionEvent> subscriptionRequestRecords = subscriptionRequestsSource.latestEvents(100);
@@ -553,11 +602,15 @@ public class AdminServlet extends HttpServlet {
       }
    }
 
-   private void renderNotifications(final HttpServletRequest request,
-                                    final HttpServletResponse response) throws IOException {
+   private void renderNotifications(final HttpServletResponse response) throws IOException {
 
       ST mainTemplate = getTemplate("main");
       ST notificationsTemplate = getTemplate("latest_notifications");
+
+      if(mainTemplate == null || notificationsTemplate == null) {
+         response.sendError(500, "Missing templates");
+         return;
+      }
 
       try {
 
@@ -586,7 +639,7 @@ public class AdminServlet extends HttpServlet {
             response.setStatus(200);
             response.getWriter().println("false");
          } else {
-            topic = datastore.getTopic(url.trim(), true);
+            datastore.getTopic(url.trim(), true); //Created
             response.setStatus(201);
             response.getWriter().println("true");
          }
@@ -638,7 +691,7 @@ public class AdminServlet extends HttpServlet {
             String callbackUsername = Strings.nullToEmpty(request.getParameter("callbackUsername")).trim();
             String callbackPassword = Strings.nullToEmpty(request.getParameter("callbackPassword")).trim();
 
-            Subscriber newSubscriber = null;
+            Subscriber newSubscriber;
 
             if(callbackUsername.length() > 0 && callbackPassword.length() > 0) {
                AuthScheme authScheme = datastore.resolveAuthScheme("Basic");
@@ -766,7 +819,7 @@ public class AdminServlet extends HttpServlet {
          builder.setStatus(status);
          builder.setLeaseSeconds(extendLeaseSeconds);
          builder.setSecret(hubSecret);
-         Subscription updatedSubscription = datastore.updateSubscription(builder.create(), status == Subscription.Status.ACTIVE);
+         datastore.updateSubscription(builder.create(), status == Subscription.Status.ACTIVE); //Updated...
          response.setStatus(201);
          response.getWriter().print("ok");
       } catch(IOException ioe) {

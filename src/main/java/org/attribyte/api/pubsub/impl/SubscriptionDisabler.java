@@ -26,7 +26,7 @@ public class SubscriptionDisabler implements DisableSubscriptionStrategy {
    /**
     * The window used for rate measurements.
     */
-   private static enum RateWindow {
+   private enum RateWindow {
       ONE_MINUTE, FIVE_MINUTE, FIFTEEN_MINUTE
    }
 

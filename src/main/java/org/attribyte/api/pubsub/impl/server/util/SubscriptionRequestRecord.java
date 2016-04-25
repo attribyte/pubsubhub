@@ -24,7 +24,6 @@ import org.attribyte.api.pubsub.Subscriber;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.List;
 
 /**
  * Optionally record subscription requests for logging, debugging.

@@ -39,7 +39,6 @@ import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 import org.attribyte.util.URIEncoder;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -403,7 +402,7 @@ public class HubEndpoint implements MetricSet {
 
             if(maxNotifierQueueSize > 0) {
 
-               final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(maxNotifierQueueSize, false); //Fair
+               final BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(maxNotifierQueueSize, false); //Fair
                notifierServiceQueueSize = new CachedGauge<Integer>(15, TimeUnit.SECONDS) {
                   @Override
                   protected Integer loadValue() {
@@ -417,7 +416,7 @@ public class HubEndpoint implements MetricSet {
                        new ThreadPoolExecutor.AbortPolicy());
             } else {
 
-               final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
+               final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
                notifierServiceQueueSize = new CachedGauge<Integer>(15, TimeUnit.SECONDS) {
                   @Override
                   protected Integer loadValue() {
@@ -444,7 +443,7 @@ public class HubEndpoint implements MetricSet {
                initUtil.throwPositiveIntRequiredException("maxConcurrentCallbacks");
             }
 
-            final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
+            final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
             callbackServiceQueueSize = new CachedGauge<Integer>(15, TimeUnit.SECONDS) {
                @Override
                protected Integer loadValue() {
@@ -502,12 +501,12 @@ public class HubEndpoint implements MetricSet {
 
             if(maxVerifierQueueSize > 0) {
                verifierService = new ThreadPoolExecutor(baseConcurrentVerifiers > 0 ? baseConcurrentVerifiers : 1, maxConcurrentVerifiers,
-                       verifierThreadKeepAliveMinutes, TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(maxVerifierQueueSize, true),
+                       verifierThreadKeepAliveMinutes, TimeUnit.MINUTES, new ArrayBlockingQueue<>(maxVerifierQueueSize, true),
                        new ThreadFactoryBuilder().setNameFormat("verifier-executor-%d").build(),
                        new ThreadPoolExecutor.AbortPolicy());
             } else {
                verifierService = new ThreadPoolExecutor(maxConcurrentVerifiers, maxConcurrentVerifiers,
-                       verifierThreadKeepAliveMinutes, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>(),
+                       verifierThreadKeepAliveMinutes, TimeUnit.MINUTES, new LinkedBlockingQueue<>(),
                        new ThreadFactoryBuilder().setNameFormat("verifier-executor-%d").build(),
                        new ThreadPoolExecutor.AbortPolicy());
             }
@@ -548,14 +547,14 @@ public class HubEndpoint implements MetricSet {
 
          List<Object> topicURLFilterObjects = initUtil.initClassList("topicURLFilters", URLFilter.class);
          if(topicURLFilterObjects.size() > 0) {
-            topicURLFilters = new ArrayList<URLFilter>(topicURLFilterObjects.size() + 1);
+            topicURLFilters = Lists.newArrayListWithExpectedSize(topicURLFilterObjects.size() + 1);
             topicURLFilters.add(new FragmentRejectFilter());
             for(Object o : topicURLFilterObjects) {
                topicURLFilters.add((URLFilter)o);
             }
             topicURLFilters = Collections.unmodifiableList(topicURLFilters);
          } else {
-            topicURLFilters = new ArrayList<URLFilter>(1);
+            topicURLFilters = Lists.newArrayListWithExpectedSize(1);
             topicURLFilters.add(new FragmentRejectFilter());
             topicURLFilters = Collections.unmodifiableList(topicURLFilters);
          }
@@ -566,14 +565,14 @@ public class HubEndpoint implements MetricSet {
 
          List<Object> callbackURLFilterObjects = initUtil.initClassList("callbackURLFilters", URLFilter.class);
          if(callbackURLFilterObjects.size() > 0) {
-            callbackURLFilters = new ArrayList<URLFilter>(callbackURLFilterObjects.size() + 1);
+            callbackURLFilters = Lists.newArrayListWithExpectedSize(callbackURLFilterObjects.size() + 1);
             callbackURLFilters.add(new FragmentRejectFilter());
             for(Object o : callbackURLFilterObjects) {
                callbackURLFilters.add((URLFilter)o);
             }
             callbackURLFilters = Collections.unmodifiableList(callbackURLFilters);
          } else {
-            callbackURLFilters = new ArrayList<URLFilter>(1);
+            callbackURLFilters = Lists.newArrayListWithExpectedSize(1);
             callbackURLFilters.add(new FragmentRejectFilter());
             callbackURLFilters = Collections.unmodifiableList(callbackURLFilters);
          }
@@ -752,7 +751,7 @@ public class HubEndpoint implements MetricSet {
          }
       }
 
-      String callbackURL = null;
+      String callbackURL;
 
       try {
          callbackURL = urlDecoder.recode(request.getParameterValue(SUBSCRIPTION_CALLBACK_PARAMETER));

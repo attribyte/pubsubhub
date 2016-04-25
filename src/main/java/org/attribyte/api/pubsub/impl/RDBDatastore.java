@@ -94,12 +94,7 @@ public abstract class RDBDatastore implements HubDatastore {
       if(connectionSourceMetrics != null) {
          metricsMap.put("connection-pool", connectionSourceMetrics);
       }
-      return new MetricSet() {
-         @Override
-         public Map<String, Metric> getMetrics() {
-            return metricsMap.build();
-         }
-      };
+      return metricsMap::build;
    }
 
 

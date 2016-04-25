@@ -110,7 +110,7 @@ public class Server {
       final int MAX_STORED_SUBSCRIPTION_REQUESTS = 200;
 
       final ArrayBlockingQueue<SubscriptionEvent> recentSubscriptionRequests =
-              new ArrayBlockingQueue<SubscriptionEvent>(MAX_STORED_SUBSCRIPTION_REQUESTS);
+              new ArrayBlockingQueue<>(MAX_STORED_SUBSCRIPTION_REQUESTS);
 
       final HubEndpoint.EventHandler hubEventHandler = new HubEndpoint.EventHandler() {
          private synchronized void offer(SubscriptionEvent record) {
@@ -181,7 +181,7 @@ public class Server {
       /**
        * A queue to which new topics are added as reported by the datastore event handler.
        */
-      final BlockingQueue<Topic> newTopicQueue = new LinkedBlockingDeque<Topic>();
+      final BlockingQueue<Topic> newTopicQueue = new LinkedBlockingDeque<>();
 
       /**
        * A datastore event handler that offers new topics to a queue.
@@ -290,7 +290,7 @@ public class Server {
       HandlerCollection serverHandlers = new HandlerCollection();
       server.setHandler(serverHandlers);
 
-      ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
+      ServletContextHandler rootContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
       rootContext.setContextPath("/");
 
       final AdminConsole adminConsole;

@@ -32,7 +32,7 @@ public final class Topic {
    /**
     * The distribution topology.
     */
-   public static enum Topology {
+   public enum Topology {
       /**
        * Broadcast to all subscribers (the default).
        */
