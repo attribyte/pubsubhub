@@ -15,6 +15,7 @@
 
 package org.attribyte.api.pubsub.impl.client;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
@@ -82,6 +83,30 @@ public class SubscriptionClient {
        * An optional error cause.
        */
       public final Optional<Throwable> cause;
+
+      /**
+       * Throws an exception if this result is an error.
+       * @throws Exception if the result is an error.
+       */
+      public void throwException() throws Exception {
+         if(isError) {
+            String message = Integer.toString(code);
+            if(this.message.isPresent()) {
+               message = message + " - " + this.message.get();
+            }
+            throw cause.isPresent() ? new Exception(message, cause.get()) : new Exception(message);
+         }
+      }
+
+      @Override
+      public String toString() {
+         return MoreObjects.toStringHelper(this)
+                 .add("code", code)
+                 .add("isError", isError)
+                 .add("message", message)
+                 .add("cause", cause)
+                 .toString();
+      }
    }
 
    /**
