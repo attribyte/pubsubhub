@@ -105,7 +105,7 @@ public class HubServlet extends HttpServlet {
       if(isShutdown.compareAndSet(false, true)) {
          logger.info("Shutting down broadcast servlet...");
          endpoint.shutdown();
-         logger.info("Broadcast servlet shutdown.");
+         logger.info("Hub servlet shutdown.");
       }
    }
 
