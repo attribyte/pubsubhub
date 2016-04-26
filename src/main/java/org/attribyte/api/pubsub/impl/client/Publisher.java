@@ -17,6 +17,7 @@ package org.attribyte.api.pubsub.impl.client;
 
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
@@ -28,6 +29,10 @@ import java.util.Map;
  */
 public interface Publisher extends MetricSet {
 
+   /**
+    * A notification sent to a hub to be broadcast
+    * to all subscribers.
+    */
    public static class Notification {
 
       /**
@@ -40,8 +45,23 @@ public interface Publisher extends MetricSet {
          this.content = content;
       }
 
+      /**
+       * The hub URL that accepts the notification for broadcast.
+       */
       public final String url;
+
+      /**
+       * The notification content.
+       */
       public final ByteString content;
+
+      @Override
+      public String toString() {
+         return MoreObjects.toStringHelper(this)
+                 .add("url", url)
+                 .add("content", content)
+                 .toString();
+      }
    }
 
    /**
@@ -81,6 +101,17 @@ public interface Publisher extends MetricSet {
        * The optionally included notification associated with the (error) result.
        */
       public final Optional<Notification> notification;
+
+      @Override
+      public String toString() {
+         return MoreObjects.toStringHelper(this)
+                 .add("code", code)
+                 .add("isError", isError)
+                 .add("message", message)
+                 .add("cause", cause)
+                 .add("notification", notification)
+                 .toString();
+      }
    }
 
    /**
@@ -114,7 +145,7 @@ public interface Publisher extends MetricSet {
    public Map<String, Metric> getMetrics();
 
    /**
-    * The HTTP 'Accepted' code (202).
+    * The HTTP accepted code (202).
     */
    static final int HTTP_ACCEPTED = 202;
 

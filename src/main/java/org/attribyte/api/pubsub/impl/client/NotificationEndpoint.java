@@ -45,7 +45,9 @@ import java.util.Map;
  * by listening on a configured address and port.
  * <p>
  * Notifications are reported as they are received to the
- * configured callback.
+ * configured callback. The endpoint derives the topic
+ * name from the path (<code>getPathInfo</code>)
+ * where the notification was received.
  * </p>
  */
 public class NotificationEndpoint implements MetricSet {

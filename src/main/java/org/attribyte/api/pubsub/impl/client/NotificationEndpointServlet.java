@@ -54,7 +54,8 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
 
    /**
     * Creates the servlet.
-    * @param topics The topics from which notifications are allowed.
+    * @param topics The topics from which notifications are allowed. The path where
+    *               a notification is received must match a configured topic name for notification to occur.
     * @param callback The callback that accepts notifications when they arrive.
     * @param allowUnsubscribe Are unsubscribe requests allowed?
     * @param exponentiallyDecayingReservoir If <code>false</code>, a uniform reservoir is used for timers/histograms.
