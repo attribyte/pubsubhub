@@ -34,17 +34,22 @@ import java.util.Set;
 @SuppressWarnings("serial")
 public class PingServlet extends HttpServlet {
 
-
-   public PingServlet(final String instanceName) {
+   /**
+    * Creates the servlet.
+    * @param instanceName The instance name.
+    * @param enumerateInterfaces Should network interface names be enumerated?
+    */
+   public PingServlet(final String instanceName, final boolean enumerateInterfaces) {
       this.instanceName = instanceName;
+      this.enumerateInterfaces = enumerateInterfaces;
    }
-
 
    private static final String CONTENT_TYPE = "text/plain";
    private static final String CACHE_CONTROL_HEADER = "Cache-Control";
    private static final String NO_CACHE_VALUE = "must-revalidate,no-cache,no-store";
    private static final Joiner nameJoiner = Joiner.on(',').skipNulls();
    private final String instanceName;
+   private final boolean enumerateInterfaces;
 
    @Override
    protected void doGet(HttpServletRequest request,
@@ -70,34 +75,35 @@ public class PingServlet extends HttpServlet {
          names.add(instanceName);
       }
 
-      try {
-         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-         while(interfaces.hasMoreElements()) {
-            NetworkInterface iface = interfaces.nextElement();
-            if(!iface.isLoopback() && !iface.isPointToPoint() && !iface.isVirtual() && iface.isUp()) {
-               for(final InterfaceAddress interfaceAddress : iface.getInterfaceAddresses()) {
-                  InetAddress addy = interfaceAddress.getAddress();
-                  if(!addy.isLoopbackAddress() &&
-                          !addy.isMulticastAddress() &&
-                          !addy.isLinkLocalAddress() &&
-                          !addy.isSiteLocalAddress() &&
-                          !addy.isAnyLocalAddress()) {
-                     String hostAddress = addy.getHostAddress();
-                     if(!hostAddress.contains("%")) {
-                        names.add(hostAddress);
-                        String hostname = addy.getHostName();
-                        if(hostname != null) {
-                           names.add(hostname);
+      if(enumerateInterfaces) {
+         try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while(interfaces.hasMoreElements()) {
+               NetworkInterface iface = interfaces.nextElement();
+               if(!iface.isLoopback() && !iface.isPointToPoint() && !iface.isVirtual() && iface.isUp()) {
+                  for(final InterfaceAddress interfaceAddress : iface.getInterfaceAddresses()) {
+                     InetAddress addy = interfaceAddress.getAddress();
+                     if(!addy.isLoopbackAddress() &&
+                             !addy.isMulticastAddress() &&
+                             !addy.isLinkLocalAddress() &&
+                             !addy.isSiteLocalAddress() &&
+                             !addy.isAnyLocalAddress()) {
+                        String hostAddress = addy.getHostAddress();
+                        if(!hostAddress.contains("%")) {
+                           names.add(hostAddress);
+                           String hostname = addy.getHostName();
+                           if(hostname != null) {
+                              names.add(hostname);
+                           }
                         }
                      }
                   }
                }
             }
+         } catch(SocketException se) {
+            //Ignore
          }
-      } catch(SocketException se) {
-         //Ignore
       }
-
       return names;
    }
 

@@ -467,7 +467,8 @@ public class Server {
       rootContext.setInitParameter(MetricsServlet.SHOW_SAMPLES, "false");
       rootContext.addServlet(metricsServletHolder, "/metrics/*");
 
-      PingServlet pingServlet = new PingServlet(props.getProperty("http.instanceName", ""));
+      boolean outputHostAddys = props.getProperty("ping.outputHostAddresses", "false").equalsIgnoreCase("true");
+      PingServlet pingServlet = new PingServlet(props.getProperty("http.instanceName", ""), outputHostAddys);
       rootContext.addServlet(new ServletHolder(pingServlet), "/ping/*");
 
       HealthCheckServlet healthCheckServlet = new HealthCheckServlet(healthCheckRegistry);
