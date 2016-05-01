@@ -77,6 +77,7 @@ or on-disk.
 ##Framework Dependencies
 
 * [Attribyte http-model](https://github.com/attribyte/http-model)
+* [Attribyte http-relay](https://github.com/attribyte/http-relay)
 * [Attribyte shared-base](https://github.com/attribyte/shared-base)
 * [Apache commons-codec](http://commons.apache.org/proper/commons-codec/)
 * [Google Guava](https://code.google.com/p/guava-libraries/)
@@ -94,7 +95,7 @@ or on-disk.
 
 ##License
 
-Copyright 2010, 2015 [Attribyte, LLC](https://attribyte.com)
+Copyright 2010, 2016 [Attribyte, LLC](https://attribyte.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
