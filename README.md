@@ -25,8 +25,6 @@ are available:
 * `javadoc` - Generates javadoc.
 * `cleandoc` - Removes generated javadoc.
 
-For Scala users, an sbt build is also available.
-
 ##H2 Quick Start
 
 [H2](http://www.h2database.com/html/main.html) is an embedded database that can store tables in-memory
