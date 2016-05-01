@@ -44,20 +44,6 @@ or on-disk.
 * View metrics `http://localhost:8086/metrics`.
 * Stop the server: `bin/stop`
 
-##H2 + SBT Quick Start
-
-* Build: sbt xitrum-package
-* Create an install-specific config: `cp config/example.h2.properties config/local.properties`
-* The default settings use an in-memory database that is destroyed on restart. If you wish to persist
-  subscriptions, use the alternate `endpoint.acp.connection.pubsub.connectionString` property with
-  a local directory.
-* Start the server: `bin/start`
-* Verify that the server is running `http://localhost:8086/health`
-* Run a performance test: `bin/test`
-* View metrics `http://localhost:8086/metrics`.
-* Stop the server: `bin/stop`
-
-
 ##MySQL Quick Start
 
 * If ivy is not installed with your ant distribution: `ant init-ivy`
