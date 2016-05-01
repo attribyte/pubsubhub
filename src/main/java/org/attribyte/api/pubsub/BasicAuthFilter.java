@@ -15,6 +15,8 @@
 
 package org.attribyte.api.pubsub;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
@@ -30,7 +32,7 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 /**
- * A filter that rejects URLs that contain a fragment (#).
+ * A filter that enforces HTTP Basic auth.
  */
 public class BasicAuthFilter implements URLFilter {
 
@@ -100,18 +102,19 @@ public class BasicAuthFilter implements URLFilter {
       Map<String, Properties> filterPropertyMap = new InitUtil("basicauth.", props, false).split();
       List<String> keys = Lists.newArrayList(filterPropertyMap.keySet());
       Collections.sort(keys);
-      patterns = Lists.newArrayListWithCapacity(keys.size());
+      List<PatternAuth> patterns = Lists.newArrayListWithCapacity(keys.size());
       for(String filterKey : keys) {
          Properties filterProps = filterPropertyMap.get(filterKey);
          String pattern = filterProps.getProperty("pattern");
          String username = filterProps.getProperty("username");
          String password = filterProps.getProperty("password");
-         if(StringUtil.hasContent(pattern) &&
-                 StringUtil.hasContent(username) &&
-                 StringUtil.hasContent(password)) {
+         if(!Strings.isNullOrEmpty(pattern) &&
+                 !Strings.isNullOrEmpty(username) &&
+                 !Strings.isNullOrEmpty(password)) {
             patterns.add(new PatternAuth(Pattern.compile(pattern), username, password));
          }
       }
+      this.patterns = ImmutableList.copyOf(patterns);
    }
 
    @Override
@@ -120,5 +123,5 @@ public class BasicAuthFilter implements URLFilter {
    /**
     * The list of patterns.
     */
-   private List<PatternAuth> patterns;
+   private ImmutableList<PatternAuth> patterns;
 }

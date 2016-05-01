@@ -28,6 +28,7 @@ import org.attribyte.api.Logger;
 import org.attribyte.api.http.Header;
 import org.attribyte.api.http.Response;
 import org.attribyte.api.http.ResponseBuilder;
+import org.attribyte.api.http.impl.BasicAuthScheme;
 import org.attribyte.api.http.impl.servlet.Bridge;
 import org.attribyte.api.pubsub.BasicAuthFilter;
 import org.attribyte.api.pubsub.HubDatastore;
@@ -35,7 +36,6 @@ import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.NotificationMetrics;
 import org.attribyte.api.pubsub.Topic;
-import org.attribyte.api.pubsub.impl.client.BasicAuth;
 import org.attribyte.api.pubsub.impl.server.util.NotificationRecord;
 import org.attribyte.api.pubsub.impl.server.util.ServerUtil;
 
@@ -176,7 +176,7 @@ public class BroadcastServlet extends ServletBase implements NotificationRecord.
       Response endpointResponse;
       if(topicURL != null) {
          if(filters.size() > 0) {
-            String checkHeader = request.getHeader(BasicAuth.AUTH_HEADER_NAME);
+            String checkHeader = request.getHeader(BasicAuthScheme.AUTH_HEADER);
             for(BasicAuthFilter filter : filters) {
                if(filter.reject(topicURL, checkHeader)) {
                   logNotification(request, topicURL, Response.Code.UNAUTHORIZED, broadcastContent);

@@ -15,6 +15,7 @@
 
 package org.attribyte.api.pubsub;
 
+import com.google.common.base.Strings;
 import org.attribyte.util.StringUtil;
 
 import java.util.Date;
@@ -307,7 +308,7 @@ public class Subscription {
          throw new UnsupportedOperationException("Topic must not be null");
       }
 
-      if(!StringUtil.hasContent(callbackURL)) {
+      if(Strings.isNullOrEmpty(callbackURL)) {
          throw new UnsupportedOperationException("Callback URL must not be null or empty");
       }
 
@@ -346,7 +347,7 @@ public class Subscription {
          throw new UnsupportedOperationException("Topic must not be null");
       }
 
-      if(!StringUtil.hasContent(callbackURL)) {
+      if(Strings.isNullOrEmpty(callbackURL)) {
          throw new UnsupportedOperationException("Callback URL must not be null or empty");
       }
 

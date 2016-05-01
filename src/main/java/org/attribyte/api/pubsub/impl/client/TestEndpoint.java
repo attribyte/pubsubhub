@@ -16,14 +16,20 @@
 package org.attribyte.api.pubsub.impl.client;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
+import org.attribyte.api.http.Header;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
+import org.attribyte.relay.AsyncPublisher;
+import org.attribyte.relay.Publisher;
 import org.attribyte.util.InitUtil;
 import org.attribyte.util.StringUtil;
 
 import java.io.FileInputStream;
+import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -114,7 +120,7 @@ public class TestEndpoint {
       }
 
       String hubTopic = props.getProperty("hub.topic");
-      if(!StringUtil.hasContent(hubTopic)) {
+      if(Strings.isNullOrEmpty(hubTopic)) {
          System.err.println("The 'hub.topic' must be specified");
          System.exit(1);
       }
@@ -125,11 +131,14 @@ public class TestEndpoint {
 
       String hubUsername = props.getProperty("hub.username");
       String hubPassword = props.getProperty("hub.password");
+      final List<Header> hubHeaders;
       final Optional<BasicAuth> hubAuth;
       if(hubUsername != null && hubPassword != null) {
          hubAuth = Optional.of(new BasicAuth(hubUsername, hubPassword));
+         hubHeaders = ImmutableList.of(new Header(BasicAuth.AUTH_HEADER_NAME, hubAuth.get().headerValue));
       } else {
          hubAuth = Optional.absent();
+         hubHeaders = ImmutableList.of();
       }
 
       String notificationURL = hubURL + "/notify" + hubTopic;
@@ -140,7 +149,7 @@ public class TestEndpoint {
       String endpointUsername = props.getProperty("endpoint.username");
       String endpointPassword = props.getProperty("endpoint.password");
       final Optional<BasicAuth> endpointAuth;
-      if(StringUtil.hasContent(endpointUsername) && StringUtil.hasContent(endpointPassword)) {
+      if(!Strings.isNullOrEmpty(endpointUsername) && !Strings.isNullOrEmpty(endpointPassword)) {
          endpointAuth = Optional.of(new BasicAuth(endpointUsername, endpointPassword));
       } else {
          endpointAuth = Optional.absent();
@@ -200,7 +209,7 @@ public class TestEndpoint {
       int numPublisherProcessors = Integer.parseInt(props.getProperty("publisher.numProcessors", "4"));
       int publisherQueueSize = Integer.parseInt(props.getProperty("publisher.QueueSize", "0"));
 
-      final AsyncPublisher publisher = new AsyncPublisher(numPublisherProcessors, publisherQueueSize, 10); //10s timeout
+      final AsyncPublisher publisher = new AsyncPublisher(numPublisherProcessors, publisherQueueSize, 10, ImmutableSet.of(Publisher.HTTP_ACCEPTED)); //10s timeout
       publisher.start();
 
       int numNotifications = Integer.parseInt(props.getProperty("test.numNotifications", "100000"));
@@ -217,7 +226,7 @@ public class TestEndpoint {
 
          for(int i = 0; i < numNotifications; i++) {
             if(i % 100 == 0) System.out.println("Queued " + i + " notifications...");
-            publisher.enqueueNotification(notifications[rnd.nextInt(numVariations)], hubAuth);
+            publisher.enqueueNotification(notifications[rnd.nextInt(numVariations)], hubHeaders);
          }
 
          long completeMillis = 0L;

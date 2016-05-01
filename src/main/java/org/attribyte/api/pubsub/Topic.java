@@ -15,6 +15,7 @@
 
 package org.attribyte.api.pubsub;
 
+import com.google.common.base.Strings;
 import org.attribyte.util.StringUtil;
 
 import java.util.Date;
@@ -129,7 +130,7 @@ public final class Topic {
     * @param topology The distribution topology.
     */
    public Topic(final String topicURL, final long id, final Date createTime, final Topology topology) {
-      if(!StringUtil.hasContent(topicURL)) {
+      if(Strings.isNullOrEmpty(topicURL)) {
          throw new UnsupportedOperationException("Topic URL must not be null or empty");
       }
       this.id = id;

@@ -20,6 +20,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
+import com.google.common.base.Strings;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -369,7 +370,7 @@ public class HubEndpoint implements MetricSet {
          datastore.init(prefix, props, datastoreEventHandler, logger);
 
          userAgent = initUtil.getProperty("httpclient.userAgent");
-         if(!StringUtil.hasContent(userAgent)) {
+         if(Strings.isNullOrEmpty(userAgent)) {
             initUtil.throwRequiredException("httpclient.userAgent");
          }
 
@@ -787,7 +788,7 @@ public class HubEndpoint implements MetricSet {
       String callbackAuthScheme = request.getParameterValue(SUBSCRIPTION_CALLBACK_AUTH_SCHEME);
       String callbackAuth = request.getParameterValue(SUBSCRIPTION_CALLBACK_AUTH);
 
-      if(StringUtil.hasContent(callbackAuthScheme) && StringUtil.hasContent(callbackAuth)) {
+      if(!Strings.isNullOrEmpty(callbackAuthScheme) && !Strings.isNullOrEmpty(callbackAuth)) {
          try {
             authScheme = datastore.resolveAuthScheme(callbackAuthScheme);
             if(authScheme == null) {

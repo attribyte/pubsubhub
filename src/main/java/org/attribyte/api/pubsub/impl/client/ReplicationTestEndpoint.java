@@ -17,11 +17,11 @@ package org.attribyte.api.pubsub.impl.client;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import org.attribyte.api.http.Header;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
-import org.attribyte.util.StringUtil;
 
 import java.io.FileInputStream;
 import java.util.Collection;
@@ -50,7 +50,7 @@ public class ReplicationTestEndpoint {
       final String hubURL = _hubURL;
 
       String _replicationTopicURL = props.getProperty("hub.replicationTopic");
-      if(!StringUtil.hasContent(_replicationTopicURL)) {
+      if(Strings.isNullOrEmpty(_replicationTopicURL)) {
          System.err.println("The 'hub.replicationTopic' must be specified");
          System.exit(1);
       }
@@ -77,7 +77,7 @@ public class ReplicationTestEndpoint {
       String endpointUsername = props.getProperty("endpoint.username");
       String endpointPassword = props.getProperty("endpoint.password");
       final Optional<BasicAuth> endpointAuth;
-      if(StringUtil.hasContent(endpointUsername) && StringUtil.hasContent(endpointPassword)) {
+      if(!Strings.isNullOrEmpty(endpointUsername) && !Strings.isNullOrEmpty(endpointPassword)) {
          endpointAuth = Optional.of(new BasicAuth(endpointUsername, endpointPassword));
       } else {
          endpointAuth = Optional.absent();

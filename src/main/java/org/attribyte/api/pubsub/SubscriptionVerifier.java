@@ -16,6 +16,7 @@
 package org.attribyte.api.pubsub;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import org.attribyte.api.http.Request;
 import org.attribyte.api.http.Response;
 import org.attribyte.util.StringUtil;
@@ -52,12 +53,12 @@ public abstract class SubscriptionVerifier implements Runnable {
    public Response validate() {
 
       String callbackStr = request.getParameterValue("hub.callback");
-      if(!StringUtil.hasContent(callbackStr)) {
+      if(Strings.isNullOrEmpty(callbackStr)) {
          return StandardResponse.NO_HUB_CALLBACK;
       }
 
       String modeStr = request.getParameterValue("hub.mode");
-      if(!StringUtil.hasContent(modeStr)) {
+      if(Strings.isNullOrEmpty(modeStr)) {
          return StandardResponse.NO_HUB_MODE;
       }
 
@@ -67,12 +68,12 @@ public abstract class SubscriptionVerifier implements Runnable {
       }
 
       String topicStr = request.getParameterValue("hub.topic");
-      if(!StringUtil.hasContent(topicStr)) {
+      if(Strings.isNullOrEmpty(topicStr)) {
          return StandardResponse.NO_HUB_TOPIC;
       }
 
       String hubSecretStr = request.getParameterValue("hub.secret");
-      if(StringUtil.hasContent(hubSecretStr)) {
+      if(!Strings.isNullOrEmpty(hubSecretStr)) {
          try {
             byte[] b = hubSecretStr.getBytes(Charsets.UTF_8);
             if(b.length > 200) {
@@ -84,7 +85,7 @@ public abstract class SubscriptionVerifier implements Runnable {
       }
 
       String leaseSecondsStr = request.getHeaderValue("hub.lease_seconds");
-      if(StringUtil.hasContent(leaseSecondsStr)) {
+      if(!Strings.isNullOrEmpty(leaseSecondsStr)) {
          try {
             int leaseSeconds = Integer.parseInt(leaseSecondsStr);
             if(leaseSeconds < 0) {

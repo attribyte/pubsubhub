@@ -15,6 +15,7 @@
 
 package org.attribyte.api.pubsub;
 
+import com.google.common.base.Strings;
 import org.attribyte.api.http.AuthScheme;
 import org.attribyte.util.StringUtil;
 
@@ -32,7 +33,7 @@ public class Endpoint {
     * @param id The endpoint id.
     */
    public Endpoint(final String endpointURL, final long id) {
-      if(!StringUtil.hasContent(endpointURL)) {
+      if(Strings.isNullOrEmpty(endpointURL)) {
          throw new UnsupportedOperationException("Endpoint URL must not be null or empty");
       }
       this.id = id;
@@ -49,7 +50,7 @@ public class Endpoint {
     * @param createTime The create time.
     */
    public Endpoint(final String endpointURL, final long id, final Date createTime) {
-      if(!StringUtil.hasContent(endpointURL)) {
+      if(Strings.isNullOrEmpty(endpointURL)) {
          throw new UnsupportedOperationException("Endpoint URL must not be null or empty");
       }
       this.id = id;
@@ -67,7 +68,7 @@ public class Endpoint {
     * @param authId The auth id expected by the endpoint.
     */
    public Endpoint(final String endpointURL, final long id, final AuthScheme authScheme, final String authId) {
-      if(!StringUtil.hasContent(endpointURL)) {
+      if(Strings.isNullOrEmpty(endpointURL)) {
          throw new UnsupportedOperationException("Endpoint URL must not be null or empty");
       }
       this.id = id;

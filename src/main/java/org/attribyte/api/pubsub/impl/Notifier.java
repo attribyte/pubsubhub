@@ -16,6 +16,7 @@
 package org.attribyte.api.pubsub.impl;
 
 import com.codahale.metrics.Timer;
+import com.google.common.base.Strings;
 import com.google.protobuf.ByteString;
 import org.attribyte.api.http.RequestBuilder;
 import org.attribyte.api.pubsub.*;
@@ -46,7 +47,7 @@ public abstract class Notifier extends org.attribyte.api.pubsub.Notifier {
     * @param subscription The subscription.
     */
    protected static void addSignature(final RequestBuilder builder, final ByteString notificationContent, final Subscription subscription) {
-      if(StringUtil.hasContent(subscription.getSecret()) && notificationContent != null) {
+      if(!Strings.isNullOrEmpty(subscription.getSecret()) && notificationContent != null) {
          try {
             String hmacSignature = HMACUtil.hexHMAC(notificationContent.toByteArray(), subscription.getSecret());
             builder.addHeader("X-Hub-Signature", "sha1=" + hmacSignature);

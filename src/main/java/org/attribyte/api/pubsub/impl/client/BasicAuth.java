@@ -20,7 +20,7 @@ import com.google.common.io.BaseEncoding;
 /**
  * Holds HTTP 'Basic' auth information.
  */
-public class BasicAuth {
+class BasicAuth {
 
    public static String AUTH_HEADER_NAME = "Authorization";
 
