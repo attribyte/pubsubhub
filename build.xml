@@ -99,7 +99,7 @@
         <delete dir="${doc}/javadoc"/>
     </target>
 
-    <target name="javadoc" depends="cleandoc">
+    <target name="javadoc" depends="cleandoc,full-dist">
         <javadoc
                 access="public"
                 destdir="${doc}/javadoc"
