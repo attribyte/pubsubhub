@@ -99,7 +99,7 @@
         <delete dir="${doc}/javadoc"/>
     </target>
 
-    <target name="javadoc">
+    <target name="javadoc" depends="cleandoc">
         <javadoc
                 access="public"
                 destdir="${doc}/javadoc"
@@ -110,6 +110,7 @@
                 windowtitle="org.attribyte"
                 sourcepath="../http-model/src/main/java;../shared-base/src/main/java;../acp/src/main/java"
                 >
+            <classpath refid="classpath"/>
             <fileset dir="${src}/main/java" defaultexcludes="yes">
                 <include name="**/*.java"/>
             </fileset>
