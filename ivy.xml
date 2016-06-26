@@ -7,11 +7,11 @@
     </configurations>
     <dependencies>
         <dependency org="org.attribyte" name="attribyte-shared-base" rev="1.0.2" conf="compile->default"/>
-        <dependency org="org.attribyte" name="acp" rev="0.6.0" conf="compile->default"/>
+        <dependency org="org.attribyte" name="acp" rev="[0.6.1,)" conf="compile->default"/>
         <dependency org="org.attribyte" name="attribyte-http" rev="0.5.2" conf="compile->default"/>
-        <dependency org="org.attribyte" name="attribyte-async-publisher" rev="0.5.0" conf="compile->default"/>
-        <dependency org="org.attribyte" name="essem-reporter" rev="[1.0,)" conf="compile->default"/>
-        <dependency org="org.attribyte" name="metrics-reporting" rev="1.0.0" conf="compile->default"/>
+        <dependency org="org.attribyte" name="attribyte-async-publisher" rev="[0.5.1,)" conf="compile->default"/>
+        <dependency org="org.attribyte" name="essem-reporter" rev="[1.0.6,)" conf="compile->default"/>
+        <dependency org="org.attribyte" name="metrics-reporting" rev="[1.0.0,)" conf="compile->default"/>
         <dependency org="commons-codec" name="commons-codec" rev="1.4" conf="compile->default"/>
         <dependency org="commons-httpclient" name="commons-httpclient" rev="3.1" conf="compile->default"/>
         <dependency org="commons-logging" name="commons-logging" rev="1.1.3" conf="compile->default"/>
@@ -23,10 +23,11 @@
         <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="9.3.8.v20160314" conf="compile->default"/>
         <dependency org="org.eclipse.jetty" name="jetty-servlets" rev="9.3.8.v20160314" conf="compile->default"/>
         <dependency org="log4j" name="log4j" rev="1.2.17" conf="compile->default"/>
-        <dependency org="com.codahale.metrics" name="metrics-core" rev="3.0.2" conf="compile->default"/>
-        <dependency org="com.codahale.metrics" name="metrics-healthchecks" rev="3.0.2" conf="compile->default"/>
-        <dependency org="com.codahale.metrics" name="metrics-servlets" rev="3.0.2" conf="compile->default"/>
-        <dependency org="com.codahale.metrics" name="metrics-jvm" rev="3.0.2" conf="compile->default"/>
+        <dependency org="io.dropwizard.metrics" name="metrics-core" rev="3.1.2" conf="compile->default"/>
+        <dependency org="io.dropwizard.metrics" name="metrics-healthchecks" rev="3.1.2" conf="compile->default"/>
+        <dependency org="io.dropwizard.metrics" name="metrics-servlets" rev="3.1.2" conf="compile->default"/>
+        <dependency org="io.dropwizard.metrics" name="metrics-jvm" rev="3.0.2" conf="compile->default"/>
+        <dependency org="org.hdrhistogram" name="HdrHistogram" rev="2.1.9" conf="compile->default"/>
         <dependency org="mysql" name="mysql-connector-java" rev="5.1.29" conf="compile->default"/>
         <dependency org="com.typesafe" name="config" rev="1.0.2" conf="compile->default"/>
         <dependency org="org.antlr" name="ST4" rev="4.0.7" conf="compile->default"/>

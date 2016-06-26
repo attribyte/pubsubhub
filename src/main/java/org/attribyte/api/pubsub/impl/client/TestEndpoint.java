@@ -166,7 +166,7 @@ public class TestEndpoint {
                     completeCount.incrementAndGet();
                     return true;
                  }
-              }, false, true, Integer.MAX_VALUE //Uniform reservoir, record total latency, no limit on message size.
+              }, false, true, Integer.MAX_VALUE //HDR reservoir, record total latency, no limit on message size.
       );
 
       notificationEndpoint.start();

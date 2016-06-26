@@ -1,11 +1,11 @@
 package org.attribyte.api.pubsub;
 
-import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
-import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableMap;
+import org.attribyte.essem.metrics.HDRReservoir;
+import org.attribyte.essem.metrics.Timer;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -67,7 +67,7 @@ public class NotificationMetrics implements MetricSet {
    /**
     * A histogram of notification size.
     */
-   public final Histogram notificationSize = new Histogram(new ExponentiallyDecayingReservoir());
+   public final Histogram notificationSize = new Histogram(new HDRReservoir(2, HDRReservoir.REPORT_SNAPSHOT_HISTOGRAM));
 
    /**
     * The topic id.

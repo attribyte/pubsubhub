@@ -66,7 +66,7 @@ public class NotificationEndpoint implements MetricSet {
    }
 
    /**
-    * Creates an endpoint that uses an exponentially decaying reservoir for timers/histograms
+    * Creates an endpoint that uses a high dynamic range reservoir (HDR) for timers/histograms
     * and allows notifications to be of unlimited size.
     * @param listenAddress The address to listen on.
     * @param listenPort The port to listen on.
@@ -79,7 +79,7 @@ public class NotificationEndpoint implements MetricSet {
                                final Optional<BasicAuth> endpointAuth,
                                final Collection<Topic> topics,
                                final Callback callback) {
-      this(listenAddress, listenPort, endpointAuth, topics, callback, true, false, Integer.MAX_VALUE);
+      this(listenAddress, listenPort, endpointAuth, topics, callback, false, false, Integer.MAX_VALUE);
    }
 
    /**
@@ -89,7 +89,7 @@ public class NotificationEndpoint implements MetricSet {
     * @param endpointAuth Optional 'Basic' auth required for calls to the endpoint.
     * @param topics A collection of topics.
     * @param callback The callback.
-    * @param exponentiallyDecayingReservoir If <code>false</code>, a uniform reservoir is used for timers/histograms.
+    * @param exponentiallyDecayingReservoir If <code>false</code>, a high dynamic range (HDR) reservoir is used for timers/histograms.
     * @param recordTotalLatency Should the total latency be recorded? This is likely to be inaccurate
     * unless the client and server are running on the same machine or are carefully synchronized.
     */

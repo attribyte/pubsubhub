@@ -20,7 +20,6 @@ import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
-import com.codahale.metrics.Timer;
 import com.codahale.metrics.UniformReservoir;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +31,8 @@ import org.attribyte.api.http.impl.servlet.Bridge;
 import org.attribyte.api.pubsub.Notification;
 import org.attribyte.api.pubsub.Topic;
 import org.attribyte.api.pubsub.impl.Constants;
+import org.attribyte.essem.metrics.HDRReservoir;
+import org.attribyte.essem.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,15 +79,15 @@ public class NotificationEndpointServlet extends HttpServlet implements MetricSe
       this.topics = builder.build();
       this.allowedVerifyModes = allowUnsubscribe ? ImmutableSet.of("subscribe", "unsubscribe") : ImmutableSet.of("subscribe");
       this.publishLatency = exponentiallyDecayingReservoir ?
-              new Histogram(new ExponentiallyDecayingReservoir()) : new Histogram(new UniformReservoir());
+              new Histogram(new ExponentiallyDecayingReservoir()) :new Histogram(new HDRReservoir(2, HDRReservoir.REPORT_SNAPSHOT_HISTOGRAM));
       if(recordTotalLatency) {
          this.totalLatency = exponentiallyDecayingReservoir ?
-                 new Histogram(new ExponentiallyDecayingReservoir()) : new Histogram(new UniformReservoir());
+                 new Histogram(new ExponentiallyDecayingReservoir()) : new Histogram(new HDRReservoir(2, HDRReservoir.REPORT_SNAPSHOT_HISTOGRAM));
       } else {
          this.totalLatency = null;
       }
       this.notificationSize = exponentiallyDecayingReservoir ?
-              new Histogram(new ExponentiallyDecayingReservoir()) : new Histogram(new UniformReservoir());
+              new Histogram(new ExponentiallyDecayingReservoir()) : new Histogram(new HDRReservoir(2, HDRReservoir.REPORT_SNAPSHOT_HISTOGRAM));
       this.maxNotificationSize = maxNotificationSize;
    }
 

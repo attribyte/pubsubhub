@@ -16,10 +16,10 @@
 package org.attribyte.api.pubsub.impl;
 
 import com.codahale.metrics.Metric;
-import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableMap;
 import org.attribyte.api.pubsub.HubEndpoint;
 import org.attribyte.api.pubsub.Notification;
+import org.attribyte.essem.metrics.Timer;
 
 import java.util.Map;
 import java.util.Properties;

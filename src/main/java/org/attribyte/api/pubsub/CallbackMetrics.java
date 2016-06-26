@@ -3,8 +3,8 @@ package org.attribyte.api.pubsub;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
-import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableMap;
+import org.attribyte.essem.metrics.Timer;
 
 import java.util.Comparator;
 import java.util.Map;
