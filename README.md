@@ -1,17 +1,17 @@
 ![Logo](/admin/htdocs/img/PsHLogo.png)
 
-##About
+## About
 
 A pubsub implementation that conforms to the [PubSubHubbub](https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html)
 protocol with extensions for authentication and security. PubSubHubbub, though originally designed for Atom and RSS feeds,
 can be applied to any type of data to push notifications over HTTP, eliminating
 inefficient polling for changes.
 
-##Documentation
+## Documentation
 
-* [Javadoc](https://www.attribyte.org/projects/pubsubhub/javadoc/index.html)
+* [Javadoc](https://attribyte.com/projects/pubsubhub/javadoc/index.html)
 
-##Building
+## Building
 
 The normal build uses [Apache Ant](http://ant.apache.org/) and
 [Apache Ivy](https://ant.apache.org/ivy/) to resolve dependencies. The following ant tasks
@@ -25,7 +25,7 @@ are available:
 * `javadoc` - Generates javadoc.
 * `cleandoc` - Removes generated javadoc.
 
-##H2 Quick Start
+## H2 Quick Start
 
 [H2](http://www.h2database.com/html/main.html) is an embedded database that can store tables in-memory
 or on-disk.
@@ -42,7 +42,7 @@ or on-disk.
 * View metrics `http://localhost:8086/metrics`.
 * Stop the server: `bin/stop`
 
-##MySQL Quick Start
+## MySQL Quick Start
 
 * If ivy is not installed with your ant distribution: `ant init-ivy`
 * Build: `ant full-dist`
@@ -58,7 +58,7 @@ or on-disk.
 * Stop the server: `bin/stop`
 
 
-##Framework Dependencies
+## Framework Dependencies
 
 * [Attribyte http-model](https://github.com/attribyte/http-model)
 * [Attribyte http-relay](https://github.com/attribyte/http-relay)
@@ -68,7 +68,7 @@ or on-disk.
 * [Dropwizard Metrics](http://metrics.codahale.com/)
 * [Apache Log4J](http://logging.apache.org/log4j/2.x/)
 
-##Implementation Dependencies
+## Implementation Dependencies
 
 * [Attribyte ACP](https://github.com/attribyte/acp)
 * [Apache commons-httpclient](http://hc.apache.org/httpclient-3.x/)
@@ -77,7 +77,7 @@ or on-disk.
 * [Typesafe Config](https://github.com/typesafehub/config)
 * [H2](http://www.h2database.com/html/main.html)
 
-##License
+## License
 
 Copyright 2010, 2016 [Attribyte, LLC](https://attribyte.com)
 
