@@ -49,7 +49,7 @@ public class SubscriptionVerifyRecord extends SubscriptionEvent {
    }
 
    /**
-    * Is the response code set?
+    * @return Is the response code set?
     */
    public final boolean getCodeIsSet() {
       return callbackResponseCode > 0;

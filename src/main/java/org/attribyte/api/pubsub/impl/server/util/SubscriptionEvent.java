@@ -30,7 +30,7 @@ public abstract class SubscriptionEvent implements Comparable<SubscriptionEvent>
    public final Date createTime = new Date();
 
    /**
-    * Does this event represent failure?
+    * @return Does this event represent failure?
     */
    public abstract boolean isFailed();
 
@@ -38,7 +38,7 @@ public abstract class SubscriptionEvent implements Comparable<SubscriptionEvent>
    public abstract String toString();
 
    /**
-    * Is the event a verify event?
+    * @return Is the event a verify event?
     */
    public abstract boolean isVerify();
 }

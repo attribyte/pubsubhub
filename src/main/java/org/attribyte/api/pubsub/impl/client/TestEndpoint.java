@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>
  *    To start: java org.attribyte.api.pubsub.impl.client.TestEndpoint -[property name]=[property file], ... [property file]
  *    Command line parameters override those in the property file.
- * </p>
  * <ol>
  *    <li>Starts a server to listen for subscription verification and test callbacks.</li>
  *    <li>Sends a subscription request to the configured topic.</li>
@@ -83,9 +82,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *          Test will generate random bytes within the specified size range.
  *       </dd>
  *       <dt>publisher.numProcessors</dt>
- *       <dd>The number of concurrent processors sending notifications if test.numNotifications > 0</dd>
+ *       <dd>The number of concurrent processors sending notifications if test.numNotifications &gt; 0</dd>
  *    </dl>
- * </p>
  */
 public class TestEndpoint {
 

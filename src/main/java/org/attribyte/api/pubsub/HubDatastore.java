@@ -182,7 +182,7 @@ public interface HubDatastore {
     * Changes the status of a subscription.
     * @param id The subscription id.
     * @param newStatus The new status for the subscription.
-    * @param newLeaseSeconds The new lease. Applied only if > 0.
+    * @param newLeaseSeconds The new lease. Applied only if &gt; 0.
     * @throws DatastoreException if subscription does not exist, or other datastore error.
     */
    public void changeSubscriptionStatus(long id, Subscription.Status newStatus, int newLeaseSeconds) throws DatastoreException;
@@ -213,7 +213,7 @@ public interface HubDatastore {
     * </p>
     * @param topic The topic.
     * @param subscriptions A collection to fill with subscriptions.
-    * @param startId The starting subscription id. The first returned subscription will be >= this id.
+    * @param startId The starting subscription id. The first returned subscription will be &gt;= this id.
     * @param maxReturned The maximum number of subscriptions returned.
     * @return The <code>startId</code> for the next page or 0 if no more pages.
     * @throws DatastoreException on datastore error.

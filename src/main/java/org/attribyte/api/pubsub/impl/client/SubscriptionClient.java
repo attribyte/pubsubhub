@@ -1,5 +1,5 @@
 /*
- * Copyright 2014, 2016 Attribyte, LLC
+ * Copyright 2014, 2016, 2018 Attribyte, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,16 @@ package org.attribyte.api.pubsub.impl.client;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
-import org.eclipse.jetty.client.HttpClient;
+import org.attribyte.api.InitializationException;
+import org.attribyte.api.InvalidURIException;
+import org.attribyte.api.http.Client;
+import org.attribyte.api.http.ClientOptions;
+import org.attribyte.api.http.FormPostRequestBuilder;
+import org.attribyte.api.http.Response;
+import org.attribyte.api.http.impl.jetty.JettyClient;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.FormContentProvider;
-import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.HttpCookieStore;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.io.IOException;
 
 /**
  * Sends subscription requests to a hub.
@@ -36,14 +34,19 @@ import java.util.concurrent.TimeoutException;
 public class SubscriptionClient {
 
    /**
-    * Creates the client.
+    * Creates a subscription client with defaults.
+    * @throws InitializationException on failure to created default HTTP client.
     */
-   public SubscriptionClient() {
-      SslContextFactory sslContextFactory = new SslContextFactory();
-      this.httpClient = new HttpClient(sslContextFactory);
-      this.httpClient.setFollowRedirects(false);
-      this.httpClient.setConnectTimeout(10000L);
-      this.httpClient.setCookieStore(new HttpCookieStore.Empty());
+   public SubscriptionClient() throws InitializationException {
+      this(new JettyClient(ClientOptions.IMPLEMENTATION_DEFAULT));
+   }
+
+   /**
+    * Creates a subscription client with a pre-configured HTTP client.
+    * @param client The HTTP client.
+    */
+   public SubscriptionClient(final Client client) {
+      this.httpClient = client;
    }
 
    /**
@@ -117,7 +120,6 @@ public class SubscriptionClient {
     * @throws Exception on start error.
     */
    public void start() throws Exception {
-      this.httpClient.start();
    }
 
    /**
@@ -125,7 +127,7 @@ public class SubscriptionClient {
     * @throws Exception on shutdown error.
     */
    public void shutdown() throws Exception {
-      this.httpClient.stop();
+      this.httpClient.shutdown();
    }
 
    /**
@@ -163,45 +165,30 @@ public class SubscriptionClient {
                                          final Optional<BasicAuth> hubAuth) {
       try {
 
-         final Fields fields = new Fields();
-         fields.add("hub.callback", callbackURL);
-         fields.add("hub.mode", "subscribe");
-         fields.add("hub.topic", topicURL);
-         fields.add("hub.lease_seconds", Integer.toString(leaseSeconds));
+         FormPostRequestBuilder requestBuilder = new FormPostRequestBuilder(hubURL);
+
+         requestBuilder.addParameter("hub.callback", callbackURL);
+         requestBuilder.addParameter("hub.mode", "subscribe");
+         requestBuilder.addParameter("hub.topic", topicURL);
+         requestBuilder.addParameter("hub.lease_seconds", Integer.toString(leaseSeconds));
 
          //Non-standard...
          if(callbackAuth.isPresent()) {
-            fields.add("hub.x-callback_auth_scheme", "Basic");
-            fields.add("hub.x-callback_auth", callbackAuth.get().headerValue.substring("Basic ".length()));
+            requestBuilder.addParameter("hub.x-callback_auth_scheme", "Basic");
+            requestBuilder.addParameter("hub.x-callback_auth", callbackAuth.get().headerValue.substring("Basic ".length()));
          }
-
-         final Request request = httpClient.POST(hubURL)
-                 .content(new FormContentProvider(fields))
-                 .timeout(10L, TimeUnit.SECONDS);
 
          if(hubAuth.isPresent()) {
-            request.header(BasicAuth.AUTH_HEADER_NAME, hubAuth.get().headerValue);
+            requestBuilder.addHeader(BasicAuth.AUTH_HEADER_NAME, hubAuth.get().headerValue);
          }
 
-         ContentResponse response = request.send();
-         int status = response.getStatus();
-         if(status == HttpStatus.ACCEPTED_202) {
-            return ACCEPTED_RESULT;
-         } else {
-            String content = response.getContentAsString();
-            return new Result(status, content, null);
-         }
-      } catch(InterruptedException ie) {
-         Thread.currentThread().interrupt();
-         return new Result(0, "Interrupted while sending", ie);
-      } catch(TimeoutException te) {
-         return new Result(0, "Timeout while sending", te);
-      } catch(ExecutionException ee) {
-         if(ee.getCause() != null) {
-            return new Result(0, "Problem sending", ee.getCause());
-         } else {
-            return new Result(0, "Problem sending", ee);
-         }
+         Response response = httpClient.send(requestBuilder.create());
+         return response.statusCode == HttpStatus.ACCEPTED_202 ?
+                 ACCEPTED_RESULT : new Result(response.statusCode, response.getBody().toStringUtf8(), null);
+      } catch(InvalidURIException iue) {
+         return new Result(0, "Hub URL is invalid", iue);
+      } catch(IOException ioe) {
+         return new Result(0, "Communication failure", ioe);
       }
    }
 
@@ -220,46 +207,32 @@ public class SubscriptionClient {
                                         final Optional<BasicAuth> hubAuth) {
       try {
 
-         final Fields fields = new Fields();
-         fields.add("hub.callback", callbackURL);
-         fields.add("hub.mode", "unsubscribe");
-         fields.add("hub.topic", topicURL);
+         FormPostRequestBuilder requestBuilder = new FormPostRequestBuilder(hubURL);
+
+
+         requestBuilder.addHeader("hub.callback", callbackURL);
+         requestBuilder.addHeader("hub.mode", "unsubscribe");
+         requestBuilder.addHeader("hub.topic", topicURL);
 
          //Non-standard...
          if(callbackAuth.isPresent()) {
-            fields.add("hub.x-callback_auth_scheme", "Basic");
-            fields.add("hub.x-callback_auth", callbackAuth.get().headerValue.substring("Basic ".length()));
+            requestBuilder.addHeader("hub.x-callback_auth_scheme", "Basic");
+            requestBuilder.addHeader("hub.x-callback_auth", callbackAuth.get().headerValue.substring("Basic ".length()));
          }
-
-         final Request request = httpClient.POST(hubURL)
-                 .content(new FormContentProvider(fields))
-                 .timeout(10L, TimeUnit.SECONDS);
 
          if(hubAuth.isPresent()) {
-            request.header(BasicAuth.AUTH_HEADER_NAME, hubAuth.get().headerValue);
+            requestBuilder.addHeader(BasicAuth.AUTH_HEADER_NAME, hubAuth.get().headerValue);
          }
 
-         ContentResponse response = request.send();
-         int status = response.getStatus();
-         if(status == HttpStatus.ACCEPTED_202) {
-            return ACCEPTED_RESULT;
-         } else {
-            String content = response.getContentAsString();
-            return new Result(status, content, null);
-         }
-      } catch(InterruptedException ie) {
-         Thread.currentThread().interrupt();
-         return new Result(0, "Interrupted while sending", ie);
-      } catch(TimeoutException te) {
-         return new Result(0, "Timeout while sending", te);
-      } catch(ExecutionException ee) {
-         if(ee.getCause() != null) {
-            return new Result(0, "Problem sending", ee.getCause());
-         } else {
-            return new Result(0, "Problem sending", ee);
-         }
+         Response response = httpClient.send(requestBuilder.create());
+         return response.statusCode == HttpStatus.ACCEPTED_202 ?
+                 ACCEPTED_RESULT : new Result(response.statusCode, response.getBody().toStringUtf8(), null);
+      } catch(InvalidURIException iue) {
+         return new Result(0, "Hub URL is invalid", iue);
+      } catch(IOException ioe) {
+         return new Result(0, "Communication failure", ioe);
       }
    }
 
-   private final HttpClient httpClient;
+   private final Client httpClient;
 }

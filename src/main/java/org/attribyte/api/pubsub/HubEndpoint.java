@@ -126,6 +126,7 @@ public class HubEndpoint implements MetricSet {
     * @param prefix The property prefix.
     * @param props The properties.
     * @param logger The logger.
+    * @param eventHandler The (optional) event handler.
     * @param datastoreEventHandler The (optional) event handler.
     * @throws InitializationException on initialization error.
     */
@@ -140,6 +141,7 @@ public class HubEndpoint implements MetricSet {
     * @param prefix The property prefix.
     * @param props The properties.
     * @param logger The logger.
+    * @param eventHandler The (optional) event handler.
     * @param datastoreEventHandler The (optional) event handler.
     * @param topicURLFilters A list of topic URL filters to add after any initialized filters.
     * @param callbackURLFilters A list of callback URL filters to add after any initialized filters.
@@ -254,7 +256,7 @@ public class HubEndpoint implements MetricSet {
     *
     * <h2>HTTP Client</h2>
     * <dl>
-    * <dt>httpclient.class<dt>
+    * <dt>httpclient.class</dt>
     * <dd>The HTTP client implementation. If unspecified, default is <code>org.attribyte.api.http.impl.commons.Client</code>.</dd>
     * <dt><b>httpclient.userAgent</b></dt>
     * <dd>The User-Agent string sent with all requests.</dd>
@@ -329,7 +331,7 @@ public class HubEndpoint implements MetricSet {
     * <dd>The minimum number of minutes before (async) verify retry if initial verify fails.
     * Default is 10 minutes.
     * </dd>
-    * <dt>verifyRetryLimit</dd>
+    * <dt>verifyRetryLimit</dt>
     * <dd>The maximum number of verify retries. Default 10.</dd>
     * <dt><b>verifyRetryThreads</b></dt>
     * <dd>The number of threads available to handle verify retry.</dd>
@@ -344,10 +346,10 @@ public class HubEndpoint implements MetricSet {
     * <dt><b>maxLeaseSeconds</b></dt>
     * <dd>The maximum allowed lease time.</dd>
     * </dl>
-    * </p>
     * @param prefix The prefix for all properties (e.g. 'hub.').
     * @param props The properties.
     * @param logger The logger. If unspecified, messages are logged to the console.
+    * @param eventHandler An event handler.
     * @param datastoreEventHandler A datastore event handler.
     * @throws InitializationException on initialization error.
     */

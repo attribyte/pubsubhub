@@ -26,6 +26,7 @@ import org.attribyte.api.pubsub.Topic;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.UserStore;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -141,7 +142,9 @@ public class NotificationEndpoint implements MetricSet {
       if(endpointAuth.isPresent()) {
          ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
          HashLoginService loginService = new HashLoginService("pubsub");
-         loginService.putUser(endpointAuth.get().username, Credential.getCredential(endpointAuth.get().password), new String[]{"api"});
+         UserStore userStore = new UserStore();
+         userStore.addUser(endpointAuth.get().username, Credential.getCredential(endpointAuth.get().password), new String[]{"api"});
+         loginService.setUserStore(userStore);
 
          Constraint constraint = new Constraint();
          constraint.setName(Constraint.__BASIC_AUTH);

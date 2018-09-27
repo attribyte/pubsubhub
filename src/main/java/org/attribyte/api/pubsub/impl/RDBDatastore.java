@@ -61,6 +61,8 @@ public abstract class RDBDatastore implements HubDatastore {
     * @param prefix The property prefix.
     * @param props The properties.
     * @param logger A logger.
+    * @return The connection source.
+    * @throws InitializationException on init error.
     */
    protected ConnectionSource initConnectionSource(String prefix, Properties props, Logger logger) throws InitializationException {
 
@@ -74,6 +76,11 @@ public abstract class RDBDatastore implements HubDatastore {
       return connectionSource;
    }
 
+   /**
+    * Gets the connection.
+    * @return The connection.
+    * @throws SQLException on database error.
+    */
    public final Connection getConnection() throws SQLException {
       return connectionSource.getConnection();
    }

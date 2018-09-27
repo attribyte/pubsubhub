@@ -76,6 +76,7 @@ public class AdminConsole {
     * @param allowedAssetPaths A list of paths (relative to the base directory)
     * from which static assets will be returned (<code>/css, /js, ...</code>).
     * @param invalidatables A collection of caches, etc that may be invalidated on-demand.
+    * @param subscriptionEventSource A source for subscription events.
     * @param notificationSource A source for recent notifications.
     */
    public void initServlets(final ServletContextHandler rootContext,
